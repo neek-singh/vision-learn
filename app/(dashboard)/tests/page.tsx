@@ -1,170 +1,44 @@
-"use client";
-
-import { useState } from "react";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { 
   FileText, 
-  Clock, 
-  HelpCircle, 
-  Play, 
-  CheckCircle2, 
-  ArrowLeft, 
-  ArrowRight,
   Trophy,
-  AlertCircle
+  BookOpen
 } from "lucide-react";
+import { verifyToken } from "@/lib/auth-custom";
+import { createPublicSupabaseClient } from "@/lib/supabase-server";
+import TestsClient from "./TestsClient";
 
-export default function TestsPage() {
-  const [activeTest, setActiveTest] = useState<any>(null);
-  const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [testCompleted, setTestCompleted] = useState(false);
-  const [answers, setAnswers] = useState<Record<number, number>>({});
+export default async function TestsPage() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("vision_learn_session")?.value;
 
-  const tests = [
-    { id: 1, title: "HTML Basics Test", course: "Web Design", questions: 20, duration: "30 mins", status: "Not Attempted" },
-    { id: 2, title: "CSS Flexbox Challenge", course: "Web Design", questions: 15, duration: "20 mins", status: "In Progress" },
-    { id: 3, title: "JavaScript Logic Quiz", course: "Frontend Dev", questions: 25, duration: "45 mins", status: "Completed", score: "22/25" },
-  ];
+  if (!token) redirect("/login");
 
-  const questions = [
-    { id: 1, text: "Which tag is used for the largest heading in HTML?", options: ["<h6>", "<h1>", "<header>", "<head>"] },
-    { id: 2, text: "What does HTML stand for?", options: ["Hyper Text Markup Language", "High Tech Multi Language", "Hyper Transfer Main Logic", "Home Tool Markup Language"] },
-    { id: 3, text: "Which element is used to create an unordered list?", options: ["<ol>", "<li>", "<ul>", "<list>"] },
-  ];
+  const payload = await verifyToken(token);
+  if (!payload) redirect("/login");
 
-  const handleStartTest = (test: any) => {
-    setActiveTest(test);
-    setTestCompleted(false);
-    setCurrentQuestion(0);
-    setAnswers({});
-  };
+  const supabase = createPublicSupabaseClient();
 
-  const handleAnswer = (optionIndex: number) => {
-    setAnswers({ ...answers, [currentQuestion]: optionIndex });
-  };
+  // 1. Get Enrolled Course IDs
+  const { data: enrollments } = await supabase
+    .from("enrollments")
+    .select("course_id")
+    .eq("student_id", payload.id);
 
-  const handleNext = () => {
-    if (currentQuestion < questions.length - 1) {
-      setCurrentQuestion(currentQuestion + 1);
-    } else {
-      setTestCompleted(true);
-    }
-  };
+  const courseIds = enrollments?.map(e => e.course_id) || [];
 
-  if (activeTest) {
-    if (testCompleted) {
-      const score = Object.keys(answers).length;
-      return (
-        <div className="max-w-xl mx-auto py-8 text-center animate-in zoom-in-95 duration-500">
-          <div className="w-20 h-20 bg-indigo-600 rounded-[1.5rem] flex items-center justify-center text-white mx-auto mb-6 shadow-xl shadow-indigo-100">
-            <Trophy size={40} />
-          </div>
-          <h2 className="text-2xl font-black text-slate-900 mb-1">Test Completed!</h2>
-          <p className="text-sm text-slate-500 font-medium mb-6">You have successfully submitted the {activeTest.title}</p>
-          
-          <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm mb-8">
-            <div className="grid grid-cols-2 gap-6">
-              <div>
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Your Score</p>
-                <p className="text-3xl font-black text-indigo-600">{score}/{questions.length}</p>
-              </div>
-              <div>
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Percentage</p>
-                <p className="text-3xl font-black text-emerald-600">{Math.round((score/questions.length) * 100)}%</p>
-              </div>
-            </div>
-            <div className="mt-6 pt-6 border-t border-slate-50">
-              <span className="bg-emerald-50 text-emerald-700 font-black px-4 py-1.5 rounded-full text-[10px] uppercase tracking-widest border border-emerald-100">
-                Status: Passed
-              </span>
-            </div>
-          </div>
-          
-          <button 
-            onClick={() => setActiveTest(null)}
-            className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-sm transition-all shadow-md"
-          >
-            Back to All Tests
-          </button>
-        </div>
-      );
-    }
-
-    return (
-      <div className="max-w-2xl mx-auto space-y-6 animate-in slide-in-from-right-4 duration-500">
-        <div className="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
-          <div>
-            <h3 className="text-base font-black text-slate-900 leading-tight">{activeTest.title}</h3>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{activeTest.course}</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="text-right">
-              <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Time Remaining</p>
-              <p className="text-xs font-black text-red-500 leading-none mt-0.5">24:55</p>
-            </div>
-            <Clock className="text-red-400" size={20} />
-          </div>
-        </div>
-
-        <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm">
-          <div className="flex justify-between items-center mb-8">
-            <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full uppercase tracking-widest">
-              Question {currentQuestion + 1} of {questions.length}
-            </span>
-            <div className="flex gap-1">
-              {questions.map((_, idx) => (
-                <div 
-                  key={idx} 
-                  className={`w-1.5 h-1.5 rounded-full ${idx === currentQuestion ? 'bg-indigo-600' : 'bg-slate-100'}`} 
-                />
-              ))}
-            </div>
-          </div>
-
-          <h2 className="text-xl font-black text-slate-900 mb-8 leading-tight">
-            {questions[currentQuestion].text}
-          </h2>
-
-          <div className="grid grid-cols-1 gap-3">
-            {questions[currentQuestion].options.map((option, idx) => (
-              <button
-                key={idx}
-                onClick={() => handleAnswer(idx)}
-                className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left font-bold text-sm ${
-                  answers[currentQuestion] === idx 
-                    ? "border-indigo-600 bg-indigo-50 text-indigo-700" 
-                    : "border-slate-50 bg-slate-50 hover:border-slate-200 text-slate-600"
-                }`}
-              >
-                <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black shrink-0 ${
-                  answers[currentQuestion] === idx ? "bg-indigo-600 text-white" : "bg-white text-slate-400"
-                }`}>
-                  {String.fromCharCode(65 + idx)}
-                </div>
-                {option}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex justify-between mt-8 pt-6 border-t border-slate-50">
-            <button 
-              disabled={currentQuestion === 0}
-              onClick={() => setCurrentQuestion(currentQuestion - 1)}
-              className="flex items-center gap-2 text-xs font-black text-slate-400 hover:text-slate-900 disabled:opacity-0 transition-all"
-            >
-              <ArrowLeft size={16} /> Previous
-            </button>
-            <button 
-              onClick={handleNext}
-              className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-xs transition-all flex items-center gap-2 shadow-md"
-            >
-              {currentQuestion === questions.length - 1 ? "Submit Test" : "Next Question"}
-              <ArrowRight size={16} />
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // 2. Fetch Tests
+  const { data: tests } = await supabase
+    .from("tests")
+    .select(`
+      *,
+      courses(title),
+      test_questions(id)
+    `)
+    .in("course_id", courseIds)
+    .eq("is_published", true)
+    .order("created_at", { ascending: false });
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -173,13 +47,18 @@ export default function TestsPage() {
         <p className="text-sm text-slate-500 font-medium">Evaluate your progress and master your skills.</p>
       </section>
 
-      <div className="p-16 text-center bg-white rounded-3xl border border-slate-100 shadow-sm">
-        <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 mx-auto mb-4">
-          <Trophy size={32} />
+      {!tests || tests.length === 0 ? (
+        <div className="p-16 text-center bg-white rounded-3xl border border-slate-100 shadow-sm">
+          <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 mx-auto mb-4">
+            <Trophy size={32} />
+          </div>
+          <h2 className="text-xl font-black text-slate-900 mb-2">Tests Coming Soon</h2>
+          <p className="text-sm text-slate-500 max-w-sm mx-auto">Online tests for your enrolled courses will be available here soon.</p>
         </div>
-        <h2 className="text-xl font-black text-slate-900 mb-2">Tests Coming Soon</h2>
-        <p className="text-sm text-slate-500 max-w-sm mx-auto">Online tests for your enrolled courses will be available here soon.</p>
-      </div>
+      ) : (
+        <TestsClient initialTests={tests} studentId={payload.id} />
+      )}
     </div>
   );
 }
+
