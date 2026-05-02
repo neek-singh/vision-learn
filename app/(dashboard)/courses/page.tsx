@@ -73,10 +73,6 @@ export default async function CoursesPage() {
                     <Clock size={14} />
                     <span className="text-[10px] font-bold">Self-paced</span>
                   </div>
-                  <div className="flex items-center gap-2 text-slate-400">
-                    <Users size={14} />
-                    <span className="text-[10px] font-bold">120+ Students</span>
-                  </div>
                 </div>
 
                 <div className="space-y-4">

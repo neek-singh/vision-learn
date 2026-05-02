@@ -8,11 +8,7 @@ import {
 } from "lucide-react";
 
 export default function AssignmentsPage() {
-  const assignments = [
-    { id: 1, title: "HTML Page Structure", dueDate: "2026-05-10", status: "Submitted", score: "90/100" },
-    { id: 2, title: "Responsive Header with Flexbox", dueDate: "2026-05-15", status: "Pending", score: null },
-    { id: 3, title: "JavaScript Calculator Logic", dueDate: "2026-05-20", status: "Pending", score: null },
-  ];
+  const assignments: any[] = [];
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">

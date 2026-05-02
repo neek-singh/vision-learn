@@ -9,13 +9,7 @@ import {
 
 export default function MaterialsPage() {
   // Static mock data for now
-  const materials = [
-    { id: 1, title: "Introduction to HTML5", type: "pdf", module: "Web Basics", size: "2.4 MB" },
-    { id: 2, title: "CSS Layouts - Flexbox & Grid", type: "pdf", module: "Web Basics", size: "3.1 MB" },
-    { id: 3, title: "JavaScript Basics Video", type: "video", module: "JavaScript", duration: "15:20" },
-    { id: 4, title: "React Fundamentals Guide", type: "pdf", module: "React JS", size: "4.8 MB" },
-    { id: 5, title: "State Management Video", type: "video", module: "React JS", duration: "24:45" },
-  ];
+  const materials: any[] = [];
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">

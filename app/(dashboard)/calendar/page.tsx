@@ -21,20 +21,11 @@ export default function CalendarPage() {
       date: date > 0 && date <= 31 ? date : (date <= 0 ? 30 + date : date - 31),
       currentMonth: date > 0 && date <= 31,
       isToday: date === 14,
-      events: date === 14 ? [
-        { title: "HTML Advanced Class", time: "10:00 AM", type: "class" },
-        { title: "CSS Flexbox Test", time: "02:30 PM", type: "test" }
-      ] : (date === 16 ? [
-        { title: "Project Submission", time: "11:59 PM", type: "deadline" }
-      ] : [])
+      events: []
     };
   });
 
-  const upcomingEvents = [
-    { title: "HTML Advanced Class", date: "14 May", time: "10:00 AM", location: "Portal", type: "class" },
-    { title: "CSS Flexbox Test", date: "14 May", time: "02:30 PM", location: "Portal", type: "test" },
-    { title: "Project Submission", date: "16 May", time: "11:59 PM", location: "Portal", type: "deadline" },
-  ];
+  const materials: any[] = [];
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">

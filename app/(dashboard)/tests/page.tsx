@@ -173,59 +173,12 @@ export default function TestsPage() {
         <p className="text-sm text-slate-500 font-medium">Evaluate your progress and master your skills.</p>
       </section>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {tests.map((test) => (
-          <div key={test.id} className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-lg transition-all duration-500 group">
-            <div className="flex justify-between items-start mb-4">
-              <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
-                <FileText size={20} />
-              </div>
-              <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${
-                test.status === 'Completed' 
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
-                  : test.status === 'In Progress'
-                    ? 'bg-amber-50 text-amber-700 border-amber-100'
-                    : 'bg-slate-50 text-slate-400 border-slate-100'
-              }`}>
-                {test.status}
-              </span>
-            </div>
-
-            <div className="space-y-0.5 mb-6">
-              <h3 className="text-lg font-black text-slate-900 line-clamp-1">{test.title}</h3>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">{test.course}</p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 mb-6">
-              <div className="flex items-center gap-2 text-slate-500">
-                <HelpCircle size={12} className="text-indigo-400" />
-                <span className="text-[10px] font-bold">{test.questions} Qs</span>
-              </div>
-              <div className="flex items-center gap-2 text-slate-500">
-                <Clock size={12} className="text-amber-400" />
-                <span className="text-[10px] font-bold">{test.duration}</span>
-              </div>
-            </div>
-
-            {test.status === 'Completed' ? (
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Your Score</p>
-                  <p className="text-base font-black text-indigo-600 leading-none">{test.score}</p>
-                </div>
-                <button className="text-[10px] font-black text-indigo-600 hover:underline">View Details</button>
-              </div>
-            ) : (
-              <button 
-                onClick={() => handleStartTest(test)}
-                className="w-full py-3 bg-slate-900 hover:bg-indigo-600 text-white rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 shadow-md shadow-slate-100"
-              >
-                <Play size={14} fill="currentColor" />
-                {test.status === 'In Progress' ? 'Resume Test' : 'Start Test'}
-              </button>
-            )}
-          </div>
-        ))}
+      <div className="p-16 text-center bg-white rounded-3xl border border-slate-100 shadow-sm">
+        <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 mx-auto mb-4">
+          <Trophy size={32} />
+        </div>
+        <h2 className="text-xl font-black text-slate-900 mb-2">Tests Coming Soon</h2>
+        <p className="text-sm text-slate-500 max-w-sm mx-auto">Online tests for your enrolled courses will be available here soon.</p>
       </div>
     </div>
   );
