@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ShieldCheck, AlertCircle, Loader2, User, Lock, Eye, EyeOff } from "lucide-react";
+import Image from "next/image";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -52,8 +53,13 @@ export default function LoginPage() {
       <div className="relative w-full max-w-sm">
         <div className="bg-white p-6 md:p-8 rounded-[2rem] shadow-2xl shadow-indigo-100/50 border border-slate-100 z-10">
           <div className="mb-8 text-center flex flex-col items-center">
-            <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200 mb-4 rotate-3">
-              <ShieldCheck size={24} />
+            <div className="w-16 h-16 relative flex items-center justify-center mb-4">
+              <Image 
+                src="/logo.png" 
+                alt="Vision IT Logo" 
+                fill 
+                className="object-contain"
+              />
             </div>
             <h1 className="text-2xl font-black text-slate-900 tracking-tight mb-1">
               Vision Learn

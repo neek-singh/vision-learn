@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase-browser";
 import { 
@@ -70,8 +71,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <aside className="hidden lg:flex w-64 bg-white border-r border-slate-100 flex-col sticky top-0 h-screen">
         <div className="p-6">
           <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-md shadow-indigo-100">
-              <BookOpen size={18} />
+            <div className="w-9 h-9 relative flex items-center justify-center">
+              <Image 
+                src="/logo.png" 
+                alt="Vision IT Logo" 
+                width={32} 
+                height={32} 
+                className="object-contain"
+              />
             </div>
             <span className="text-lg font-black text-slate-900 tracking-tight">Vision Learn</span>
           </Link>
@@ -130,8 +137,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       }`}>
         <div className="p-8 flex justify-between items-center">
           <Link href="/dashboard" className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white">
-              <BookOpen size={24} />
+            <div className="w-12 h-12 relative flex items-center justify-center">
+              <Image 
+                src="/logo.png" 
+                alt="Vision IT Logo" 
+                width={40} 
+                height={40} 
+                className="object-contain"
+              />
             </div>
             <span className="text-xl font-black text-slate-900">Vision Learn</span>
           </Link>

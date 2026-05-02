@@ -14,8 +14,13 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://learn.visionitinstitute.com"),
-  title: "Vision Learn | Student Dashboard",
+  title: "Vision IT Computer Institute Learn Start",
   description: "Official Learning Management System for Vision IT Computer Institute students.",
+  icons: {
+    icon: "/logo.png",
+    shortcut: "/logo.png",
+    apple: "/logo.png",
+  },
 };
 
 export default function RootLayout({
