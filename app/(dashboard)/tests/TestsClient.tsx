@@ -14,7 +14,7 @@ import {
   Loader2
 } from "lucide-react";
 
-export default function TestsClient({ initialTests, studentId }: { initialTests: any[], studentId: string }) {
+export default function TestsClient({ initialTests, studentId, initialResults }: { initialTests: any[], studentId: string, initialResults: any[] }) {
   const [activeTest, setActiveTest] = useState<any>(null);
   const [questions, setQuestions] = useState<any[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -22,6 +22,12 @@ export default function TestsClient({ initialTests, studentId }: { initialTests:
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [score, setScore] = useState(0);
+  const [selectedCourse, setSelectedCourse] = useState("all");
+
+  const coursesList = Array.from(new Set(initialTests.map(t => t.courses?.title))).filter(Boolean);
+  const filteredTests = selectedCourse === "all" 
+    ? initialTests 
+    : initialTests.filter(t => t.courses?.title === selectedCourse);
 
   const fetchQuestions = async (testId: string) => {
     setIsLoading(true);
@@ -198,18 +204,62 @@ export default function TestsClient({ initialTests, studentId }: { initialTests:
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {initialTests.map((test) => (
+    <div className="space-y-8">
+      {/* Course Filter */}
+      <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
+        <button 
+          onClick={() => setSelectedCourse("all")}
+          className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap border ${
+            selectedCourse === "all" ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-500 border-slate-100 hover:border-slate-200"
+          }`}
+        >
+          All Courses
+        </button>
+        {coursesList.map((courseName: any) => (
+          <button 
+            key={courseName}
+            onClick={() => setSelectedCourse(courseName)}
+            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap border ${
+              selectedCourse === courseName ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-500 border-slate-100 hover:border-slate-200"
+            }`}
+          >
+            {courseName}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredTests.map((test) => (
         <div key={test.id} className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-lg transition-all duration-500 group">
           <div className="flex justify-between items-start mb-4">
             <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
               <FileText size={20} />
             </div>
+            {initialResults.find(r => r.test_id === test.id) && (
+              <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-emerald-100">
+                <CheckCircle2 size={12} />
+                Completed
+              </span>
+            )}
           </div>
 
           <div className="space-y-0.5 mb-6">
+            <div className="flex items-center gap-2 mb-2">
+              <span className={`px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-widest border ${
+                test.type === 'monthly' ? 'bg-purple-50 text-purple-700 border-purple-100' : 
+                test.type === 'weekly' ? 'bg-blue-50 text-blue-700 border-blue-100' : 
+                'bg-emerald-50 text-emerald-700 border-emerald-100'
+              }`}>
+                {test.type || 'daily'}
+              </span>
+            </div>
             <h3 className="text-lg font-black text-slate-900 line-clamp-1">{test.title}</h3>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">{test.courses?.title}</p>
+            <div className="flex items-center justify-between mt-1">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">{test.courses?.title}</p>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                {new Date(test.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              </p>
+            </div>
           </div>
 
           <div className="flex items-center gap-4 mb-6">
@@ -217,17 +267,31 @@ export default function TestsClient({ initialTests, studentId }: { initialTests:
               <Clock size={12} className="text-amber-400" />
               <span className="text-[10px] font-bold">{test.duration_minutes}m</span>
             </div>
+            {initialResults.find(r => r.test_id === test.id) && (
+              <div className="flex items-center gap-2 text-emerald-600">
+                <Trophy size={12} />
+                <span className="text-[10px] font-black">Score: {initialResults.find(r => r.test_id === test.id).score}/{initialResults.find(r => r.test_id === test.id).total_questions}</span>
+              </div>
+            )}
           </div>
 
           <button 
             onClick={() => handleStartTest(test)}
-            className="w-full py-3 bg-slate-900 hover:bg-indigo-600 text-white rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 shadow-md shadow-slate-100"
+            className={`w-full py-3 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 shadow-md ${
+              initialResults.find(r => r.test_id === test.id)
+                ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-100"
+                : "bg-slate-900 hover:bg-indigo-600 text-white shadow-slate-100"
+            }`}
           >
-            <Play size={14} fill="currentColor" />
-            Start Test
+            {initialResults.find(r => r.test_id === test.id) ? (
+              <><CheckCircle2 size={14} /> Retake Test</>
+            ) : (
+              <><Play size={14} fill="currentColor" /> Start Test</>
+            )}
           </button>
         </div>
       ))}
+      </div>
     </div>
   );
 }

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { createClient } from "@/lib/supabase-browser";
 import { 
   LayoutDashboard, 
   BookOpen, 
@@ -13,7 +14,9 @@ import {
   Menu, 
   X,
   Bell,
-  Calendar
+  Calendar,
+  CheckCircle2,
+  Wallet
 } from "lucide-react";
 
 const sidebarLinks = [
@@ -24,12 +27,42 @@ const sidebarLinks = [
   { name: "Notes & Materials", href: "/materials", icon: FileText },
   { name: "Assignments", href: "/assignments", icon: PenTool },
   { name: "Calendar", href: "/calendar", icon: Calendar },
+  { name: "Attendance", href: "/attendance", icon: CheckCircle2 },
+  { name: "Notifications", href: "/notifications", icon: Bell },
+  { name: "My Fees", href: "/fees", icon: Wallet },
   { name: "Profile", href: "/profile", icon: User },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [student, setStudent] = useState<any>(null);
+  const supabase = createClient();
+
+  useEffect(() => {
+    const fetchStudentData = async () => {
+      try {
+        const res = await fetch("/api/auth/profile");
+        if (res.ok) {
+          const studentData = await res.json();
+          setStudent(studentData);
+          
+          // 3. Fetch unread count (using the ID from the profile API)
+          const { count } = await supabase
+            .from("user_notifications")
+            .select("*", { count: "exact", head: true })
+            .eq("user_id", studentData.id)
+            .eq("is_read", false);
+          setUnreadCount(count || 0);
+        }
+      } catch (err) {
+        console.error("Error fetching student profile:", err);
+      }
+    };
+
+    fetchStudentData();
+  }, [pathname, supabase]);
 
   return (
     <div className="min-h-screen bg-slate-50 flex">
@@ -59,7 +92,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 }`}
               >
                 <Icon size={18} className={isActive ? "text-indigo-600" : "text-slate-400 group-hover:text-slate-600"} />
-                <span className="text-sm">{link.name}</span>
+                <span className="text-sm flex-1">{link.name}</span>
+                {link.name === "Notifications" && unreadCount > 0 && (
+                  <span className="bg-rose-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                    {unreadCount}
+                  </span>
+                )}
               </Link>
             );
           })}
@@ -149,11 +187,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             
             <Link href="/profile" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
               <div className="text-right hidden sm:block">
-                <p className="text-xs font-black text-slate-900 leading-none mb-0.5">Student Profile</p>
+                <p className="text-xs font-black text-slate-900 leading-none mb-0.5">{student?.name || "Loading..."}</p>
                 <p className="text-[9px] font-bold text-indigo-600 uppercase tracking-wider">Active Learner</p>
               </div>
               <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden">
-                <User size={16} className="text-slate-400" />
+                {student?.photo_url ? (
+                  <img src={student.photo_url} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <User size={16} className="text-slate-400" />
+                )}
               </div>
             </Link>
           </div>

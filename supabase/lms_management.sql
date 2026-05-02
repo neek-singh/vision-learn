@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS public.assignments (
     title TEXT NOT NULL,
     description TEXT,
     due_date TIMESTAMPTZ,
+    is_published BOOLEAN DEFAULT false,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -53,6 +54,7 @@ CREATE TABLE IF NOT EXISTS public.tests (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     course_id UUID REFERENCES public.courses(id) ON DELETE CASCADE,
     title TEXT NOT NULL,
+    type TEXT DEFAULT 'daily', -- 'daily', 'weekly', 'monthly'
     duration_minutes INTEGER DEFAULT 30,
     is_published BOOLEAN DEFAULT false,
     created_at TIMESTAMPTZ DEFAULT NOW()

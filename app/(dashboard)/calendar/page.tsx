@@ -23,15 +23,25 @@ export default async function CalendarPage() {
 
   const courseIds = enrollments?.map(e => e.course_id) || [];
 
-  // 2. Fetch Events (Course specific + Public)
+  // 2. Fetch Public/Course Events
   const { data: events } = await supabase
     .from("events")
-    .select(`
-      *,
-      courses(title)
-    `)
+    .select("*, courses(title)")
     .or(`course_id.in.(${courseIds.join(',')}),course_id.is.null`)
     .order("event_date", { ascending: true });
+
+  // 3. Fetch Academic Schedules (Classes, Tests, Assignments)
+  const { data: schedules } = await supabase
+    .from("schedules")
+    .select("*, courses(title)")
+    .in("course_id", courseIds)
+    .order("date", { ascending: true });
+
+  // Merge them for the client
+  const allEvents = [
+    ...(events || []).map(e => ({ ...e, type: 'event', date: e.event_date })),
+    ...(schedules || []).map(s => ({ ...s, date: s.date, type: s.type }))
+  ];
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -42,7 +52,7 @@ export default async function CalendarPage() {
         </div>
       </div>
 
-      <CalendarClient initialEvents={events || []} />
+      <CalendarClient initialEvents={allEvents} />
     </div>
   );
 }

@@ -44,12 +44,12 @@ export default async function DashboardPage() {
       id,
       course_id,
       progress_percentage,
-      courses(id, title, course_code, thumbnail)
+      courses(id, title, course_code, image_url)
     `)
     .eq("student_id", payload.id);
 
   const mainEnrollment = enrollments?.[0];
-  const course = mainEnrollment?.courses;
+  const course = mainEnrollment?.courses as any;
   const mainProgress = mainEnrollment?.progress_percentage || 0;
 
   // 3. Fetch User Progress (Completed Lessons)
@@ -172,21 +172,72 @@ export default async function DashboardPage() {
               <div className="flex justify-between items-center p-4 bg-white border border-slate-50 rounded-2xl">
                  <div className="flex items-center gap-3">
                     <div className="p-2 bg-blue-50 text-blue-600 rounded-lg"><Calendar size={16} /></div>
-                    <span className="text-xs font-bold text-slate-600">Batch Year</span>
+                    <span className="text-xs font-bold text-slate-600">Joined On</span>
                  </div>
-                 <span className="text-xs font-black text-slate-900">2026-27</span>
+                 <span className="text-xs font-black text-slate-900">
+                    {student?.created_at ? new Date(student.created_at).toLocaleDateString() : 'N/A'}
+                 </span>
               </div>
-              <div className="flex justify-between items-center p-4 bg-white border border-slate-50 rounded-2xl">
+              <div className="flex justify-between items-center p-4 bg-white border border-slate-100/50 rounded-2xl shadow-sm">
                  <div className="flex items-center gap-3">
                     <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg"><CheckCircle2 size={16} /></div>
-                    <span className="text-xs font-bold text-slate-600">Attendance</span>
+                    <span className="text-xs font-bold text-slate-600">Course Status</span>
                  </div>
-                 <span className="text-xs font-black text-slate-900">100%</span>
+                 <span className="text-xs font-black text-emerald-600 uppercase tracking-widest">Active</span>
               </div>
            </div>
         </div>
 
       </div>
+
+      {/* Other Courses Section */}
+      {enrollments && enrollments.length > 1 && (
+        <section className="space-y-4">
+          <div className="flex items-center justify-between px-2">
+            <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+              <BookOpen size={20} className="text-indigo-600" />
+              My Other Courses
+            </h3>
+            <Link href="/courses" className="text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:underline">
+              View All
+            </Link>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {enrollments.slice(1).map((enroll: any) => (
+              <div key={enroll.id} className="group bg-white rounded-[2.5rem] p-6 border border-slate-100 shadow-sm hover:shadow-md transition-all">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
+                    <BookOpen size={24} />
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Active</p>
+                    <p className="text-xs font-bold text-slate-400">{enroll.progress_percentage}% Done</p>
+                  </div>
+                </div>
+                
+                <h4 className="text-lg font-black text-slate-900 leading-tight mb-4 line-clamp-1">
+                  {enroll.courses?.title}
+                </h4>
+                
+                <div className="w-full bg-slate-50 h-2 rounded-full overflow-hidden mb-6">
+                  <div 
+                    className="bg-indigo-600 h-full rounded-full transition-all duration-1000" 
+                    style={{ width: `${enroll.progress_percentage}%` }}
+                  />
+                </div>
+                
+                <Link 
+                  href={`/curriculum?course=${enroll.course_id}`}
+                  className="w-full py-3 bg-slate-50 hover:bg-indigo-600 hover:text-white text-slate-600 rounded-2xl font-bold text-xs transition-all flex items-center justify-center gap-2"
+                >
+                  Continue Learning <ChevronRight size={14} />
+                </Link>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Next Lesson Section */}
       {nextLesson && (

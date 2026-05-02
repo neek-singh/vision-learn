@@ -88,11 +88,11 @@ export default async function CoursesPage() {
                   </div>
 
                   <Link 
-                    href={`/courses/${enrollment.id}`}
-                    className="w-full py-3 mt-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 shadow-md"
+                    href="/curriculum"
+                    className="w-full py-3 mt-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 shadow-md shadow-indigo-100"
                   >
                     <Play size={14} fill="currentColor" />
-                    Open Course
+                    Start Learn
                   </Link>
                 </div>
               </div>

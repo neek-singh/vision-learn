@@ -9,7 +9,10 @@ import {
   Calendar,
   Settings,
   Shield,
-  LogOut
+  MapPin,
+  Users,
+  Baby,
+  Dna
 } from "lucide-react";
 import { verifyToken } from "@/lib/auth-custom";
 import { createPublicSupabaseClient } from "@/lib/supabase-server";
@@ -33,99 +36,101 @@ export default async function ProfilePage() {
     .single();
 
   return (
-    <div className="max-w-4xl space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <section className="flex flex-col md:flex-row items-center gap-6 bg-white p-6 md:p-8 rounded-3xl border border-slate-100 shadow-sm relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-48 h-48 bg-indigo-50 rounded-full -mr-24 -mt-24 opacity-50" />
+    <div className="max-w-4xl space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
+      {/* Header / Profile Card */}
+      <section className="flex flex-col md:flex-row items-center gap-6 bg-white p-6 md:p-10 rounded-[2.5rem] border border-slate-100 shadow-sm relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full -mr-32 -mt-32 opacity-50" />
         
-        <div className="w-20 h-20 rounded-2xl bg-indigo-600 flex items-center justify-center text-white text-2xl font-black shadow-xl shadow-indigo-200 relative z-10 shrink-0">
-          {student?.name?.charAt(0) || "S"}
+        <div className="w-28 h-28 rounded-3xl bg-indigo-600 border-4 border-white shadow-2xl overflow-hidden flex items-center justify-center text-white text-4xl font-black relative z-10 shrink-0">
+          {student?.photo_url ? (
+            <img src={student.photo_url} alt={student.name} className="w-full h-full object-cover" />
+          ) : (
+            student?.name?.charAt(0) || "S"
+          )}
         </div>
         
-        <div className="relative z-10 text-center md:text-left space-y-1">
-          <h1 className="text-xl font-black text-slate-900 tracking-tight">{student?.name}</h1>
+        <div className="relative z-10 text-center md:text-left space-y-1.5">
+          <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.3em] mb-1">Student Profile</p>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">{student?.name}</h1>
           <div className="flex flex-wrap justify-center md:justify-start gap-3 pt-1">
-            <span className="bg-indigo-50 text-indigo-700 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border border-indigo-100">
-              {student?.student_id}
+            <span className="bg-indigo-50 text-indigo-700 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-xl border border-indigo-100">
+              ID: {student?.student_id}
+            </span>
+            <span className="bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-xl border border-emerald-100">
+              Active Student
             </span>
           </div>
         </div>
       </section>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Personal Details */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-6">
-          <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
-            <User size={18} className="text-indigo-600" /> Personal Details
+        {/* Contact & Bio */}
+        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-8">
+          <h3 className="text-lg font-black text-slate-900 flex items-center gap-3">
+            <User size={20} className="text-indigo-600" /> Contact Information
           </h3>
           
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-slate-50 rounded-lg flex items-center justify-center text-slate-400">
-                <Mail size={16} />
-              </div>
-              <div>
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">Email Address</p>
-                <p className="text-xs font-bold text-slate-700">{student?.email || "Not provided"}</p>
-              </div>
-            </div>
+          <div className="grid grid-cols-1 gap-6">
+            <ProfileInfo icon={<Mail size={16}/>} label="Email Address" value={student?.email} />
+            <ProfileInfo icon={<Phone size={16}/>} label="Phone Number" value={student?.phone} />
+            <ProfileInfo icon={<MapPin size={16}/>} label="Residential Address" value={student?.address || "Address not provided"} />
+          </div>
+        </div>
 
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-slate-50 rounded-lg flex items-center justify-center text-slate-400">
-                <Phone size={16} />
-              </div>
-              <div>
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">Phone Number</p>
-                <p className="text-xs font-bold text-slate-700">{student?.phone || "Not provided"}</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-slate-50 rounded-lg flex items-center justify-center text-slate-400">
-                <Calendar size={16} />
-              </div>
-              <div>
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">Join Date</p>
-                <p className="text-xs font-bold text-slate-700">
-                  {student?.created_at ? new Date(student.created_at).toLocaleDateString() : "—"}
-                </p>
-              </div>
+        {/* Family & Personal Details */}
+        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-8">
+          <h3 className="text-lg font-black text-slate-900 flex items-center gap-3">
+            <Users size={20} className="text-indigo-600" /> Family & Personal
+          </h3>
+          
+          <div className="grid grid-cols-1 gap-6">
+            <ProfileInfo icon={<Users size={16}/>} label="Father's Name" value={student?.father_name} />
+            <ProfileInfo icon={<Baby size={16}/>} label="Mother's Name" value={student?.mother_name} />
+            
+            <div className="grid grid-cols-2 gap-4">
+               <ProfileInfo icon={<Calendar size={16}/>} label="Date of Birth" value={student?.dob ? new Date(student.dob).toLocaleDateString() : "—"} />
+               <ProfileInfo icon={<Dna size={16}/>} label="Gender" value={student?.gender} className="capitalize" />
             </div>
           </div>
         </div>
 
-        {/* Academic Details */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-6">
-          <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
-            <Shield size={18} className="text-indigo-600" /> Academic Details
+        {/* Academic Profile */}
+        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-8 md:col-span-2">
+          <h3 className="text-lg font-black text-slate-900 flex items-center gap-3">
+            <Shield size={20} className="text-indigo-600" /> Academic Profile
           </h3>
           
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-slate-50 rounded-lg flex items-center justify-center text-slate-400">
-                <BookOpen size={16} />
-              </div>
-              <div>
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">Active Course</p>
-                <p className="text-xs font-bold text-slate-700">{student?.course}</p>
-              </div>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <ProfileInfo icon={<BookOpen size={16}/>} label="Primary Course" value={student?.course} />
+            <ProfileInfo icon={<IdCard size={16}/>} label="Official Student ID" value={student?.student_id} />
+            <ProfileInfo icon={<Calendar size={16}/>} label="Admission Date" value={student?.admission_date ? new Date(student.admission_date).toLocaleDateString() : "—"} />
+          </div>
 
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-slate-50 rounded-lg flex items-center justify-center text-slate-400">
-                <IdCard size={16} />
-              </div>
-              <div>
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">Student Portal ID</p>
-                <p className="text-xs font-bold text-slate-700">{student?.student_id}</p>
-              </div>
-            </div>
-
-            <button className="w-full mt-2 flex items-center justify-center gap-2 px-4 py-3 bg-slate-50 hover:bg-slate-100 text-slate-600 font-black rounded-xl transition-all border border-slate-100 text-xs">
-              <Settings size={16} />
-              Account Settings
-            </button>
+          <div className="pt-4 border-t border-slate-50 flex flex-col md:flex-row gap-4">
+             <div className="flex-1 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-50">
+                <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Highest Education</p>
+                <p className="text-sm font-black text-indigo-700">{student?.education || "Undergraduate"}</p>
+             </div>
+             <div className="flex-1 p-4 bg-emerald-50/50 rounded-2xl border border-emerald-50">
+                <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">Student Category</p>
+                <p className="text-sm font-black text-emerald-700">{student?.category || "General"}</p>
+             </div>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function ProfileInfo({ icon, label, value, className = "" }: any) {
+  return (
+    <div className="flex items-start gap-4">
+      <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 shrink-0">
+        {icon}
+      </div>
+      <div>
+        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.15em] leading-none mb-1.5">{label}</p>
+        <p className={`text-sm font-bold text-slate-700 ${className}`}>{value || "—"}</p>
       </div>
     </div>
   );

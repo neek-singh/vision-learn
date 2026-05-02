@@ -40,6 +40,12 @@ export default async function TestsPage() {
     .eq("is_published", true)
     .order("created_at", { ascending: false });
 
+  // 3. Fetch Results
+  const { data: results } = await supabase
+    .from("test_results")
+    .select("test_id, score, total_questions")
+    .eq("student_id", payload.id);
+
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <section>
@@ -56,7 +62,7 @@ export default async function TestsPage() {
           <p className="text-sm text-slate-500 max-w-sm mx-auto">Online tests for your enrolled courses will be available here soon.</p>
         </div>
       ) : (
-        <TestsClient initialTests={tests} studentId={payload.id} />
+        <TestsClient initialTests={tests} studentId={payload.id} initialResults={results || []} />
       )}
     </div>
   );
