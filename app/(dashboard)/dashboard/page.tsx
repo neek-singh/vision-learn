@@ -34,7 +34,7 @@ export default async function DashboardPage() {
   const { data: student } = await supabase
     .from("students")
     .select("*")
-    .eq("student_id", payload.id)
+    .eq("id", payload.id)
     .single();
 
   // 2. Fetch Enrollments & Courses
@@ -56,7 +56,7 @@ export default async function DashboardPage() {
   const { data: completedLessons } = await supabase
     .from("user_progress")
     .select("lesson_id")
-    .eq("user_id", payload.sub) // verifyToken payload.sub is auth.uid()
+    .eq("user_id", payload.id) 
     .eq("completed", true);
 
   const completedIds = completedLessons?.map(p => p.lesson_id) || [];
