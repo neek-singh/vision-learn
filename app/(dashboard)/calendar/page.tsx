@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { verifyToken } from "@/lib/auth-custom";
 import { createPublicSupabaseClient } from "@/lib/supabase-server";
-import CalendarClient from "./CalendarClient";
+import CalendarClient from "@/app/(dashboard)/calendar/CalendarClient";
 
 export default async function CalendarPage() {
   const cookieStore = await cookies();

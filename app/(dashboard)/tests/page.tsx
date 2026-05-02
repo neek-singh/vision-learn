@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { verifyToken } from "@/lib/auth-custom";
 import { createPublicSupabaseClient } from "@/lib/supabase-server";
-import TestsClient from "./TestsClient";
+import TestsClient from "@/app/(dashboard)/tests/TestsClient";
 
 export default async function TestsPage() {
   const cookieStore = await cookies();
