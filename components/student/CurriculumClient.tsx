@@ -60,17 +60,43 @@ export function CurriculumClient({
     setIsUpdating(lessonId);
     try {
       if (!currentStatus) {
-        const { error } = await supabase
+        // Safe fallback: check if exists, then update or insert to avoid unique constraint errors with upsert
+        const { data: existing } = await supabase
           .from("user_progress")
-          .upsert({ 
-            user_id: studentId, 
-            lesson_id: lessonId, 
-            completed: true,
-            last_watched_at: new Date().toISOString()
-          }, { onConflict: 'user_id,lesson_id' });
+          .select("id")
+          .eq("user_id", studentId)
+          .eq("lesson_id", lessonId)
+          .single();
 
-        if (!error) {
-          setUserProgress(prev => [...prev, lessonId]);
+        if (existing) {
+          const { error } = await supabase
+            .from("user_progress")
+            .update({ 
+              completed: true,
+              last_watched_at: new Date().toISOString()
+            })
+            .eq("id", existing.id);
+
+          if (!error) {
+            setUserProgress(prev => [...prev, lessonId]);
+          } else {
+            console.error("Error updating progress:", error);
+          }
+        } else {
+          const { error } = await supabase
+            .from("user_progress")
+            .insert({ 
+              user_id: studentId, 
+              lesson_id: lessonId, 
+              completed: true,
+              last_watched_at: new Date().toISOString()
+            });
+
+          if (!error) {
+            setUserProgress(prev => [...prev, lessonId]);
+          } else {
+            console.error("Error inserting progress:", error);
+          }
         }
       } else {
         const { error } = await supabase
