@@ -15,13 +15,19 @@ export default async function CalendarPage() {
 
   const supabase = createPublicSupabaseClient();
 
-  // 1. Get Enrolled Course IDs
+  // 1. Get Enrolled Course IDs & Batches
   const { data: enrollments } = await supabase
     .from("enrollments")
-    .select("course_id")
+    .select("course_id, batch")
     .eq("student_id", payload.id);
 
   const courseIds = enrollments?.map(e => e.course_id) || [];
+  
+  // Create a map of course_id -> batch for filtering
+  const studentCourseBatches: Record<string, string | null> = {};
+  enrollments?.forEach(e => {
+    studentCourseBatches[e.course_id] = e.batch;
+  });
 
   // 2. Fetch Public/Course Events
   const { data: events } = await supabase
@@ -37,10 +43,17 @@ export default async function CalendarPage() {
     .in("course_id", courseIds)
     .order("date", { ascending: true });
 
+  // Filter schedules based on batch
+  const filteredSchedules = (schedules || []).filter(s => {
+    const studentBatch = studentCourseBatches[s.course_id];
+    // If the event is for 'All Batches', has no batch, or matches the student's batch exactly
+    return !s.batch || s.batch === "All Batches" || s.batch === studentBatch;
+  });
+
   // Merge them for the client — normalize date field to `event_date`
   const allEvents = [
     ...(events || []).map(e => ({ ...e, type: e.type || 'event', event_date: e.event_date })),
-    ...(schedules || []).map(s => ({ ...s, event_date: s.date, type: s.type || 'class' }))
+    ...filteredSchedules.map(s => ({ ...s, event_date: s.date, type: s.type || 'class' }))
   ];
 
   return (
