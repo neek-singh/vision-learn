@@ -88,8 +88,12 @@ export default async function DashboardPage() {
     }
   }
 
-  // Determine greeting based on current time
-  const hour = new Date().getHours();
+  // Determine greeting based on current time (IST - Indian Standard Time)
+  const now = new Date();
+  const istOffset = 5.5 * 60 * 60 * 1000; // IST is UTC+5:30
+  const istTime = new Date(now.getTime() + istOffset);
+  const hour = istTime.getUTCHours();
+  
   let greeting = "Welcome back";
   if (hour >= 5 && hour < 12) greeting = "Good morning";
   else if (hour >= 12 && hour < 17) greeting = "Good afternoon";
