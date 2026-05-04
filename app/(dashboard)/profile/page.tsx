@@ -12,7 +12,8 @@ import {
   MapPin,
   Users,
   Baby,
-  Dna
+  Dna,
+  LogOut
 } from "lucide-react";
 import { verifyToken } from "@/lib/auth-custom";
 import { createPublicSupabaseClient } from "@/lib/supabase-server";
@@ -38,7 +39,7 @@ export default async function ProfilePage() {
   return (
     <div className="max-w-4xl space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
       {/* Header / Profile Card */}
-      <section className="flex flex-col md:flex-row items-center gap-6 bg-white p-6 md:p-10 rounded-[2.5rem] border border-slate-100 shadow-sm relative overflow-hidden">
+      <section className="flex flex-col md:flex-row items-center gap-6 bg-white p-6 md:p-8 rounded-3xl border border-slate-100 shadow-sm relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full -mr-32 -mt-32 opacity-50" />
         
         <div className="w-28 h-28 rounded-3xl bg-indigo-600 border-4 border-white shadow-2xl overflow-hidden flex items-center justify-center text-white text-4xl font-black relative z-10 shrink-0">
@@ -65,7 +66,7 @@ export default async function ProfilePage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Contact & Bio */}
-        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-8">
+        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-6">
           <h3 className="text-lg font-black text-slate-900 flex items-center gap-3">
             <User size={20} className="text-indigo-600" /> Contact Information
           </h3>
@@ -78,7 +79,7 @@ export default async function ProfilePage() {
         </div>
 
         {/* Family & Personal Details */}
-        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-8">
+        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-6">
           <h3 className="text-lg font-black text-slate-900 flex items-center gap-3">
             <Users size={20} className="text-indigo-600" /> Family & Personal
           </h3>
@@ -95,7 +96,7 @@ export default async function ProfilePage() {
         </div>
 
         {/* Academic Profile */}
-        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-8 md:col-span-2">
+        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-6 md:col-span-2">
           <h3 className="text-lg font-black text-slate-900 flex items-center gap-3">
             <Shield size={20} className="text-indigo-600" /> Academic Profile
           </h3>
@@ -117,6 +118,19 @@ export default async function ProfilePage() {
              </div>
           </div>
         </div>
+      </div>
+
+      {/* Logout Section at the Bottom */}
+      <div className="pt-8 flex justify-center">
+        <form action="/api/logout" method="POST">
+          <button
+            type="submit"
+            className="flex items-center gap-3 px-10 py-4 bg-red-50 text-red-600 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-red-100 transition-all border border-red-100 shadow-sm"
+          >
+            <LogOut size={20} />
+            Logout from Account
+          </button>
+        </form>
       </div>
     </div>
   );

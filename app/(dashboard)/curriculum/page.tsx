@@ -26,7 +26,7 @@ export default async function CurriculumPage() {
     return (
       <div className="space-y-6">
         <section>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight mb-1">Course Curriculum</h1>
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight mb-1">My Classes</h1>
           <p className="text-sm text-slate-500 font-medium">No active courses found.</p>
         </section>
       </div>
@@ -59,7 +59,7 @@ export default async function CurriculumPage() {
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <section>
-        <h1 className="text-2xl font-black text-slate-900 tracking-tight mb-1">Course Curriculum</h1>
+        <h1 className="text-2xl font-black text-slate-900 tracking-tight mb-1">My Classes</h1>
         <p className="text-sm text-slate-500 font-medium">Follow your structured learning path to mastery.</p>
       </section>
 

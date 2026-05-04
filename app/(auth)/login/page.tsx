@@ -55,7 +55,7 @@ export default function LoginPage() {
           <div className="mb-8 text-center flex flex-col items-center">
             <div className="w-16 h-16 relative flex items-center justify-center mb-4">
               <Image 
-                src="/logo.png" 
+                src="https://res.cloudinary.com/ddiooxxks/image/upload/f_auto,q_auto/logo_unnut8.png" 
                 alt="Vision IT Logo" 
                 fill 
                 className="object-contain"

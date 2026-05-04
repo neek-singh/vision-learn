@@ -22,7 +22,7 @@ import {
 
 const sidebarLinks = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Curriculum", href: "/curriculum", icon: BookOpen },
+  { name: "My Classes", href: "/curriculum", icon: BookOpen },
   { name: "My Courses", href: "/courses", icon: BookOpen },
   { name: "Tests", href: "/tests", icon: FileText },
   { name: "Notes & Materials", href: "/materials", icon: FileText },
@@ -73,11 +73,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <Link href="/dashboard" className="flex items-center gap-2">
             <div className="w-9 h-9 relative flex items-center justify-center">
               <Image 
-                src="/logo.png" 
+                src="https://res.cloudinary.com/ddiooxxks/image/upload/f_auto,q_auto/logo_unnut8.png" 
                 alt="Vision IT Logo" 
-                width={32} 
-                height={32} 
+                width={36} 
+                height={36} 
                 className="object-contain"
+                priority
               />
             </div>
             <span className="text-lg font-black text-slate-900 tracking-tight">Vision Learn</span>
@@ -132,18 +133,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       )}
 
       {/* Sidebar - Mobile */}
-      <aside className={`fixed inset-y-0 left-0 w-72 bg-white z-50 transform transition-transform duration-300 lg:hidden ${
+      <aside className={`fixed inset-y-0 left-0 w-72 bg-white z-50 transform transition-transform duration-300 lg:hidden flex flex-col ${
         isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
       }`}>
-        <div className="p-8 flex justify-between items-center">
+        <div className="p-8 flex justify-between items-center shrink-0">
           <Link href="/dashboard" className="flex items-center gap-3">
             <div className="w-12 h-12 relative flex items-center justify-center">
               <Image 
-                src="/logo.png" 
+                src="https://res.cloudinary.com/ddiooxxks/image/upload/f_auto,q_auto/logo_unnut8.png" 
                 alt="Vision IT Logo" 
-                width={40} 
-                height={40} 
+                width={44} 
+                height={44} 
                 className="object-contain"
+                priority
               />
             </div>
             <span className="text-xl font-black text-slate-900">Vision Learn</span>
@@ -152,7 +154,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <X size={24} />
           </button>
         </div>
-        <nav className="px-4 space-y-2">
+        <nav className="px-4 space-y-2 flex-1 overflow-y-auto custom-scrollbar pb-4">
           {sidebarLinks.map((link) => {
             const Icon = link.icon;
             const isActive = pathname === link.href;
@@ -173,6 +175,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             );
           })}
         </nav>
+        <div className="p-4 border-t border-slate-50 shrink-0">
+          <form action="/api/logout" method="POST">
+            <button
+              type="submit"
+              className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-red-500 hover:bg-red-50 transition-all font-bold group text-base"
+            >
+              <LogOut size={20} className="text-red-400 group-hover:text-red-500" />
+              Logout
+            </button>
+          </form>
+        </div>
       </aside>
 
       {/* Main Content */}
@@ -198,23 +211,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             
             <div className="h-6 w-[1px] bg-slate-100 mx-1" />
             
-            <Link href="/profile" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <div className="text-right hidden sm:block">
-                <p className="text-xs font-black text-slate-900 leading-none mb-0.5">{student?.name || "Loading..."}</p>
-                <p className="text-[9px] font-bold text-indigo-600 uppercase tracking-wider">Active Learner</p>
-              </div>
-              <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden">
-                {student?.photo_url ? (
-                  <img src={student.photo_url} alt="Profile" className="w-full h-full object-cover" />
-                ) : (
-                  <User size={16} className="text-slate-400" />
-                )}
-              </div>
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link href="/profile" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                <div className="text-right hidden sm:block">
+                  <p className="text-xs font-black text-slate-900 leading-none mb-0.5">{student?.name || "Loading..."}</p>
+                  <p className="text-[9px] font-bold text-indigo-600 uppercase tracking-wider">Active Learner</p>
+                </div>
+                <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden">
+                  {student?.photo_url ? (
+                    <img src={student.photo_url} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    <User size={16} className="text-slate-400" />
+                  )}
+                </div>
+              </Link>
+            </div>
           </div>
         </header>
 
-        <main className="p-6 lg:p-8 max-w-7xl">
+        <main className="p-4 lg:p-6 max-w-7xl">
           {children}
         </main>
       </div>

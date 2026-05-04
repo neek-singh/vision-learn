@@ -107,16 +107,16 @@ export function CurriculumClient({
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 pb-20">
+    <div className="max-w-5xl mx-auto space-y-6 pb-20">
       {/* Course Header & Progress */}
-      <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm overflow-hidden relative group">
+      <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm overflow-hidden relative group">
         <div className="absolute top-0 right-0 p-10 opacity-[0.03] pointer-events-none group-hover:scale-110 transition-transform duration-700">
            <Award size={180} />
         </div>
         
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
           <div className="space-y-1">
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Course Curriculum</h1>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">My Classes</h1>
             <p className="text-slate-500 font-medium">Follow your structured learning path to mastery.</p>
           </div>
           
@@ -131,23 +131,32 @@ export function CurriculumClient({
           </div>
         </div>
 
-        <div className="mt-8 space-y-3">
-          <div className="w-full h-3 bg-slate-50 rounded-full overflow-hidden border border-slate-100/50 p-0.5">
+        <div className="mt-8 space-y-4">
+          <div className="flex justify-between items-end px-1">
+            <div className="space-y-1">
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Overall Completion</p>
+              <p className="text-xl font-black text-slate-900 tracking-tight">{totalProgress}% <span className="text-slate-300 font-medium">Finished</span></p>
+            </div>
+            <div className="text-right">
+              <p className="text-[9px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100 uppercase tracking-widest inline-block">
+                {userProgress.length} / {allLessons.length} Lessons
+              </p>
+            </div>
+          </div>
+          <div className="w-full h-4 bg-slate-50 rounded-full overflow-hidden border border-slate-100 p-1 relative">
             <div 
-              className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-600 rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(79,70,229,0.3)]" 
+              className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-600 rounded-full transition-all duration-1000 ease-out shadow-[0_0_20px_rgba(79,70,229,0.3)] relative z-10" 
               style={{ width: `${totalProgress}%` }} 
             />
-          </div>
-          <div className="flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
-            <span>{userProgress.length} Lessons Completed</span>
-            <span>{allLessons.length - userProgress.length} Remaining</span>
+            {/* Animated shimmer effect */}
+            <div className="absolute inset-y-0 left-0 w-full animate-shimmer pointer-events-none opacity-30 bg-gradient-to-r from-transparent via-white to-transparent" style={{ backgroundSize: '200% 100%' }} />
           </div>
         </div>
       </div>
 
       {/* Resume Learning Section */}
       {resumeLesson && (
-        <div className="bg-gradient-to-r from-slate-900 to-indigo-950 rounded-[2rem] p-6 text-white flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl shadow-indigo-100 animate-in slide-in-from-top-4 duration-700">
+        <div className="bg-gradient-to-r from-slate-900 to-indigo-950 rounded-2xl p-5 text-white flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl shadow-indigo-100 animate-in slide-in-from-top-4 duration-700">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/10">
               <Play size={20} fill="white" />
@@ -173,7 +182,7 @@ export function CurriculumClient({
             <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center text-slate-200 mx-auto mb-6">
                <BookOpen size={40} />
             </div>
-            <h3 className="text-xl font-black text-slate-900 mb-2">Curriculum Empty</h3>
+            <h3 className="text-xl font-black text-slate-900 mb-2">My Classes Empty</h3>
             <p className="text-slate-500 font-medium max-w-sm mx-auto">No lessons have been published for this course yet. Check back later!</p>
           </div>
         ) : initialModules.sort((a, b) => a.order_index - b.order_index).map((module, mIdx) => {
@@ -182,13 +191,13 @@ export function CurriculumClient({
           const lessons = (module.lessons || []).sort((a: any, b: any) => a.order_index - b.order_index);
 
           return (
-            <div key={module.id} className={`bg-white rounded-[2rem] border transition-all duration-500 ${
+            <div key={module.id} className={`bg-white rounded-2xl border transition-all duration-500 ${
               isExpanded ? 'border-indigo-100 shadow-xl shadow-indigo-50/50' : 'border-slate-100 shadow-sm hover:border-slate-200'
             }`}>
               {/* Module Header */}
               <button 
                 onClick={() => toggleModule(module.id)}
-                className="w-full px-8 py-6 flex items-center justify-between text-left group"
+                className="w-full px-6 py-5 flex items-center justify-between text-left group"
               >
                 <div className="flex items-center gap-5">
                   <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 ${
@@ -202,11 +211,14 @@ export function CurriculumClient({
                       <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
                         <BookOpen size={12} /> {lessons.length} Lessons
                       </span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-20 h-1 bg-slate-50 rounded-full overflow-hidden">
-                          <div className="h-full bg-indigo-500 transition-all duration-1000" style={{ width: `${progress}%` }} />
+                      <div className="flex items-center gap-3">
+                        <div className="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/50 p-[1px]">
+                          <div 
+                            className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-1000 ease-out shadow-[0_0_8px_rgba(79,70,229,0.4)]" 
+                            style={{ width: `${progress}%` }} 
+                          />
                         </div>
-                        <span className="text-[10px] font-black text-indigo-600 tracking-tighter">{progress}%</span>
+                        <span className="text-[10px] font-black text-indigo-600 tabular-nums tracking-tight">{progress}%</span>
                       </div>
                     </div>
                   </div>
@@ -344,19 +356,36 @@ export function CurriculumClient({
                      </div>
                    ) : (
                      <div className="bg-white rounded-[2rem] p-10 shadow-sm border border-slate-200 min-h-full">
-                        <div className="flex justify-between items-start mb-8">
+                        <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-8">
                            <h2 className="text-3xl font-black text-slate-900">{activeLesson.title}</h2>
-                           <a 
-                             href={activeLesson.content_url} 
-                             target="_blank" 
-                             className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
-                           >
-                              Open in New Tab <ExternalLink size={14} />
-                           </a>
+                           {activeLesson.content_url?.startsWith('http') && (
+                             <a 
+                               href={activeLesson.content_url} 
+                               target="_blank" 
+                               className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 shrink-0"
+                             >
+                                Open in New Tab <ExternalLink size={14} />
+                             </a>
+                           )}
                         </div>
-                        <div className="prose prose-slate max-w-none text-slate-700 leading-relaxed text-lg font-medium">
-                           <p>Please use the button above to view the complete document or material associated with this lesson.</p>
-                           <p className="mt-4 text-slate-400 italic">Lesson URL: {activeLesson.content_url}</p>
+                        <div className="prose prose-slate max-w-none text-slate-700 leading-relaxed text-lg font-medium whitespace-pre-wrap">
+                           {activeLesson.type?.toLowerCase().includes('offline') ? (
+                             <div>
+                               <p className="text-indigo-600 font-bold mb-4">Offline Class Details:</p>
+                               <p>{activeLesson.content_url}</p>
+                             </div>
+                           ) : (
+                             <>
+                               {activeLesson.content_url?.startsWith('http') ? (
+                                 <>
+                                   <p>Please use the button above to view the complete document or material associated with this lesson.</p>
+                                   <p className="mt-4 text-slate-400 italic break-all">Link: {activeLesson.content_url}</p>
+                                 </>
+                               ) : (
+                                 <p>{activeLesson.content_url}</p>
+                               )}
+                             </>
+                           )}
                         </div>
                      </div>
                    )}
@@ -368,7 +397,7 @@ export function CurriculumClient({
                    onClick={() => setActiveLesson(null)}
                    className="px-8 py-3 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl font-black text-xs uppercase tracking-widest transition-all"
                  >
-                   Back to Curriculum
+                   Back to My Classes
                  </button>
                  <div className="flex items-center gap-4">
                     <span className="text-xs font-bold text-slate-400">Finished this lesson?</span>

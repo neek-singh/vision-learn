@@ -37,10 +37,10 @@ export default async function CalendarPage() {
     .in("course_id", courseIds)
     .order("date", { ascending: true });
 
-  // Merge them for the client
+  // Merge them for the client — normalize date field to `event_date`
   const allEvents = [
-    ...(events || []).map(e => ({ ...e, type: 'event', date: e.event_date })),
-    ...(schedules || []).map(s => ({ ...s, date: s.date, type: s.type }))
+    ...(events || []).map(e => ({ ...e, type: e.type || 'event', event_date: e.event_date })),
+    ...(schedules || []).map(s => ({ ...s, event_date: s.date, type: s.type || 'class' }))
   ];
 
   return (
@@ -56,4 +56,3 @@ export default async function CalendarPage() {
     </div>
   );
 }
-
