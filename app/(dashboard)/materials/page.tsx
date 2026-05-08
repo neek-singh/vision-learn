@@ -26,7 +26,7 @@ export default async function MaterialsPage() {
   // 1. Get Enrolled Course IDs
   const { data: enrollments } = await supabase
     .from("enrollments")
-    .select("course_id")
+    .select("course_id, batch")
     .eq("student_id", payload.id);
 
   const courseIds = enrollments?.map(e => e.course_id) || [];
@@ -42,6 +42,12 @@ export default async function MaterialsPage() {
     .eq("is_published", true)
     .order("created_at", { ascending: false });
 
+  const filteredMaterials = materials?.filter((m) => {
+    if (!m.batch || m.batch === "All Batches") return true;
+    const enrollmentForCourse = enrollments?.find(e => e.course_id === m.course_id);
+    return enrollmentForCourse && enrollmentForCourse.batch === m.batch;
+  }) || [];
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <section className="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -51,7 +57,7 @@ export default async function MaterialsPage() {
         </div>
       </section>
 
-      {!materials || materials.length === 0 ? (
+      {!filteredMaterials || filteredMaterials.length === 0 ? (
         <div className="p-20 text-center bg-white rounded-[2.5rem] border border-slate-100 shadow-sm">
           <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-200 mx-auto mb-4">
             <BookOpen size={32} />
@@ -59,7 +65,7 @@ export default async function MaterialsPage() {
           <p className="text-slate-400 font-bold">No materials available for your current modules.</p>
         </div>
       ) : (
-        <MaterialsClient initialMaterials={materials} />
+        <MaterialsClient initialMaterials={filteredMaterials} />
       )}
     </div>
   );

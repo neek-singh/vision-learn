@@ -20,10 +20,10 @@ export default async function TestsPage() {
 
   const supabase = createPublicSupabaseClient();
 
-  // 1. Get Enrolled Course IDs
+  // 1. Get Enrolled Course IDs and Batches
   const { data: enrollments } = await supabase
     .from("enrollments")
-    .select("course_id")
+    .select("course_id, batch")
     .eq("student_id", payload.id);
 
   const courseIds = enrollments?.map(e => e.course_id) || [];
@@ -40,6 +40,12 @@ export default async function TestsPage() {
     .eq("is_published", true)
     .order("created_at", { ascending: false });
 
+  const filteredTests = tests?.filter((t) => {
+    if (!t.batch || t.batch === "All Batches") return true;
+    const enrollmentForCourse = enrollments?.find(e => e.course_id === t.course_id);
+    return enrollmentForCourse && enrollmentForCourse.batch === t.batch;
+  }) || [];
+
   // 3. Fetch Results
   const { data: results } = await supabase
     .from("test_results")
@@ -53,7 +59,7 @@ export default async function TestsPage() {
         <p className="text-sm text-slate-500 font-medium">Evaluate your progress and master your skills.</p>
       </section>
 
-      {!tests || tests.length === 0 ? (
+      {!filteredTests || filteredTests.length === 0 ? (
         <div className="p-16 text-center bg-white rounded-3xl border border-slate-100 shadow-sm">
           <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 mx-auto mb-4">
             <Trophy size={32} />
@@ -62,7 +68,7 @@ export default async function TestsPage() {
           <p className="text-sm text-slate-500 max-w-sm mx-auto">Online tests for your enrolled courses will be available here soon.</p>
         </div>
       ) : (
-        <TestsClient initialTests={tests} studentId={payload.id} initialResults={results || []} />
+        <TestsClient initialTests={filteredTests} studentId={payload.id} initialResults={results || []} />
       )}
     </div>
   );

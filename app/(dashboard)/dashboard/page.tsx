@@ -16,7 +16,8 @@ import {
   Target,
   ChevronRight,
   Flame,
-  GraduationCap
+  GraduationCap,
+  Users
 } from "lucide-react";
 import { verifyToken } from "@/lib/auth-custom";
 import { createPublicSupabaseClient } from "@/lib/supabase-server";
@@ -46,6 +47,7 @@ export default async function DashboardPage() {
       id,
       course_id,
       progress_percentage,
+      batch,
       courses(id, title, course_code, image_url)
     `)
     .eq("student_id", payload.id);
@@ -106,10 +108,15 @@ export default async function DashboardPage() {
       <section className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight mb-1">
-            {greeting}, {student?.name?.split(" ")[0] || "Learner"} 👋
+            {greeting}, {student?.name?.split(" ")[0] || "Learner"}
           </h1>
-          <p className="text-sm text-slate-500 font-medium">
+          <p className="text-sm text-slate-500 font-medium flex items-center gap-2">
             {course ? `You are learning ${course.title}` : "Welcome to Vision Learn Portal"}
+            {student?.batch && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-700 rounded-md border border-amber-100 text-[10px] font-black uppercase tracking-wider shadow-sm">
+                <Users size={10} /> {student.batch}
+              </span>
+            )}
           </p>
         </div>
         <div className="flex items-center gap-2 bg-indigo-50 px-4 py-2 rounded-xl border border-indigo-100">
@@ -264,6 +271,13 @@ export default async function DashboardPage() {
                     <span className="text-xs font-bold text-slate-600">Course</span>
                  </div>
                  <span className="text-[10px] font-black text-purple-600 bg-purple-50 px-2 py-0.5 rounded border border-purple-100 uppercase tracking-widest truncate max-w-[90px]">{course?.course_code || "GEN"}</span>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-white border border-slate-100 rounded-xl hover:border-slate-200 transition-colors">
+                 <div className="flex items-center gap-2.5">
+                    <div className="p-1.5 bg-amber-50 text-amber-600 rounded-lg"><Users size={14} /></div>
+                    <span className="text-xs font-bold text-slate-600">Batch</span>
+                 </div>
+                  <span className="text-[10px] font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-100 uppercase tracking-widest truncate max-w-[90px]">{student?.batch || "Not Assigned"}</span>
               </div>
            </div>
         </div>

@@ -36,6 +36,14 @@ export default async function ProfilePage() {
     .eq("id", payload.id)
     .single();
 
+  // Fetch Enrollments to get Batch
+  const { data: enrollments } = await supabase
+    .from("enrollments")
+    .select("batch")
+    .eq("student_id", payload.id);
+    
+  const mainBatch = enrollments?.[0]?.batch || "Not Assigned";
+
   return (
     <div className="max-w-4xl space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
       {/* Header / Profile Card */}
@@ -101,9 +109,10 @@ export default async function ProfilePage() {
             <Shield size={20} className="text-indigo-600" /> Academic Profile
           </h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <ProfileInfo icon={<BookOpen size={16}/>} label="Primary Course" value={student?.course} />
             <ProfileInfo icon={<IdCard size={16}/>} label="Official Student ID" value={student?.student_id} />
+            <ProfileInfo icon={<Users size={16}/>} label="Assigned Batch" value={mainBatch} />
             <ProfileInfo icon={<Calendar size={16}/>} label="Admission Date" value={student?.admission_date ? new Date(student.admission_date).toLocaleDateString() : "—"} />
           </div>
 

@@ -23,10 +23,10 @@ export default async function AssignmentsPage() {
 
   const supabase = createPublicSupabaseClient();
 
-  // 1. Get Enrolled Course IDs
+  // 1. Get Enrolled Course IDs and Batches
   const { data: enrollments } = await supabase
     .from("enrollments")
-    .select("course_id")
+    .select("course_id, batch")
     .eq("student_id", payload.id);
 
   const courseIds = enrollments?.map(e => e.course_id) || [];
@@ -42,6 +42,12 @@ export default async function AssignmentsPage() {
     .eq("is_published", true)
     .order("due_date", { ascending: true });
 
+  const filteredAssignments = assignments?.filter((a) => {
+    if (!a.batch || a.batch === "All Batches") return true;
+    const enrollmentForCourse = enrollments?.find(e => e.course_id === a.course_id);
+    return enrollmentForCourse && enrollmentForCourse.batch === a.batch;
+  }) || [];
+
   // 3. Fetch Submissions
   const { data: submissions } = await supabase
     .from("submissions")
@@ -55,7 +61,7 @@ export default async function AssignmentsPage() {
         <p className="text-sm text-slate-500 font-medium">Keep track of your tasks and submission deadlines.</p>
       </section>
 
-      {!assignments || assignments.length === 0 ? (
+      {!filteredAssignments || filteredAssignments.length === 0 ? (
         <div className="p-20 text-center bg-white rounded-[2.5rem] border border-slate-100 shadow-sm">
           <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-200 mx-auto mb-4">
             <BookOpen size={32} />
@@ -63,7 +69,7 @@ export default async function AssignmentsPage() {
           <p className="text-slate-400 font-bold">No assignments available yet.</p>
         </div>
       ) : (
-        <AssignmentsClient initialAssignments={assignments} initialSubmissions={submissions || []} studentId={payload.id} />
+        <AssignmentsClient initialAssignments={filteredAssignments} initialSubmissions={submissions || []} studentId={payload.id} />
       )}
     </div>
   );

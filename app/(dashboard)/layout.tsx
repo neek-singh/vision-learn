@@ -19,6 +19,7 @@ import {
   CheckCircle2,
   Wallet
 } from "lucide-react";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 const sidebarLinks = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -40,8 +41,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [unreadCount, setUnreadCount] = useState(0);
   const [student, setStudent] = useState<any>(null);
   const supabase = createClient();
+  const { permission, requestPermission } = usePushNotifications(student?.id);
+
+  // Auto-request permission on first login if not denied
+  useEffect(() => {
+    if (student?.id && permission === 'default') {
+      requestPermission();
+    }
+  }, [student, permission, requestPermission]);
 
   useEffect(() => {
+    let channel: any;
+
     const fetchStudentData = async () => {
       try {
         const res = await fetch("/api/auth/profile");
@@ -49,13 +60,36 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           const studentData = await res.json();
           setStudent(studentData);
           
-          // 3. Fetch unread count (using the ID from the profile API)
+          // Initial count fetch
           const { count } = await supabase
             .from("user_notifications")
             .select("*", { count: "exact", head: true })
             .eq("user_id", studentData.id)
             .eq("is_read", false);
           setUnreadCount(count || 0);
+
+          // 4. Setup REALTIME listener for new notifications
+          channel = supabase
+            .channel('realtime_notifications')
+            .on(
+              'postgres_changes',
+              {
+                event: '*',
+                schema: 'public',
+                table: 'user_notifications',
+                filter: `user_id=eq.${studentData.id}`
+              },
+              async () => {
+                // Re-fetch count whenever something changes
+                const { count: newCount } = await supabase
+                  .from("user_notifications")
+                  .select("*", { count: "exact", head: true })
+                  .eq("user_id", studentData.id)
+                  .eq("is_read", false);
+                setUnreadCount(newCount || 0);
+              }
+            )
+            .subscribe();
         }
       } catch (err) {
         console.error("Error fetching student profile:", err);
@@ -63,7 +97,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     };
 
     fetchStudentData();
-  }, [pathname, supabase]);
+
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [supabase]);
 
   return (
     <div className="min-h-screen bg-slate-50 flex">
@@ -206,7 +244,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="flex items-center gap-3">
             <button className="p-2 text-slate-400 hover:text-slate-900 relative">
               <Bell size={18} />
-              <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-indigo-500 rounded-full border-2 border-white" />
+              {unreadCount > 0 && (
+                <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-rose-500 rounded-full border-2 border-white" />
+              )}
             </button>
             
             <div className="h-6 w-[1px] bg-slate-100 mx-1" />
@@ -214,8 +254,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="flex items-center gap-2">
               <Link href="/profile" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                 <div className="text-right hidden sm:block">
-                  <p className="text-xs font-black text-slate-900 leading-none mb-0.5">{student?.name || "Loading..."}</p>
-                  <p className="text-[9px] font-bold text-indigo-600 uppercase tracking-wider">Active Learner</p>
+                  <p className="text-xs font-black text-slate-900 leading-none">{student?.name || "Loading..."}</p>
                 </div>
                 <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden">
                   {student?.photo_url ? (
@@ -229,9 +268,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        <main className="p-4 lg:p-6 max-w-7xl">
+        <main className="p-4 lg:p-6 max-w-7xl pb-24 lg:pb-6">
           {children}
         </main>
+
+        {/* Mobile Bottom Navigation */}
+        {!isMobileMenuOpen && (
+          <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 px-4 py-2 z-50 flex items-center justify-around shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.05)] animate-in slide-in-from-bottom duration-300">
+            <Link href="/dashboard" className={`flex flex-col items-center gap-1 p-2 min-w-[64px] transition-all ${pathname === '/dashboard' ? 'text-indigo-600' : 'text-slate-400'}`}>
+              <LayoutDashboard size={20} />
+              <span className="text-[10px] font-bold">Home</span>
+            </Link>
+            <Link href="/curriculum" className={`flex flex-col items-center gap-1 p-2 min-w-[64px] transition-all ${pathname === '/curriculum' ? 'text-indigo-600' : 'text-slate-400'}`}>
+              <BookOpen size={20} />
+              <span className="text-[10px] font-bold">Classes</span>
+            </Link>
+            <Link href="/materials" className={`flex flex-col items-center gap-1 p-2 min-w-[64px] transition-all ${pathname === '/materials' ? 'text-indigo-600' : 'text-slate-400'}`}>
+              <FileText size={20} />
+              <span className="text-[10px] font-bold">Notes</span>
+            </Link>
+            <Link href="/tests" className={`flex flex-col items-center gap-1 p-2 min-w-[64px] transition-all ${pathname === '/tests' ? 'text-indigo-600' : 'text-slate-400'}`}>
+              <PenTool size={20} />
+              <span className="text-[10px] font-bold">Tests</span>
+            </Link>
+          </nav>
+        )}
       </div>
     </div>
   );

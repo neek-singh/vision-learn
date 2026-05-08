@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { 
   BookOpen, 
   ChevronDown, 
@@ -18,18 +18,21 @@ import {
   MessageSquare,
   Trophy,
   X,
-  ExternalLink
+  ExternalLink,
+  Clock
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 export function CurriculumClient({ 
   initialModules, 
   initialProgress, 
-  studentId 
+  studentId,
+  initialSchedules = []
 }: { 
   initialModules: any[], 
   initialProgress: string[], 
-  studentId: string 
+  studentId: string,
+  initialSchedules?: any[]
 }) {
   const [expandedModules, setExpandedModules] = useState<string[]>(
     initialModules.length > 0 ? [initialModules[0].id] : []
@@ -37,6 +40,79 @@ export function CurriculumClient({
   const [userProgress, setUserProgress] = useState<string[]>(initialProgress);
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
   const [activeLesson, setActiveLesson] = useState<any>(null);
+  const [currentSchedules, setCurrentSchedules] = useState<any[]>(initialSchedules);
+  const [activeBatch, setActiveBatch] = useState<string | null>(null);
+  const [courseId, setCourseId] = useState<string | null>(initialModules[0]?.course_id || null);
+  const [now, setNow] = useState(new Date());
+
+  // Update clock every minute for precise unlocking
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 60000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Sync with real-time schedules
+  useEffect(() => {
+    // 1. Fetch current batch for the student first
+    const fetchBatch = async () => {
+      const { data } = await supabase
+        .from("students")
+        .select("batch")
+        .eq("id", studentId)
+        .single();
+      if (data?.batch) setActiveBatch(data.batch);
+    };
+    fetchBatch();
+
+    // 2. Setup Realtime Listener for Schedules
+    const channel = supabase
+      .channel('realtime_curriculum_schedules')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'schedules',
+          filter: courseId ? `course_id=eq.${courseId}` : undefined
+        },
+        async () => {
+          // Re-fetch schedules for this course
+          const { data: rawSchedules } = await supabase
+            .from("schedules")
+            .select("title, batch, type, date, start_time")
+            .eq("course_id", courseId);
+
+          if (rawSchedules) {
+            const normalizedActiveBatch = activeBatch?.trim().toLowerCase();
+            const filtered = rawSchedules
+              .filter(s => {
+                if (s.type !== "class") return false;
+                const sBatch = s.batch?.trim().toLowerCase();
+                return !sBatch || sBatch === "all batches" || sBatch === normalizedActiveBatch;
+              });
+            
+            setCurrentSchedules(filtered);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [courseId, activeBatch, studentId]);
+
+  const formatTime = (timeStr: string) => {
+    if (!timeStr) return "";
+    try {
+      const [h, m] = timeStr.split(':');
+      let hour = parseInt(h);
+      const ampm = hour >= 12 ? 'PM' : 'AM';
+      hour = hour % 12;
+      hour = hour ? hour : 12;
+      return `${hour}:${m} ${ampm}`;
+    } catch (e) { return timeStr; }
+  };
 
   // Flatten all lessons across all modules to handle locking and sequence
   const allLessons = useMemo(() => {
@@ -263,10 +339,25 @@ export function CurriculumClient({
                   {lessons.map((lesson: any, lIdx: number) => {
                     const isCompleted = userProgress.includes(lesson.id);
                     
-                    // Logic for locking:
-                    const globalIdx = allLessons.findIndex(al => al.id === lesson.id);
-                    const isLocked = globalIdx > 0 && !userProgress.includes(allLessons[globalIdx - 1].id);
-                    const isInProgress = !isCompleted && !isLocked && (globalIdx === 0 || userProgress.includes(allLessons[globalIdx - 1].id));
+                    // Logic for locking: based on schedule AND time
+                    const fullLessonTitle = `${module.title}: ${lesson.title}`.trim();
+                    const schedule = currentSchedules.find(st => st.title.trim() === fullLessonTitle);
+                    
+                    let isScheduled = false;
+                    let isTimeReached = false;
+                    
+                    if (schedule) {
+                      isScheduled = true;
+                      const schedDate = new Date(schedule.date);
+                      const schedTime = schedule.start_time || "00:00";
+                      const [sh, sm] = schedTime.split(':');
+                      schedDate.setHours(parseInt(sh), parseInt(sm), 0);
+                      
+                      isTimeReached = now >= schedDate;
+                    }
+
+                    const isLocked = !isScheduled || !isTimeReached;
+                    const isInProgress = !isCompleted && !isLocked;
 
                     return (
                       <div 
@@ -286,9 +377,9 @@ export function CurriculumClient({
                             'bg-slate-100 text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-600'
                           }`}>
                             {isLocked ? <Lock size={18} /> : 
-                             isCompleted ? <Check size={18} /> :
-                             lesson.type === 'video' ? <PlayCircle size={18} /> :
-                             lesson.type === 'document' ? <FileText size={18} /> :
+                             (lesson.lesson_type || lesson.type)?.toLowerCase() === 'video' ? <PlayCircle size={18} /> :
+                             (lesson.lesson_type || lesson.type)?.toLowerCase() === 'article' ? <BookOpen size={18} /> :
+                             (lesson.lesson_type || lesson.type)?.toLowerCase() === 'document' ? <FileText size={18} /> :
                              <PenTool size={18} />}
                           </div>
                           <div className="min-w-0">
@@ -301,7 +392,12 @@ export function CurriculumClient({
                             </div>
                             <div className="flex items-center gap-3">
                               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                                {lesson.type} {lesson.duration ? `• ${lesson.duration}m` : ''}
+                                {(lesson.lesson_type || lesson.type || 'Lesson')?.toUpperCase()} {lesson.duration ? `• ${lesson.duration}m` : ''}
+                                {schedule && (
+                                  <span className="ml-2 text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded-md border border-indigo-100 flex items-center gap-1">
+                                    <Clock size={10} /> {formatTime(schedule.start_time)}
+                                  </span>
+                                )}
                               </p>
                             </div>
                           </div>
@@ -364,7 +460,7 @@ export function CurriculumClient({
                   </div>
                   <div>
                     <h3 className="text-xl font-black text-slate-900 leading-tight">{activeLesson.title}</h3>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{activeLesson.type} • {activeLesson.duration || '0'} Mins</p>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{(activeLesson.lesson_type || activeLesson.type)} • {activeLesson.duration || '0'} Mins</p>
                   </div>
                 </div>
                 <button onClick={() => setActiveLesson(null)} className="p-3 hover:bg-slate-100 rounded-2xl transition-all"><X size={24} /></button>
@@ -372,10 +468,16 @@ export function CurriculumClient({
 
               <div className="flex-1 overflow-y-auto bg-slate-50 p-8 scrollbar-hide">
                 <div className="max-w-4xl mx-auto h-full">
-                   {activeLesson.type === 'video' ? (
+                   {(activeLesson.lesson_type || activeLesson.type) === 'video' ? (
                      <div className="aspect-video bg-black rounded-[2rem] overflow-hidden shadow-2xl border-4 border-white">
                         <iframe 
-                          src={activeLesson.content_url?.replace('watch?v=', 'embed/')} 
+                          src={
+                            activeLesson.content_url?.includes('youtu.be') 
+                              ? `https://www.youtube.com/embed/${activeLesson.content_url.split('/').pop()}` 
+                              : activeLesson.content_url?.includes('vimeo.com')
+                                ? `https://player.vimeo.com/video/${activeLesson.content_url.split('/').pop()}`
+                                : activeLesson.content_url?.replace('watch?v=', 'embed/')
+                          } 
                           className="w-full h-full" 
                           allowFullScreen 
                         />
@@ -390,12 +492,17 @@ export function CurriculumClient({
                                target="_blank" 
                                className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 shrink-0"
                              >
-                                Open in New Tab <ExternalLink size={14} />
+                                Download / Open Material <ExternalLink size={14} />
                              </a>
                            )}
                         </div>
-                        <div className="prose prose-slate max-w-none text-slate-700 leading-relaxed text-lg font-medium whitespace-pre-wrap">
-                           {activeLesson.type?.toLowerCase().includes('offline') ? (
+                        <div className="prose prose-indigo max-w-none text-slate-700 leading-relaxed text-lg font-medium">
+                           {activeLesson.notes_content ? (
+                             <div 
+                               dangerouslySetInnerHTML={{ __html: activeLesson.notes_content }} 
+                               className="rich-content"
+                             />
+                           ) : activeLesson.type?.toLowerCase().includes('offline') ? (
                              <div>
                                <p className="text-indigo-600 font-bold mb-4">Offline Class Details:</p>
                                <p>{activeLesson.content_url}</p>
@@ -403,12 +510,12 @@ export function CurriculumClient({
                            ) : (
                              <>
                                {activeLesson.content_url?.startsWith('http') ? (
-                                 <>
+                                 <div className="space-y-4">
                                    <p>Please use the button above to view the complete document or material associated with this lesson.</p>
-                                   <p className="mt-4 text-slate-400 italic break-all">Link: {activeLesson.content_url}</p>
-                                 </>
+                                   <p className="text-slate-400 italic text-sm break-all">Source: {activeLesson.content_url}</p>
+                                 </div>
                                ) : (
-                                 <p>{activeLesson.content_url}</p>
+                                 <p className="whitespace-pre-wrap">{activeLesson.content_url}</p>
                                )}
                              </>
                            )}

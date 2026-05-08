@@ -15,7 +15,13 @@ export default async function CalendarPage() {
 
   const supabase = createPublicSupabaseClient();
 
-  // 1. Get Enrolled Course IDs & Batches
+  // 1. Get Student Info & Enrolled Course IDs
+  const { data: student } = await supabase
+    .from("students")
+    .select("batch")
+    .eq("id", payload.id)
+    .single();
+
   const { data: enrollments } = await supabase
     .from("enrollments")
     .select("course_id, batch")
@@ -23,34 +29,41 @@ export default async function CalendarPage() {
 
   const courseIds = enrollments?.map(e => e.course_id) || [];
   
-  // Create a map of course_id -> batch for filtering
+  // Create a map of course_id -> batch for filtering, fallback to global student batch
   const studentCourseBatches: Record<string, string | null> = {};
   enrollments?.forEach(e => {
-    studentCourseBatches[e.course_id] = e.batch;
+    studentCourseBatches[e.course_id] = e.batch || student?.batch || null;
   });
-
-  // 2. Fetch Public/Course Events
+  
   const { data: events } = await supabase
     .from("events")
     .select("*, courses(title)")
-    .or(`course_id.in.(${courseIds.join(',')}),course_id.is.null`)
     .order("event_date", { ascending: true });
 
-  // 3. Fetch Academic Schedules (Classes, Tests, Assignments)
-  const { data: schedules } = await supabase
+  const activeBatch = student?.batch || enrollments?.[0]?.batch;
+
+  // 4. Fetch ALL Schedules for this course (Classes, Tests, Assignments)
+  const { data: rawSchedules } = await supabase
     .from("schedules")
     .select("*, courses(title)")
-    .in("course_id", courseIds)
-    .order("date", { ascending: true });
+    .in("course_id", courseIds);
 
-  // Filter schedules based on batch
-  const filteredSchedules = (schedules || []).filter(s => {
-    const studentBatch = studentCourseBatches[s.course_id];
-    // If the event is for 'All Batches', has no batch, or matches the student's batch exactly
-    return !s.batch || s.batch === "All Batches" || s.batch === studentBatch;
+  // Filter in JS for robustness (trimmed, case-insensitive, handling "All Batches")
+  const normalizedActiveBatch = activeBatch?.trim().toLowerCase();
+  
+  const filteredSchedules = (rawSchedules || []).filter(s => {
+    const sBatch = s.batch?.trim().toLowerCase();
+    return !sBatch || 
+           sBatch === "all batches" || 
+           sBatch === normalizedActiveBatch;
   });
 
-  // Merge them for the client — normalize date field to `event_date`
+  // Filter specifically for "class" types to unlock curriculum lessons
+  const scheduledLessons = filteredSchedules
+    .filter(s => s.type === "class")
+    .map(s => s.title);
+
+  // Normalize date field for calendar client
   const allEvents = [
     ...(events || []).map(e => ({ ...e, type: e.type || 'event', event_date: e.event_date })),
     ...filteredSchedules.map(s => ({ ...s, event_date: s.date, type: s.type || 'class' }))
