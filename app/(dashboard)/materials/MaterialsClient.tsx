@@ -1,32 +1,91 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { 
   FileText, 
   Video, 
   Download, 
   ExternalLink,
   BookOpen,
-  Copy,
-  Check,
-  X
+  X,
+  ArrowLeft
 } from "lucide-react";
+import dynamic from "next/dynamic";
 
-export default function MaterialsClient({ initialMaterials }: { initialMaterials: any[] }) {
+const NoteViewer = dynamic(() => import("./NoteViewer"), {
+  loading: () => <div className="fixed inset-0 bg-white/80 backdrop-blur-sm z-[100] flex items-center justify-center animate-pulse">
+    <div className="flex flex-col items-center gap-4">
+      <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+      <p className="text-xs font-black text-indigo-600 uppercase tracking-widest">Opening Note...</p>
+    </div>
+  </div>
+});
+
+export default function MaterialsClient({ 
+  initialMaterials, 
+  schedules, 
+  activeBatch 
+}: { 
+  initialMaterials: any[], 
+  schedules: any[], 
+  activeBatch: string 
+}) {
   const [selectedCourse, setSelectedCourse] = useState("all");
   const [viewingCode, setViewingCode] = useState<any>(null);
-  const [copied, setCopied] = useState(false);
 
-  const handleCopy = (code: string) => {
-    navigator.clipboard.writeText(code);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+  const now = new Date();
+  
+  // 1. Filter by Schedule
+  const scheduledTitles = useMemo(() => {
+    const nowTime = now.getTime();
+    const scheduledMaterials = schedules.filter(s => {
+      const sBatch = s.batch?.trim().toLowerCase();
+      const batchMatch = !sBatch || sBatch === "all batches" || sBatch.includes(activeBatch) || activeBatch.includes(sBatch);
+      if (!batchMatch) return false;
 
-  const coursesList = Array.from(new Set(initialMaterials.map(m => m.courses?.title))).filter(Boolean);
-  const filteredMaterials = selectedCourse === "all" 
-    ? initialMaterials 
-    : initialMaterials.filter(m => m.courses?.title === selectedCourse);
+      const timeStr = s.start_time?.includes(':') ? s.start_time : '00:00:00';
+      const sDate = new Date(`${s.date}T${timeStr}`).getTime();
+      return nowTime >= sDate;
+    });
+    return scheduledMaterials.map(s => s.title.toLowerCase());
+  }, [schedules, activeBatch, now]);
+
+  // 2. Apply Schedule Filter to initialMaterials
+  const currentlyAvailableMaterials = useMemo(() => {
+    return initialMaterials.filter((m: any) => {
+      // First check if it's scheduled
+      const isScheduled = scheduledTitles.some((st: string) => {
+        const normalize = (txt: string) => {
+          return txt.toLowerCase()
+            .replace(/^(test|note|assignment|class|lecture|event):/i, '')
+            .trim();
+        };
+        const cleanST = normalize(st);
+        const cleanMT = normalize(m.title);
+        return cleanST.includes(cleanMT) || cleanMT.includes(cleanST);
+      });
+      if (!isScheduled) return false;
+
+      // Batch check from material column (as fallback)
+      if (!m.batch || m.batch === "All Batches") return true;
+      const mBatch = m.batch.trim().toLowerCase();
+      return mBatch.includes(activeBatch) || activeBatch.includes(mBatch);
+    });
+  }, [initialMaterials, scheduledTitles, activeBatch]);
+
+
+
+  const coursesList = useMemo(() => 
+    Array.from(new Set(currentlyAvailableMaterials.map((m: any) => m.courses?.title))).filter(Boolean),
+    [currentlyAvailableMaterials]
+  );
+  
+  const filteredMaterials = useMemo(() => 
+    selectedCourse === "all" 
+      ? currentlyAvailableMaterials 
+      : currentlyAvailableMaterials.filter((m: any) => m.courses?.title === selectedCourse),
+    [selectedCourse, currentlyAvailableMaterials]
+  );
 
   return (
     <div className="space-y-8">
@@ -34,7 +93,9 @@ export default function MaterialsClient({ initialMaterials }: { initialMaterials
       <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
         <button 
           onClick={() => setSelectedCourse("all")}
-          className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap border ${
+          aria-label="Filter by all courses"
+          aria-selected={selectedCourse === "all"}
+          className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap border active:scale-95 ${
             selectedCourse === "all" ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-500 border-slate-100 hover:border-slate-200"
           }`}
         >
@@ -44,7 +105,9 @@ export default function MaterialsClient({ initialMaterials }: { initialMaterials
           <button 
             key={courseName}
             onClick={() => setSelectedCourse(courseName)}
-            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap border ${
+            aria-label={`Filter by ${courseName}`}
+            aria-selected={selectedCourse === courseName}
+            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap border active:scale-95 ${
               selectedCourse === courseName ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-500 border-slate-100 hover:border-slate-200"
             }`}
           >
@@ -58,7 +121,7 @@ export default function MaterialsClient({ initialMaterials }: { initialMaterials
           <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-200 mx-auto mb-4">
             <BookOpen size={32} />
           </div>
-          <p className="text-slate-400 font-bold">No materials found for this course.</p>
+          <p className="text-slate-400 font-bold">No materials available for your current modules.</p>
         </div>
       ) : (
         <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden animate-in fade-in duration-500">
@@ -108,7 +171,8 @@ export default function MaterialsClient({ initialMaterials }: { initialMaterials
                       {(item.type === 'note' || item.type === 'code') ? (
                         <button 
                           onClick={() => setViewingCode(item)}
-                          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-black bg-amber-100 text-amber-700 hover:bg-amber-600 hover:text-white transition-all"
+                          aria-label={`Read note: ${item.title}`}
+                          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-black bg-amber-100 text-amber-800 hover:bg-amber-600 hover:text-white transition-all shadow-sm"
                         >
                           <BookOpen size={12} />
                           Read Note
@@ -118,9 +182,10 @@ export default function MaterialsClient({ initialMaterials }: { initialMaterials
                           href={item.content_url} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-black transition-all ${
+                          aria-label={`${item.type === 'pdf' ? 'Download' : 'Open'} ${item.title}`}
+                          className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-black transition-all shadow-sm ${
                           item.type === 'pdf' 
-                            ? 'bg-slate-100 text-slate-600 hover:bg-indigo-600 hover:text-white' 
+                            ? 'bg-slate-100 text-slate-700 hover:bg-indigo-600 hover:text-white' 
                             : 'bg-indigo-600 text-white hover:bg-indigo-700'
                         }`}>
                           {item.type === 'pdf' ? (
@@ -145,44 +210,12 @@ export default function MaterialsClient({ initialMaterials }: { initialMaterials
         </div>
       )}
 
-      {/* Note Viewer Modal */}
+      {/* Full Screen Note Viewer */}
       {viewingCode && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-4xl overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
-            <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-              <div className="flex items-center gap-4">
-                 <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
-                    <BookOpen size={24} />
-                 </div>
-                 <div>
-                    <h3 className="text-xl font-black text-slate-900 leading-none mb-1">{viewingCode.title}</h3>
-                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                      {viewingCode.duration || 'Reading Material'} • {viewingCode.courses?.title}
-                    </p>
-                 </div>
-              </div>
-              <button onClick={() => setViewingCode(null)} className="p-2 hover:bg-slate-100 rounded-xl transition-all"><X size={24} /></button>
-            </div>
-
-            <div className="p-10 overflow-y-auto bg-white flex-1 scrollbar-hide">
-              <div className="max-w-3xl mx-auto">
-                <div 
-                  className="prose prose-slate max-w-none text-slate-800"
-                  dangerouslySetInnerHTML={{ __html: viewingCode.code_content }}
-                />
-              </div>
-            </div>
-            
-            <div className="p-6 bg-slate-50 border-t border-slate-100 flex justify-end">
-               <button 
-                 onClick={() => setViewingCode(null)}
-                 className="px-6 py-2 bg-white border border-slate-200 text-slate-600 font-black text-xs rounded-xl hover:bg-slate-50 transition-all"
-               >
-                 Close Viewer
-               </button>
-            </div>
-          </div>
-        </div>
+        <NoteViewer 
+          item={viewingCode} 
+          onClose={() => setViewingCode(null)} 
+        />
       )}
     </div>
   );

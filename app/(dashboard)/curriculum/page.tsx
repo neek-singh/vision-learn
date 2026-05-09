@@ -79,6 +79,20 @@ export default async function CurriculumPage() {
       return !sBatch || sBatch === "all batches" || sBatch === normalizedActiveBatch;
     });
 
+  // 5. Fetch Tests (Homework)
+  const { data: testsData } = await supabase
+    .from("tests")
+    .select("*")
+    .eq("course_id", courseId)
+    .eq("is_published", true);
+
+  // 6. Fetch Materials (Notes)
+  const { data: materialsData } = await supabase
+    .from("materials")
+    .select("*")
+    .eq("course_id", courseId)
+    .eq("is_published", true);
+
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <section>
@@ -98,6 +112,8 @@ export default async function CurriculumPage() {
         initialProgress={initialProgress} 
         studentId={payload.id} 
         initialSchedules={scheduledItems}
+        initialTests={testsData || []}
+        initialMaterials={materialsData || []}
       />
     </div>
   );

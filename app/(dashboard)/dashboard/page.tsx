@@ -17,7 +17,8 @@ import {
   ChevronRight,
   Flame,
   GraduationCap,
-  Users
+  Users,
+  FileText
 } from "lucide-react";
 import { verifyToken } from "@/lib/auth-custom";
 import { createPublicSupabaseClient } from "@/lib/supabase-server";
@@ -366,7 +367,7 @@ export default async function DashboardPage() {
           <DashboardLink icon={<BookOpen size={18}/>} title="Materials" href="/materials" color="text-blue-600" bg="bg-blue-50" borderColor="border-blue-100" />
           <DashboardLink icon={<BellRing size={18}/>} title="Notices" href="#" color="text-rose-600" bg="bg-rose-50" borderColor="border-rose-100" />
           <DashboardLink icon={<Calendar size={18}/>} title="Calendar" href="/calendar" color="text-emerald-600" bg="bg-emerald-50" borderColor="border-emerald-100" />
-          <DashboardLink icon={<Target size={18}/>} title="Tasks" href="/assignments" color="text-amber-600" bg="bg-amber-50" borderColor="border-amber-100" />
+          <DashboardLink icon={<FileText size={18}/>} title="Notes" href="/materials" color="text-amber-600" bg="bg-amber-50" borderColor="border-amber-100" />
       </div>
     </div>
   );

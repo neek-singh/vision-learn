@@ -24,6 +24,7 @@ export default function AssignmentsClient({ initialAssignments, initialSubmissio
   const [isUploading, setIsUploading] = useState(false);
   const [activeAssignment, setActiveAssignment] = useState<any>(null);
   const [submissionUrl, setSubmissionUrl] = useState("");
+  const [submissions, setSubmissions] = useState<any[]>(initialSubmissions);
 
   const supabase = createPublicSupabaseClient();
 
@@ -49,8 +50,19 @@ export default function AssignmentsClient({ initialAssignments, initialSubmissio
         }], { onConflict: 'assignment_id,student_id' });
 
       if (error) throw error;
+      
+      // Update local state
+      setSubmissions(prev => [
+        ...prev.filter(s => s.assignment_id !== activeAssignment.id),
+        {
+          assignment_id: activeAssignment.id,
+          student_id: studentId,
+          content_url: submissionUrl,
+          status: 'submitted'
+        }
+      ]);
+      
       setIsSubmittingModal(false);
-      router.refresh();
     } catch (err) {
       console.error("Error submitting assignment:", err);
       alert("Failed to submit assignment");
@@ -118,7 +130,7 @@ export default function AssignmentsClient({ initialAssignments, initialSubmissio
                           <PenTool size={16} />
                         </div>
                         <p className="font-black text-slate-900 text-sm">{task.title}</p>
-                        {initialSubmissions.find(s => s.assignment_id === task.id) && (
+                        {submissions.find(s => s.assignment_id === task.id) && (
                           <span className="flex items-center gap-1 px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-full text-[8px] font-black uppercase tracking-widest border border-emerald-100">
                             Completed
                           </span>
@@ -148,14 +160,14 @@ export default function AssignmentsClient({ initialAssignments, initialSubmissio
                     <td className="px-6 py-4 text-right">
                        <button 
                          onClick={() => handleOpenSubmission(task)}
-                         disabled={!!initialSubmissions.find(s => s.assignment_id === task.id)}
-                         className={`inline-flex items-center gap-2 px-4 py-2 text-[10px] font-black rounded-xl transition-all shadow-md ${
-                         initialSubmissions.find(s => s.assignment_id === task.id)
+                         disabled={!!submissions.find(s => s.assignment_id === task.id)}
+                         className={`inline-flex items-center gap-2 px-4 py-2 text-[10px] font-black rounded-xl transition-all shadow-md active:scale-95 ${
+                         submissions.find(s => s.assignment_id === task.id)
                            ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-                           : "bg-indigo-600 hover:bg-indigo-700 text-white"
+                           : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-100"
                        }`}>
                         <FileUp size={12} />
-                        {initialSubmissions.find(s => s.assignment_id === task.id) ? "Submitted" : "Submit Task"}
+                        {submissions.find(s => s.assignment_id === task.id) ? "Submitted" : "Submit Task"}
                       </button>
                     </td>
                   </tr>
@@ -202,7 +214,7 @@ export default function AssignmentsClient({ initialAssignments, initialSubmissio
                       Due: {new Date(activeAssignment.due_date).toLocaleString()}
                     </span>
                   </div>
-                  {initialSubmissions.find(s => s.assignment_id === activeAssignment.id) && (
+                  {submissions.find(s => s.assignment_id === activeAssignment.id) && (
                     <span className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500 text-white rounded-full text-[8px] font-black uppercase tracking-widest">
                       <CheckCircle2 size={10} /> Already Submitted
                     </span>
@@ -241,7 +253,7 @@ export default function AssignmentsClient({ initialAssignments, initialSubmissio
                     Cancel
                   </button>
                   <button 
-                    disabled={isUploading || !!initialSubmissions.find(s => s.assignment_id === activeAssignment.id)}
+                    disabled={isUploading || !!submissions.find(s => s.assignment_id === activeAssignment.id)}
                     className="flex-[2] py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all shadow-xl shadow-indigo-100 disabled:opacity-50 disabled:bg-slate-200 disabled:text-slate-400 flex items-center justify-center gap-2"
                   >
                     {isUploading ? (
@@ -249,7 +261,7 @@ export default function AssignmentsClient({ initialAssignments, initialSubmissio
                     ) : (
                       <CheckCircle2 size={18} />
                     )}
-                    {initialSubmissions.find(s => s.assignment_id === activeAssignment.id) ? "Already Submitted" : "Submit Assignment"}
+                    {submissions.find(s => s.assignment_id === activeAssignment.id) ? "Already Submitted" : "Submit Assignment"}
                   </button>
                 </div>
               </form>

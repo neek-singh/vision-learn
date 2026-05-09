@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useCallback, useMemo, memo } from "react";
 import { 
   Bell, 
   Info, 
@@ -11,7 +11,6 @@ import {
   Check,
   Trash2,
   MailOpen,
-  Mail,
   Loader2
 } from "lucide-react";
 import { createClient } from "@/lib/supabase-browser";
@@ -63,13 +62,83 @@ export default function StudentNotificationsClient({ initialData, studentId }: {
   };
 
   const NOTIF_STYLES: any = {
-    info: { color: "text-blue-600", bg: "bg-blue-50", icon: <Info size={18}/>, border: "border-blue-100" },
-    success: { color: "text-emerald-600", bg: "bg-emerald-50", icon: <CheckCircle size={18}/>, border: "border-emerald-100" },
-    warning: { color: "text-amber-600", bg: "bg-amber-50", icon: <AlertTriangle size={18}/>, border: "border-amber-100" },
-    alert: { color: "text-rose-600", bg: "bg-rose-50", icon: <AlertCircle size={18}/>, border: "border-rose-100" },
+    info: { color: "text-blue-700", bg: "bg-blue-50", icon: <Info size={18}/>, border: "border-blue-100" },
+    success: { color: "text-emerald-700", bg: "bg-emerald-50", icon: <CheckCircle size={18}/>, border: "border-emerald-100" },
+    warning: { color: "text-amber-700", bg: "bg-amber-50", icon: <AlertTriangle size={18}/>, border: "border-amber-100" },
+    alert: { color: "text-rose-700", bg: "bg-rose-50", icon: <AlertCircle size={18}/>, border: "border-rose-100" },
   };
 
-  const unreadCount = notifications.filter(n => !n.is_read).length;
+  // Memoized Notification Item for better performance and reduced re-renders
+  const NotificationItem = memo(({ un, style, onRead, onDelete, isLoading }: any) => (
+    <div 
+      className={`group bg-white p-6 rounded-[2rem] border transition-all duration-300 relative overflow-hidden ${
+        !un.is_read 
+        ? "border-indigo-100 shadow-lg shadow-indigo-500/5 ring-1 ring-indigo-50" 
+        : "border-slate-100 shadow-sm grayscale-[0.5] opacity-80 hover:grayscale-0 hover:opacity-100"
+      }`}
+    >
+       <div className="flex items-start gap-4">
+          <div className={`w-14 h-14 ${style.bg} ${style.color} rounded-2xl flex items-center justify-center shrink-0 shadow-sm`}>
+            {style.icon}
+          </div>
+          <div className="flex-1 space-y-2">
+             <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className={`text-[10px] font-black uppercase tracking-widest ${style.color}`}>
+                    {un.notifications?.type}
+                  </span>
+                  {!un.is_read && (
+                    <span className="flex items-center gap-1 text-[9px] font-black text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full uppercase tracking-tighter">
+                       New Message
+                    </span>
+                  )}
+                </div>
+                <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
+                  <Clock size={10} /> {new Date(un.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}, {new Date(un.created_at).toLocaleDateString()}
+                </span>
+             </div>
+             
+             <h4 className={`text-xl font-black leading-tight ${!un.is_read ? 'text-slate-900' : 'text-slate-600'}`}>
+               {un.notifications?.title}
+             </h4>
+             <p className="text-sm text-slate-500 font-medium leading-relaxed">
+               {un.notifications?.message}
+             </p>
+
+             <div className="flex items-center justify-between pt-4 mt-2 border-t border-slate-50">
+                <div className="flex gap-2">
+                  {!un.is_read && (
+                    <button 
+                      onClick={() => onRead(un.id)}
+                      disabled={isLoading}
+                      aria-label="Mark notification as read"
+                      className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-[10px] font-black uppercase flex items-center gap-2 hover:bg-indigo-700 transition-all shadow-md shadow-indigo-100 active:scale-95"
+                    >
+                      {isLoading ? <Loader2 className="animate-spin" size={12}/> : <Check size={12}/>}
+                      Mark Read
+                    </button>
+                  )}
+                  {un.is_read && (
+                     <span className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 uppercase">
+                        <MailOpen size={12}/> Opened
+                     </span>
+                  )}
+                </div>
+                <button 
+                  onClick={() => onDelete(un.id)}
+                  aria-label="Delete notification"
+                  className="p-2 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all active:scale-90"
+                  title="Delete notification"
+                >
+                  <Trash2 size={16} />
+                </button>
+             </div>
+          </div>
+       </div>
+    </div>
+  ));
+
+  const unreadCount = useMemo(() => notifications.filter(n => !n.is_read).length, [notifications]);
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in duration-500 pb-12">
@@ -78,7 +147,7 @@ export default function StudentNotificationsClient({ initialData, studentId }: {
           <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
             Notification Inbox
             {unreadCount > 0 && (
-              <span className="px-3 py-1 bg-rose-500 text-white text-xs font-black rounded-full">
+              <span className="px-3 py-1 bg-rose-600 text-white text-xs font-black rounded-full shadow-sm">
                 {unreadCount} New
               </span>
             )}
@@ -90,7 +159,8 @@ export default function StudentNotificationsClient({ initialData, studentId }: {
             <button 
               onClick={markAllRead}
               disabled={loading === "all"}
-              className="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-xs font-black flex items-center gap-2 hover:bg-indigo-100 transition-all border border-indigo-100"
+              aria-label="Mark all notifications as read"
+              className="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-xl text-xs font-black flex items-center gap-2 hover:bg-indigo-100 transition-all border border-indigo-100 active:scale-95"
             >
               {loading === "all" ? <Loader2 className="animate-spin" size={14}/> : <MailOpen size={14}/>}
               Mark all as Read
@@ -112,71 +182,14 @@ export default function StudentNotificationsClient({ initialData, studentId }: {
           notifications.map((un: any) => {
             const style = NOTIF_STYLES[un.notifications?.type] || NOTIF_STYLES.info;
             return (
-              <div 
+              <NotificationItem 
                 key={un.id} 
-                className={`group bg-white p-6 rounded-[2rem] border transition-all duration-300 relative overflow-hidden ${
-                  !un.is_read 
-                  ? "border-indigo-100 shadow-lg shadow-indigo-500/5 ring-1 ring-indigo-50" 
-                  : "border-slate-100 shadow-sm grayscale-[0.5] opacity-80 hover:grayscale-0 hover:opacity-100"
-                }`}
-              >
-                 <div className="flex items-start gap-4">
-                    <div className={`w-14 h-14 ${style.bg} ${style.color} rounded-2xl flex items-center justify-center shrink-0 shadow-sm`}>
-                      {style.icon}
-                    </div>
-                    <div className="flex-1 space-y-2">
-                       <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className={`text-[10px] font-black uppercase tracking-widest ${style.color}`}>
-                              {un.notifications?.type}
-                            </span>
-                            {!un.is_read && (
-                              <span className="flex items-center gap-1 text-[9px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full uppercase tracking-tighter">
-                                 New Message
-                              </span>
-                            )}
-                          </div>
-                          <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
-                            <Clock size={10} /> {new Date(un.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}, {new Date(un.created_at).toLocaleDateString()}
-                          </span>
-                       </div>
-                       
-                       <h4 className={`text-xl font-black leading-tight ${!un.is_read ? 'text-slate-900' : 'text-slate-600'}`}>
-                         {un.notifications?.title}
-                       </h4>
-                       <p className="text-sm text-slate-500 font-medium leading-relaxed">
-                         {un.notifications?.message}
-                       </p>
-
-                       <div className="flex items-center justify-between pt-4 mt-2 border-t border-slate-50">
-                          <div className="flex gap-2">
-                            {!un.is_read && (
-                              <button 
-                                onClick={() => markAsRead(un.id)}
-                                disabled={loading === un.id}
-                                className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-[10px] font-black uppercase flex items-center gap-2 hover:bg-indigo-700 transition-all shadow-md shadow-indigo-100"
-                              >
-                                {loading === un.id ? <Loader2 className="animate-spin" size={12}/> : <Check size={12}/>}
-                                Mark Read
-                              </button>
-                            )}
-                            {un.is_read && (
-                               <span className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 uppercase">
-                                  <MailOpen size={12}/> Opened
-                               </span>
-                            )}
-                          </div>
-                          <button 
-                            onClick={() => deleteNotification(un.id)}
-                            className="p-2 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
-                            title="Delete notification"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                       </div>
-                    </div>
-                 </div>
-              </div>
+                un={un} 
+                style={style} 
+                onRead={markAsRead} 
+                onDelete={deleteNotification}
+                isLoading={loading === un.id}
+              />
             );
           })
         )}

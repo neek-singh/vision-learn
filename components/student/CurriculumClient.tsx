@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import Link from "next/link";
 import { 
   BookOpen, 
   ChevronDown, 
@@ -19,20 +20,37 @@ import {
   Trophy,
   X,
   ExternalLink,
-  Clock
+  Clock,
+  Maximize2,
+  Minimize2, 
+  Video 
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import dynamic from "next/dynamic";
+
+const LessonViewer = dynamic(() => import("./LessonViewer"), {
+  loading: () => <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center">
+    <div className="bg-white p-8 rounded-3xl shadow-xl flex flex-col items-center gap-4">
+      <Loader2 className="animate-spin text-indigo-600" size={32} />
+      <p className="text-xs font-black text-slate-900 uppercase tracking-widest">Opening Lesson...</p>
+    </div>
+  </div>
+});
 
 export function CurriculumClient({ 
   initialModules, 
   initialProgress, 
   studentId,
-  initialSchedules = []
+  initialSchedules = [],
+  initialTests = [],
+  initialMaterials = []
 }: { 
   initialModules: any[], 
   initialProgress: string[], 
   studentId: string,
-  initialSchedules?: any[]
+  initialSchedules?: any[],
+  initialTests?: any[],
+  initialMaterials?: any[]
 }) {
   const [expandedModules, setExpandedModules] = useState<string[]>(
     initialModules.length > 0 ? [initialModules[0].id] : []
@@ -40,6 +58,7 @@ export function CurriculumClient({
   const [userProgress, setUserProgress] = useState<string[]>(initialProgress);
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
   const [activeLesson, setActiveLesson] = useState<any>(null);
+  const [isFullScreen, setIsFullScreen] = useState(false);
   const [currentSchedules, setCurrentSchedules] = useState<any[]>(initialSchedules);
   const [activeBatch, setActiveBatch] = useState<string | null>(null);
   const [courseId, setCourseId] = useState<string | null>(initialModules[0]?.course_id || null);
@@ -64,6 +83,26 @@ export function CurriculumClient({
     };
     fetchBatch();
 
+    const fetchSchedules = async () => {
+      const { data: rawSchedules } = await supabase
+        .from("schedules")
+        .select("title, batch, type, date, start_time")
+        .eq("course_id", courseId);
+
+      if (rawSchedules) {
+        const normalizedActiveBatch = activeBatch?.trim().toLowerCase();
+        const filtered = rawSchedules
+          .filter(s => {
+            const sBatch = s.batch?.trim().toLowerCase();
+            return !sBatch || sBatch === "all batches" || sBatch === normalizedActiveBatch;
+          });
+        setCurrentSchedules(filtered);
+      }
+    };
+
+    // Initial fetch
+    fetchSchedules();
+
     // 2. Setup Realtime Listener for Schedules
     const channel = supabase
       .channel('realtime_curriculum_schedules')
@@ -75,25 +114,7 @@ export function CurriculumClient({
           table: 'schedules',
           filter: courseId ? `course_id=eq.${courseId}` : undefined
         },
-        async () => {
-          // Re-fetch schedules for this course
-          const { data: rawSchedules } = await supabase
-            .from("schedules")
-            .select("title, batch, type, date, start_time")
-            .eq("course_id", courseId);
-
-          if (rawSchedules) {
-            const normalizedActiveBatch = activeBatch?.trim().toLowerCase();
-            const filtered = rawSchedules
-              .filter(s => {
-                if (s.type !== "class") return false;
-                const sBatch = s.batch?.trim().toLowerCase();
-                return !sBatch || sBatch === "all batches" || sBatch === normalizedActiveBatch;
-              });
-            
-            setCurrentSchedules(filtered);
-          }
-        }
+        () => fetchSchedules()
       )
       .subscribe();
 
@@ -206,6 +227,7 @@ export function CurriculumClient({
 
   const openLesson = (lesson: any) => {
     setActiveLesson(lesson);
+    setIsFullScreen(true);
   };
 
   return (
@@ -341,7 +363,7 @@ export function CurriculumClient({
                     
                     // Logic for locking: based on schedule AND time
                     const fullLessonTitle = `${module.title}: ${lesson.title}`.trim();
-                    const schedule = currentSchedules.find(st => st.title.trim() === fullLessonTitle);
+                    const schedule = currentSchedules.find(st => st.type === 'class' && st.title.trim() === fullLessonTitle);
                     
                     let isScheduled = false;
                     let isTimeReached = false;
@@ -451,102 +473,17 @@ export function CurriculumClient({
 
       {/* Lesson Viewer Modal */}
       {activeLesson && (
-        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-in fade-in duration-300">
-           <div className="bg-white rounded-[3rem] w-full max-w-5xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300 flex flex-col max-h-[95vh]">
-              <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-white">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-100">
-                    {activeLesson.type === 'video' ? <PlayCircle size={24} /> : <FileText size={24} />}
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-black text-slate-900 leading-tight">{activeLesson.title}</h3>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{(activeLesson.lesson_type || activeLesson.type)} • {activeLesson.duration || '0'} Mins</p>
-                  </div>
-                </div>
-                <button onClick={() => setActiveLesson(null)} className="p-3 hover:bg-slate-100 rounded-2xl transition-all"><X size={24} /></button>
-              </div>
-
-              <div className="flex-1 overflow-y-auto bg-slate-50 p-8 scrollbar-hide">
-                <div className="max-w-4xl mx-auto h-full">
-                   {(activeLesson.lesson_type || activeLesson.type) === 'video' ? (
-                     <div className="aspect-video bg-black rounded-[2rem] overflow-hidden shadow-2xl border-4 border-white">
-                        <iframe 
-                          src={
-                            activeLesson.content_url?.includes('youtu.be') 
-                              ? `https://www.youtube.com/embed/${activeLesson.content_url.split('/').pop()}` 
-                              : activeLesson.content_url?.includes('vimeo.com')
-                                ? `https://player.vimeo.com/video/${activeLesson.content_url.split('/').pop()}`
-                                : activeLesson.content_url?.replace('watch?v=', 'embed/')
-                          } 
-                          className="w-full h-full" 
-                          allowFullScreen 
-                        />
-                     </div>
-                   ) : (
-                     <div className="bg-white rounded-[2rem] p-10 shadow-sm border border-slate-200 min-h-full">
-                        <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-8">
-                           <h2 className="text-3xl font-black text-slate-900">{activeLesson.title}</h2>
-                           {activeLesson.content_url?.startsWith('http') && (
-                             <a 
-                               href={activeLesson.content_url} 
-                               target="_blank" 
-                               className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 shrink-0"
-                             >
-                                Download / Open Material <ExternalLink size={14} />
-                             </a>
-                           )}
-                        </div>
-                        <div className="prose prose-indigo max-w-none text-slate-700 leading-relaxed text-lg font-medium">
-                           {activeLesson.notes_content ? (
-                             <div 
-                               dangerouslySetInnerHTML={{ __html: activeLesson.notes_content }} 
-                               className="rich-content"
-                             />
-                           ) : activeLesson.type?.toLowerCase().includes('offline') ? (
-                             <div>
-                               <p className="text-indigo-600 font-bold mb-4">Offline Class Details:</p>
-                               <p>{activeLesson.content_url}</p>
-                             </div>
-                           ) : (
-                             <>
-                               {activeLesson.content_url?.startsWith('http') ? (
-                                 <div className="space-y-4">
-                                   <p>Please use the button above to view the complete document or material associated with this lesson.</p>
-                                   <p className="text-slate-400 italic text-sm break-all">Source: {activeLesson.content_url}</p>
-                                 </div>
-                               ) : (
-                                 <p className="whitespace-pre-wrap">{activeLesson.content_url}</p>
-                               )}
-                             </>
-                           )}
-                        </div>
-                     </div>
-                   )}
-                </div>
-              </div>
-
-              <div className="p-6 bg-white border-t border-slate-100 flex items-center justify-between">
-                 <button 
-                   onClick={() => setActiveLesson(null)}
-                   className="px-8 py-3 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl font-black text-xs uppercase tracking-widest transition-all"
-                 >
-                   Back to My Classes
-                 </button>
-                 <div className="flex items-center gap-4">
-                    <span className="text-xs font-bold text-slate-400">Finished this lesson?</span>
-                    <button 
-                      onClick={() => {
-                        toggleLessonCompletion(activeLesson.id, userProgress.includes(activeLesson.id));
-                        setActiveLesson(null);
-                      }}
-                      className="px-8 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-black text-xs uppercase tracking-widest transition-all shadow-lg shadow-emerald-100"
-                    >
-                      {userProgress.includes(activeLesson.id) ? "Mark as Incomplete" : "Mark as Complete"}
-                    </button>
-                 </div>
-              </div>
-           </div>
-        </div>
+        <LessonViewer 
+          lesson={activeLesson}
+          isFullScreen={isFullScreen}
+          onClose={() => { setActiveLesson(null); setIsFullScreen(false); }}
+          userProgress={userProgress}
+          toggleCompletion={toggleLessonCompletion}
+          initialTests={initialTests}
+          initialMaterials={initialMaterials}
+          currentSchedules={currentSchedules}
+          now={now}
+        />
       )}
     </div>
   );
