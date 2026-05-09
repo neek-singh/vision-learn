@@ -1,8 +1,10 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import { verifyToken } from "@/lib/auth-custom";
 import { createPublicSupabaseClient } from "@/lib/supabase-server";
 import { CurriculumClient } from "@/components/student/CurriculumClient";
+import { CurriculumSkeleton } from "@/components/dashboard/DashboardSkeletons";
 
 export default async function CurriculumPage() {
   const cookieStore = await cookies();
@@ -13,20 +15,26 @@ export default async function CurriculumPage() {
   const payload = await verifyToken(token);
   if (!payload) redirect("/login");
 
+  return (
+    <div className="space-y-6 animate-in fade-in duration-500">
+      <Suspense fallback={<CurriculumSkeleton />}>
+        <CurriculumContent userId={payload.id} />
+      </Suspense>
+    </div>
+  );
+}
+
+async function CurriculumContent({ userId }: { userId: string }) {
   const supabase = createPublicSupabaseClient();
 
-  // 1. Fetch Student & Enrollments
-  const { data: student } = await supabase
-    .from("students")
-    .select("batch")
-    .eq("id", payload.id)
-    .single();
+  // 1. Fetch Student & Enrollments in parallel
+  const [studentRes, enrollmentRes] = await Promise.all([
+    supabase.from("students").select("batch").eq("id", userId).single(),
+    supabase.from("enrollments").select("course_id, batch").eq("student_id", userId).limit(1)
+  ]);
 
-  const { data: enrollmentData } = await supabase
-    .from("enrollments")
-    .select("course_id, batch")
-    .eq("student_id", payload.id)
-    .limit(1);
+  const student = studentRes.data;
+  const enrollmentData = enrollmentRes.data;
 
   if (!enrollmentData || enrollmentData.length === 0) {
     return (
@@ -40,61 +48,33 @@ export default async function CurriculumPage() {
   }
 
   const courseId = enrollmentData[0].course_id;
-  // Prioritize global student batch, fallback to enrollment batch
   const activeBatch = student?.batch || enrollmentData[0].batch;
 
-  // 2. Fetch Modules & Lessons
-  const { data: modulesData } = await supabase
-    .from("lms_modules")
-    .select(`
-      id,
-      title,
-      order_index,
-      lessons (*)
-    `)
-    .eq("course_id", courseId)
-    .order("order_index");
+  // 2. Fetch Modules, Progress, Schedules, Tests, and Materials in parallel
+  const [modulesRes, progressRes, schedulesRes, testsRes, materialsRes] = await Promise.all([
+    supabase.from("lms_modules").select(`id, title, order_index, lessons (*)`).eq("course_id", courseId).order("order_index"),
+    supabase.from("user_progress").select("lesson_id").eq("user_id", userId).eq("completed", true),
+    supabase.from("schedules").select("title, batch, type, date, start_time").eq("course_id", courseId),
+    supabase.from("tests").select("*").eq("course_id", courseId).eq("is_published", true),
+    supabase.from("materials").select("*").eq("course_id", courseId).eq("is_published", true)
+  ]);
 
-  // 3. Fetch Progress
-  const { data: progressData } = await supabase
-    .from("user_progress")
-    .select("lesson_id")
-    .eq("user_id", payload.id)
-    .eq("completed", true);
+  const modulesData = modulesRes.data || [];
+  const initialProgress = progressRes.data?.map(p => p.lesson_id) || [];
+  const rawSchedules = schedulesRes.data || [];
+  const testsData = testsRes.data || [];
+  const materialsData = materialsRes.data || [];
 
-  const initialProgress = progressData?.map(p => p.lesson_id) || [];
-
-  // 4. Fetch Schedules (unlock lessons)
-  const { data: rawSchedules } = await supabase
-    .from("schedules")
-    .select("title, batch, type, date, start_time")
-    .eq("course_id", courseId);
-
-  // Filter in JS for maximum robustness
+  // Filter schedules in JS
   const normalizedActiveBatch = activeBatch?.trim().toLowerCase();
-  const scheduledItems = (rawSchedules || [])
-    .filter(s => {
-      if (s.type !== "class") return false;
-      const sBatch = s.batch?.trim().toLowerCase();
-      return !sBatch || sBatch === "all batches" || sBatch === normalizedActiveBatch;
-    });
-
-  // 5. Fetch Tests (Homework)
-  const { data: testsData } = await supabase
-    .from("tests")
-    .select("*")
-    .eq("course_id", courseId)
-    .eq("is_published", true);
-
-  // 6. Fetch Materials (Notes)
-  const { data: materialsData } = await supabase
-    .from("materials")
-    .select("*")
-    .eq("course_id", courseId)
-    .eq("is_published", true);
+  const scheduledItems = rawSchedules.filter(s => {
+    if (s.type !== "class") return false;
+    const sBatch = s.batch?.trim().toLowerCase();
+    return !sBatch || sBatch === "all batches" || sBatch === normalizedActiveBatch;
+  });
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
+    <>
       <section>
         <h1 className="text-2xl font-black text-slate-900 tracking-tight mb-1">My Classes</h1>
         <p className="text-sm text-slate-500 font-medium flex items-center gap-2">
@@ -108,15 +88,15 @@ export default async function CurriculumPage() {
       </section>
 
       <CurriculumClient 
-        initialModules={modulesData || []} 
+        initialModules={modulesData} 
         initialProgress={initialProgress} 
-        studentId={payload.id} 
+        studentId={userId} 
         initialSchedules={scheduledItems}
-        initialTests={testsData || []}
-        initialMaterials={materialsData || []}
+        initialTests={testsData}
+        initialMaterials={materialsData}
+        initialBatch={activeBatch}
+        initialCourseId={courseId}
       />
-    </div>
+    </>
   );
 }
-
-

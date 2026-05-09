@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import { 
   User, 
   Mail, 
@@ -7,7 +8,6 @@ import {
   IdCard, 
   BookOpen, 
   Calendar,
-  Settings,
   Shield,
   MapPin,
   Users,
@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { verifyToken } from "@/lib/auth-custom";
 import { createPublicSupabaseClient } from "@/lib/supabase-server";
+import { ProfilePageSkeleton } from "@/components/dashboard/DashboardSkeletons";
 
 export default async function ProfilePage() {
   const cookieStore = await cookies();
@@ -27,22 +28,30 @@ export default async function ProfilePage() {
   const payload = await verifyToken(token);
   if (!payload) redirect("/login");
 
+  return (
+    <div className="space-y-6">
+      <Suspense fallback={<ProfilePageSkeleton />}>
+        <ProfileContent userId={payload.id} />
+      </Suspense>
+    </div>
+  );
+}
+
+async function ProfileContent({ userId }: { userId: string }) {
   const supabase = createPublicSupabaseClient();
 
-  // Fetch Student Profile
-  const { data: student } = await supabase
-    .from("students")
-    .select("*")
-    .eq("id", payload.id)
-    .single();
+  // Fetch Student Profile and Enrollments in parallel
+  const [studentRes, enrollmentRes] = await Promise.all([
+    supabase.from("students").select("*").eq("id", userId).single(),
+    supabase.from("enrollments").select("batch").eq("student_id", userId).limit(1)
+  ]);
 
-  // Fetch Enrollments to get Batch
-  const { data: enrollments } = await supabase
-    .from("enrollments")
-    .select("batch")
-    .eq("student_id", payload.id);
-    
-  const mainBatch = enrollments?.[0]?.batch || "Not Assigned";
+  const student = studentRes.data;
+  const mainBatch = enrollmentRes.data?.[0]?.batch || "Not Assigned";
+
+  if (!student) {
+    return <div className="p-10 bg-white rounded-3xl border border-slate-100 text-center font-bold text-slate-500">Student profile not found.</div>;
+  }
 
   return (
     <div className="max-w-4xl space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
@@ -51,19 +60,19 @@ export default async function ProfilePage() {
         <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full -mr-32 -mt-32 opacity-50" />
         
         <div className="w-28 h-28 rounded-3xl bg-indigo-600 border-4 border-white shadow-2xl overflow-hidden flex items-center justify-center text-white text-4xl font-black relative z-10 shrink-0">
-          {student?.photo_url ? (
+          {student.photo_url ? (
             <img src={student.photo_url} alt={student.name} className="w-full h-full object-cover" />
           ) : (
-            student?.name?.charAt(0) || "S"
+            student.name?.charAt(0) || "S"
           )}
         </div>
         
         <div className="relative z-10 text-center md:text-left space-y-1.5">
           <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.3em] mb-1">Student Profile</p>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">{student?.name}</h1>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">{student.name}</h1>
           <div className="flex flex-wrap justify-center md:justify-start gap-3 pt-1">
             <span className="bg-indigo-50 text-indigo-700 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-xl border border-indigo-100">
-              ID: {student?.student_id}
+              ID: {student.student_id}
             </span>
             <span className="bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-xl border border-emerald-100">
               Active Student
@@ -80,9 +89,9 @@ export default async function ProfilePage() {
           </h3>
           
           <div className="grid grid-cols-1 gap-6">
-            <ProfileInfo icon={<Mail size={16}/>} label="Email Address" value={student?.email} />
-            <ProfileInfo icon={<Phone size={16}/>} label="Phone Number" value={student?.phone} />
-            <ProfileInfo icon={<MapPin size={16}/>} label="Residential Address" value={student?.address || "Address not provided"} />
+            <ProfileInfo icon={<Mail size={16}/>} label="Email Address" value={student.email} />
+            <ProfileInfo icon={<Phone size={16}/>} label="Phone Number" value={student.phone} />
+            <ProfileInfo icon={<MapPin size={16}/>} label="Residential Address" value={student.address || "Address not provided"} />
           </div>
         </div>
 
@@ -93,12 +102,12 @@ export default async function ProfilePage() {
           </h3>
           
           <div className="grid grid-cols-1 gap-6">
-            <ProfileInfo icon={<Users size={16}/>} label="Father's Name" value={student?.father_name} />
-            <ProfileInfo icon={<Baby size={16}/>} label="Mother's Name" value={student?.mother_name} />
+            <ProfileInfo icon={<Users size={16}/>} label="Father's Name" value={student.father_name} />
+            <ProfileInfo icon={<Baby size={16}/>} label="Mother's Name" value={student.mother_name} />
             
             <div className="grid grid-cols-2 gap-4">
-               <ProfileInfo icon={<Calendar size={16}/>} label="Date of Birth" value={student?.dob ? new Date(student.dob).toLocaleDateString() : "—"} />
-               <ProfileInfo icon={<Dna size={16}/>} label="Gender" value={student?.gender} className="capitalize" />
+               <ProfileInfo icon={<Calendar size={16}/>} label="Date of Birth" value={student.dob ? new Date(student.dob).toLocaleDateString() : "—"} />
+               <ProfileInfo icon={<Dna size={16}/>} label="Gender" value={student.gender} className="capitalize" />
             </div>
           </div>
         </div>
@@ -110,20 +119,20 @@ export default async function ProfilePage() {
           </h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <ProfileInfo icon={<BookOpen size={16}/>} label="Primary Course" value={student?.course} />
-            <ProfileInfo icon={<IdCard size={16}/>} label="Official Student ID" value={student?.student_id} />
+            <ProfileInfo icon={<BookOpen size={16}/>} label="Primary Course" value={student.course} />
+            <ProfileInfo icon={<IdCard size={16}/>} label="Official Student ID" value={student.student_id} />
             <ProfileInfo icon={<Users size={16}/>} label="Assigned Batch" value={mainBatch} />
-            <ProfileInfo icon={<Calendar size={16}/>} label="Admission Date" value={student?.admission_date ? new Date(student.admission_date).toLocaleDateString() : "—"} />
+            <ProfileInfo icon={<Calendar size={16}/>} label="Admission Date" value={student.admission_date ? new Date(student.admission_date).toLocaleDateString() : "—"} />
           </div>
 
           <div className="pt-4 border-t border-slate-50 flex flex-col md:flex-row gap-4">
              <div className="flex-1 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-50">
                 <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Highest Education</p>
-                <p className="text-sm font-black text-indigo-700">{student?.education || "Undergraduate"}</p>
+                <p className="text-sm font-black text-indigo-700">{student.education || "Undergraduate"}</p>
              </div>
              <div className="flex-1 p-4 bg-emerald-50/50 rounded-2xl border border-emerald-50">
                 <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">Student Category</p>
-                <p className="text-sm font-black text-emerald-700">{student?.category || "General"}</p>
+                <p className="text-sm font-black text-emerald-700">{student.category || "General"}</p>
              </div>
           </div>
         </div>
