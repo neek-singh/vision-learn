@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -18,6 +18,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://learn.visionitinstitute.com"),
   title: "Vision IT Computer Institute Learn Start",
   description: "Official Learning Management System for Vision IT Computer Institute students.",
+  manifest: "/manifest.json",
   icons: {
     icon: [
       { url: "https://res.cloudinary.com/ddiooxxks/image/upload/f_auto,q_auto/logo_unnut8.png" },
@@ -30,6 +31,22 @@ export const metadata: Metadata = {
       { url: "https://res.cloudinary.com/ddiooxxks/image/upload/f_auto,q_auto/logo_unnut8.png", sizes: "180x180", type: "image/png" },
     ],
   },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Vision Learn",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#4f46e5",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({
