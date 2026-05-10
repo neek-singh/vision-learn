@@ -76,6 +76,9 @@ const nextConfig: NextConfig = {
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
   },
+  // Explicitly set empty turbopack config to silence warnings in Next.js 16
+  // while we force Webpack mode for PWA support.
+  turbopack: {},
 };
 
 export default withPWA(nextConfig);
