@@ -4,6 +4,8 @@ import { useEffect } from "react";
 
 export function PWARegistration() {
   useEffect(() => {
+    if (process.env.NODE_ENV === 'development') return;
+
     if (
       typeof window !== "undefined" &&
       "serviceWorker" in navigator &&
@@ -21,6 +23,7 @@ export function PWARegistration() {
       });
     }
   }, []);
+
 
   return null;
 }
