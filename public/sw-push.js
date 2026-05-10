@@ -1,20 +1,30 @@
+// Service Worker for Push Notifications
 self.addEventListener('push', function(event) {
   if (event.data) {
     const data = event.data.json();
     const options = {
       body: data.body,
-      icon: 'https://res.cloudinary.com/ddiooxxks/image/upload/f_auto,q_auto/logo_unnut8.png',
-      badge: 'https://res.cloudinary.com/ddiooxxks/image/upload/f_auto,q_auto/logo_unnut8.png',
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
       vibrate: [100, 50, 100],
       data: {
-        url: data.url || '/notifications'
+        dateOfArrival: Date.now(),
+        primaryKey: '1',
+        url: data.url || '/'
       },
       actions: [
-        { action: 'open', title: 'View Details' },
-        { action: 'close', title: 'Close' }
+        {
+          action: 'explore',
+          title: 'View Details',
+          icon: '/icons/icon-192.png'
+        },
+        {
+          action: 'close',
+          title: 'Close',
+          icon: '/icons/icon-192.png'
+        },
       ]
     };
-
     event.waitUntil(
       self.registration.showNotification(data.title, options)
     );
@@ -23,9 +33,13 @@ self.addEventListener('push', function(event) {
 
 self.addEventListener('notificationclick', function(event) {
   event.notification.close();
-  if (event.action === 'open' || !event.action) {
+  if (event.action === 'explore') {
     event.waitUntil(
       clients.openWindow(event.notification.data.url)
+    );
+  } else {
+    event.waitUntil(
+      clients.openWindow('/')
     );
   }
 });

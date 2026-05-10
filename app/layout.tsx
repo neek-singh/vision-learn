@@ -14,23 +14,17 @@ const geistMono = Geist_Mono({
   display: 'swap',
 });
 
+import { PWARegistration } from "@/components/PWARegistration";
+import { InstallButton } from "@/components/InstallButton";
+
 export const metadata: Metadata = {
   metadataBase: new URL("https://learn.visionitinstitute.com"),
-  title: "Vision IT Computer Institute Learn Start",
-  description: "Official Learning Management System for Vision IT Computer Institute students.",
-  manifest: "/manifest.json",
-  icons: {
-    icon: [
-      { url: "https://res.cloudinary.com/ddiooxxks/image/upload/f_auto,q_auto/logo_unnut8.png" },
-      { url: "https://res.cloudinary.com/ddiooxxks/image/upload/f_auto,q_auto/logo_unnut8.png", sizes: "32x32", type: "image/png" },
-      { url: "https://res.cloudinary.com/ddiooxxks/image/upload/f_auto,q_auto/logo_unnut8.png", sizes: "16x16", type: "image/png" },
-    ],
-    shortcut: "https://res.cloudinary.com/ddiooxxks/image/upload/f_auto,q_auto/logo_unnut8.png",
-    apple: [
-      { url: "https://res.cloudinary.com/ddiooxxks/image/upload/f_auto,q_auto/logo_unnut8.png" },
-      { url: "https://res.cloudinary.com/ddiooxxks/image/upload/f_auto,q_auto/logo_unnut8.png", sizes: "180x180", type: "image/png" },
-    ],
+  title: {
+    default: "Vision Learn",
+    template: "%s | Vision Learn"
   },
+  description: "Official Learning Management System for Vision IT Computer Institute students. Access courses, track attendance, and stay connected.",
+  manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -38,6 +32,15 @@ export const metadata: Metadata = {
   },
   formatDetection: {
     telephone: false,
+  },
+  icons: {
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
   },
 };
 
@@ -47,9 +50,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  viewportFit: "cover",
 };
-
-import { PWARegistration } from "@/components/PWARegistration";
 
 export default function RootLayout({
   children,
@@ -63,9 +65,11 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <PWARegistration />
+        <InstallButton />
         {children}
       </body>
     </html>
   );
 }
+
 

@@ -4,8 +4,10 @@ const withPWA = require('next-pwa')({
   disable: process.env.NODE_ENV === 'development',
   register: true,
   skipWaiting: true,
-  // This allows us to merge your existing push notification worker
   importScripts: ['/sw-push.js'],
+  fallbacks: {
+    document: '/offline', // Fallback to /offline page when network fails
+  },
   runtimeCaching: [
     {
       urlPattern: /^https:\/\/res\.cloudinary\.com\/.*/i,
@@ -48,7 +50,7 @@ const withPWA = require('next-pwa')({
       }
     },
     {
-      urlPattern: /\/(?:dashboard|courses|lessons)\/.*$/i,
+      urlPattern: /\/(?:dashboard|courses|lessons|offline)\/.*$/i,
       handler: 'StaleWhileRevalidate',
       options: {
         cacheName: 'app-pages',
@@ -60,6 +62,7 @@ const withPWA = require('next-pwa')({
     }
   ]
 });
+
 
 const nextConfig: NextConfig = {
   images: {

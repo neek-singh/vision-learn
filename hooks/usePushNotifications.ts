@@ -32,6 +32,7 @@ export function usePushNotifications(userId: string | null) {
   };
 
   const registerAndSubscribe = async () => {
+    if (process.env.NODE_ENV === 'development') return;
     if (!userId || !('serviceWorker' in navigator) || !('PushManager' in window)) return;
 
     try {

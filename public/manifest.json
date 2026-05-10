@@ -1,12 +1,16 @@
 {
+  "id": "com.visionitinstitute.learn",
   "name": "Vision Learn",
   "short_name": "VisionLearn",
-  "description": "Premium Learning Management System for Vision IT Computer Institute",
+  "description": "Premium Learning Management System for Vision IT Computer Institute students. Access courses, attendance, and tests offline.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#f8fafc",
   "theme_color": "#4f46e5",
+  "lang": "en-US",
+  "dir": "ltr",
   "icons": [
     {
       "src": "/icons/icon-192.png",
@@ -15,8 +19,8 @@
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-512.png",
-      "sizes": "512x512",
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
@@ -25,12 +29,19 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "shortcuts": [
     {
       "name": "My Courses",
       "url": "/dashboard/courses",
+      "description": "View and manage your enrolled courses",
       "icons": [
         {
           "src": "/icons/icon-192.png",
@@ -42,6 +53,7 @@
     {
       "name": "Attendance",
       "url": "/dashboard/attendance",
+      "description": "Track your daily institute attendance",
       "icons": [
         {
           "src": "/icons/icon-192.png",
@@ -50,10 +62,6 @@
         }
       ]
     }
-  ],
-  "categories": [
-    "education",
-    "productivity"
   ],
   "screenshots": [
     {
@@ -69,5 +77,10 @@
       "type": "image/png",
       "label": "Mobile Dashboard"
     }
-  ]
+  ],
+  "categories": [
+    "education",
+    "productivity"
+  ],
+  "prefer_related_applications": false
 }
