@@ -78,10 +78,11 @@ const withPWA = require('next-pwa')({
       }
     },
     {
-      urlPattern: /^\/(?:dashboard|courses|lessons|curriculum|materials|offline|login)(?:\/.*)?$/i,
-      handler: 'StaleWhileRevalidate',
+      urlPattern: /^\/(?:dashboard|courses|lessons|curriculum|materials|offline|login|$)(?:\/.*)?$/i,
+      handler: 'NetworkFirst',
       options: {
         cacheName: 'app-pages',
+        networkTimeoutSeconds: 10,
         expiration: {
           maxEntries: 100,
           maxAgeSeconds: 60 * 60 * 24 // 24 hours
