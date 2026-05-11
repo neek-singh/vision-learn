@@ -85,7 +85,42 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [student, permission, requestPermission]);
 
   useEffect(() => {
-    let channel: any;
+    let activeChannel: any;
+
+    const setupRealtime = async (studentId: string) => {
+      // 1. Initial count fetch
+      const { count } = await supabase
+        .from("user_notifications")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", studentId)
+        .eq("is_read", false);
+      setUnreadCount(count || 0);
+
+      // 2. Setup SINGLE channel
+      const channelId = `vision_realtime_${studentId}`;
+      
+      // Clean up any existing channel with same ID first to be safe
+      supabase.removeChannel(supabase.channel(channelId));
+
+      activeChannel = supabase
+        .channel(channelId)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'user_notifications', filter: `user_id=eq.${studentId}` },
+          async () => {
+            const { count: newCount } = await supabase
+              .from("user_notifications")
+              .select("*", { count: "exact", head: true })
+              .eq("user_id", studentId)
+              .eq("is_read", false);
+            setUnreadCount(newCount || 0);
+          }
+        )
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'materials' }, () => router.refresh())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'tests' }, () => router.refresh())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'assignments' }, () => router.refresh())
+        .subscribe();
+    };
 
     const fetchStudentData = async () => {
       try {
@@ -93,34 +128,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         if (res.ok) {
           const studentData = await res.json();
           setStudent(studentData);
-          
-          const { count } = await supabase
-            .from("user_notifications")
-            .select("*", { count: "exact", head: true })
-            .eq("user_id", studentData.id)
-            .eq("is_read", false);
-          setUnreadCount(count || 0);
-
-          // Use a SINGLE channel for all changes to reduce overhead
-          const channelId = `vision_realtime_${studentData.id}`;
-          channel = supabase
-            .channel(channelId)
-            .on(
-              'postgres_changes',
-              { event: '*', schema: 'public', table: 'user_notifications', filter: `user_id=eq.${studentData.id}` },
-              async () => {
-                const { count: newCount } = await supabase
-                  .from("user_notifications")
-                  .select("*", { count: "exact", head: true })
-                  .eq("user_id", studentData.id)
-                  .eq("is_read", false);
-                setUnreadCount(newCount || 0);
-              }
-            )
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'materials' }, () => router.refresh())
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'tests' }, () => router.refresh())
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'assignments' }, () => router.refresh())
-            .subscribe();
+          await setupRealtime(studentData.id);
         }
       } catch (err) {
         console.error("Error fetching student profile:", err);
@@ -130,9 +138,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     fetchStudentData();
 
     return () => {
-      if (channel) supabase.removeChannel(channel);
+      if (activeChannel) {
+        supabase.removeChannel(activeChannel);
+      }
     };
-  }, [supabase]);
+  }, [supabase, router]);
 
   return (
     <div className="min-h-screen bg-slate-50 flex">
@@ -292,12 +302,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Mobile Bottom Navigation */}
         {!isMobileMenuOpen && (
           <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 px-4 py-2 z-50 flex items-center justify-around shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.05)] animate-in slide-in-from-bottom duration-300">
-          <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 px-4 py-2 z-50 flex items-center justify-around shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.05)] animate-in slide-in-from-bottom duration-300">
             <MobileBottomLink href="/dashboard" icon={LayoutDashboard} name="Home" isActive={pathname === '/dashboard'} />
             <MobileBottomLink href="/curriculum" icon={BookOpen} name="Classes" isActive={pathname === '/curriculum'} />
             <MobileBottomLink href="/materials" icon={FileText} name="Notes" isActive={pathname === '/materials'} />
             <MobileBottomLink href="/tests" icon={PenTool} name="Tests" isActive={pathname === '/tests'} />
-          </nav>
           </nav>
         )}
       </div>

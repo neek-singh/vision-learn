@@ -78,7 +78,7 @@ const withPWA = require('next-pwa')({
       }
     },
     {
-      urlPattern: /\/(?:dashboard|courses|lessons|curriculum|materials|offline)\/.*$/i,
+      urlPattern: /^\/(?:dashboard|courses|lessons|curriculum|materials|offline|login)(?:\/.*)?$/i,
       handler: 'StaleWhileRevalidate',
       options: {
         cacheName: 'app-pages',
