@@ -20,6 +20,7 @@ import {
   Wallet
 } from "lucide-react";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { SyncStatus } from "@/components/SyncStatus";
 
 const sidebarLinks = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -252,6 +253,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
 
           <div className="flex items-center gap-3">
+            <SyncStatus />
+            <div className="h-6 w-[1px] bg-slate-100 mx-1 hidden sm:block" />
             <Link 
               href="/notifications"
               aria-label={`View notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}

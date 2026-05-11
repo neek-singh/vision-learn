@@ -17,6 +17,9 @@ import {
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import dynamic from "next/dynamic";
+import { CacheManager } from "@/lib/cache-manager";
+import { useCachedCurriculum } from "@/hooks/use-cached-curriculum";
+import { DownloadButton } from "@/components/DownloadButton";
 
 const LessonViewer = dynamic(() => import("./LessonViewer"), {
   loading: () => <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center">
@@ -46,17 +49,34 @@ export function CurriculumClient({
   initialBatch?: string | null,
   initialCourseId?: string | null
 }) {
+  const [courseId] = useState<string | null>(initialCourseId || initialModules[0]?.course_id || null);
+  
+  // Use cached data
+  const { modules: cachedModules, progress: cachedProgress } = useCachedCurriculum(courseId || "", studentId);
+
   const [expandedModules, setExpandedModules] = useState<string[]>(
     initialModules.length > 0 ? [initialModules[0].id] : []
   );
+  
+  // Use local state for immediate feedback, synced with cachedProgress
   const [userProgress, setUserProgress] = useState<string[]>(initialProgress);
+
+  // Sync userProgress with cachedProgress when it changes
+  useEffect(() => {
+    if (cachedProgress) {
+      setUserProgress(cachedProgress.filter((p: any) => p.completed).map((p: any) => p.lesson_id));
+    }
+  }, [cachedProgress]);
+
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
   const [activeLesson, setActiveLesson] = useState<any>(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [currentSchedules, setCurrentSchedules] = useState<any[]>(initialSchedules);
   const [activeBatch] = useState<string | null>(initialBatch);
-  const [courseId] = useState<string | null>(initialCourseId || initialModules[0]?.course_id || null);
   const [now, setNow] = useState(new Date());
+
+  // Use cached modules if available, otherwise fallback to initial
+  const displayModules = cachedModules && cachedModules.length > 0 ? cachedModules : initialModules;
 
   // Update clock every minute for precise unlocking
   useEffect(() => {
@@ -115,10 +135,10 @@ export function CurriculumClient({
   };
 
   const allLessons = useMemo(() => {
-    return [...initialModules]
+    return [...displayModules]
       .sort((a, b) => a.order_index - b.order_index)
       .flatMap(m => (m.lessons || []).sort((a: any, b: any) => a.order_index - b.order_index));
-  }, [initialModules]);
+  }, [displayModules]);
 
   const totalProgress = useMemo(() => {
     if (allLessons.length === 0) return 0;
@@ -131,54 +151,20 @@ export function CurriculumClient({
 
   async function toggleLessonCompletion(lessonId: string, currentStatus: boolean) {
     setIsUpdating(lessonId);
+    const newStatus = !currentStatus;
+    
+    // Optimistic UI update
+    if (newStatus) {
+      setUserProgress(prev => [...prev, lessonId]);
+    } else {
+      setUserProgress(prev => prev.filter(id => id !== lessonId));
+    }
+
     try {
-      if (!currentStatus) {
-        const { data: existing } = await supabase
-          .from("user_progress")
-          .select("id")
-          .eq("user_id", studentId)
-          .eq("lesson_id", lessonId)
-          .single();
-
-        if (existing) {
-          const { error } = await supabase
-            .from("user_progress")
-            .update({ 
-              completed: true,
-              last_watched_at: new Date().toISOString()
-            })
-            .eq("id", existing.id);
-
-          if (!error) {
-            setUserProgress(prev => [...prev, lessonId]);
-          }
-        } else {
-          const { error } = await supabase
-            .from("user_progress")
-            .insert({ 
-              user_id: studentId, 
-              lesson_id: lessonId, 
-              completed: true,
-              last_watched_at: new Date().toISOString()
-            });
-
-          if (!error) {
-            setUserProgress(prev => [...prev, lessonId]);
-          }
-        }
-      } else {
-        const { error } = await supabase
-          .from("user_progress")
-          .delete()
-          .eq("user_id", studentId)
-          .eq("lesson_id", lessonId);
-
-        if (!error) {
-          setUserProgress(prev => prev.filter(id => id !== lessonId));
-        }
-      }
+      await CacheManager.saveProgress(studentId, lessonId, newStatus);
     } catch (err) {
       console.error("Error updating progress:", err);
+      // Revert if totally failed? No, CacheManager handles offline.
     } finally {
       setIsUpdating(null);
     }
@@ -213,6 +199,9 @@ export function CurriculumClient({
           <div className="space-y-1">
             <h1 className="text-3xl font-black text-slate-900 tracking-tight">My Classes</h1>
             <p className="text-slate-500 font-medium">Follow your structured learning path to mastery.</p>
+            <div className="pt-2">
+              <DownloadButton courseId={courseId || ""} courseTitle="My Course" />
+            </div>
           </div>
           
           <div className="flex items-center gap-6">
@@ -271,7 +260,7 @@ export function CurriculumClient({
 
       {/* Modules List */}
       <div className="space-y-4">
-        {initialModules.length === 0 ? (
+        {displayModules.length === 0 ? (
           <div className="bg-white p-20 rounded-[3rem] border border-slate-100 text-center">
             <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center text-slate-200 mx-auto mb-6">
                <BookOpen size={40} />
@@ -279,7 +268,7 @@ export function CurriculumClient({
             <h3 className="text-xl font-black text-slate-900 mb-2">My Classes Empty</h3>
             <p className="text-slate-500 font-medium max-w-sm mx-auto">No lessons have been published for this course yet. Check back later!</p>
           </div>
-        ) : initialModules.sort((a, b) => a.order_index - b.order_index).map((module, mIdx) => (
+        ) : displayModules.sort((a: any, b: any) => a.order_index - b.order_index).map((module: any, mIdx: number) => (
           <ModuleItem 
             key={module.id}
             module={module}

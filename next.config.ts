@@ -15,8 +15,25 @@ const withPWA = require('next-pwa')({
       options: {
         cacheName: 'cloudinary-images',
         expiration: {
-          maxEntries: 100,
+          maxEntries: 200,
           maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+        },
+        cacheableResponse: {
+          statuses: [0, 200]
+        }
+      }
+    },
+    {
+      urlPattern: /^https:\/\/.*\.supabase\.co\/storage\/v1\/object\/public\/.*/i,
+      handler: 'CacheFirst',
+      options: {
+        cacheName: 'supabase-storage',
+        expiration: {
+          maxEntries: 100,
+          maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+        },
+        cacheableResponse: {
+          statuses: [0, 200]
         }
       }
     },
@@ -26,8 +43,19 @@ const withPWA = require('next-pwa')({
       options: {
         cacheName: 'google-fonts',
         expiration: {
-          maxEntries: 10,
+          maxEntries: 20,
           maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+        }
+      }
+    },
+    {
+      urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|avif|pdf)$/i,
+      handler: 'CacheFirst',
+      options: {
+        cacheName: 'static-assets',
+        expiration: {
+          maxEntries: 100,
+          maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
         }
       }
     },
@@ -36,26 +64,26 @@ const withPWA = require('next-pwa')({
       handler: 'NetworkFirst',
       options: {
         cacheName: 'api-responses',
-        networkTimeoutSeconds: 10,
+        networkTimeoutSeconds: 5,
         expiration: {
-          maxEntries: 50,
+          maxEntries: 100,
           maxAgeSeconds: 60 * 60 * 24 // 24 hours
         },
         backgroundSync: {
           name: 'api-sync',
           options: {
-            maxRetentionTime: 60 * 60 // 1 hour
+            maxRetentionTime: 60 * 60 * 24 // 24 hours
           }
         }
       }
     },
     {
-      urlPattern: /\/(?:dashboard|courses|lessons|offline)\/.*$/i,
+      urlPattern: /\/(?:dashboard|courses|lessons|curriculum|materials|offline)\/.*$/i,
       handler: 'StaleWhileRevalidate',
       options: {
         cacheName: 'app-pages',
         expiration: {
-          maxEntries: 50,
+          maxEntries: 100,
           maxAgeSeconds: 60 * 60 * 24 // 24 hours
         }
       }
