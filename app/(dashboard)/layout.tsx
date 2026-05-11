@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { SyncStatus } from "@/components/SyncStatus";
+import { GlobalSearch } from "@/components/GlobalSearch";
 
 const sidebarLinks = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -249,7 +250,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Navbar */}
-        <header className="h-16 bg-white border-b border-slate-100 flex items-center justify-between px-6 lg:px-8 sticky top-0 z-30">
+        <header className="h-16 bg-white border-b border-slate-100 flex items-center justify-between px-4 sm:px-6 lg:px-8 sticky top-0 z-30">
           <button 
             onClick={() => setIsMobileMenuOpen(true)}
             aria-label="Open mobile menu"
@@ -258,13 +259,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Menu size={20} />
           </button>
 
-          <div className="hidden lg:block">
-            <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Student Portal</h2>
+          <div className="flex items-center gap-4">
+            <div className="hidden lg:block">
+              <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Student Portal</h2>
+              <p className="text-[8px] font-black text-indigo-600 uppercase tracking-wider">Vision IT Academy</p>
+            </div>
+            <GlobalSearch />
           </div>
 
           <div className="flex items-center gap-3">
             <SyncStatus />
-            <div className="h-6 w-[1px] bg-slate-100 mx-1 hidden sm:block" />
+            <div className="h-6 w-[1px] bg-slate-100 mx-1 hidden min-[400px]:block" />
             <Link 
               href="/notifications"
               aria-label={`View notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}

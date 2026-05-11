@@ -93,7 +93,8 @@ export default function StudentAttendanceClient({ initialRecords }: { initialRec
            </div>
         </div>
         
-        <div className="overflow-x-auto">
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left">
             <thead>
               <tr className="bg-slate-50 text-slate-400 text-[9px] uppercase font-black tracking-[0.2em] border-b border-slate-100">
@@ -147,6 +148,50 @@ export default function StudentAttendanceClient({ initialRecords }: { initialRec
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Card View */}
+        <div className="md:hidden divide-y divide-slate-50">
+          {initialRecords.length === 0 ? (
+            <div className="px-8 py-20 text-center text-slate-400 font-bold">
+              No attendance records found yet.
+            </div>
+          ) : initialRecords.map((record) => (
+            <div key={record.id} className="p-6 space-y-4">
+              <div className="flex justify-between items-start">
+                <div className="flex items-center gap-3">
+                   <div className="w-9 h-9 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400">
+                      <Calendar size={16} />
+                   </div>
+                   <div>
+                      <p className="font-black text-slate-900 text-sm">
+                         {new Date(record.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </p>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                        {record.courses?.title || 'General'}
+                      </p>
+                   </div>
+                </div>
+                <div>
+                   {record.status === 'present' && (
+                     <div className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5">
+                        <CheckCircle2 size={10} /> Present
+                     </div>
+                   )}
+                   {record.status === 'absent' && (
+                     <div className="px-3 py-1 bg-rose-50 text-rose-600 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5">
+                        <XCircle size={10} /> Absent
+                     </div>
+                   )}
+                   {record.status === 'late' && (
+                     <div className="px-3 py-1 bg-amber-50 text-amber-600 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5">
+                        <Clock size={10} /> Late
+                     </div>
+                   )}
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

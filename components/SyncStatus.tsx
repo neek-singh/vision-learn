@@ -16,12 +16,12 @@ export function SyncStatus() {
               <Wifi size={14} className="text-emerald-500" />
               <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
             </div>
-            <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Online</span>
+            <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest hidden sm:inline">Online</span>
           </div>
         ) : (
           <div className="flex items-center gap-1.5">
             <WifiOff size={14} className="text-rose-500" />
-            <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Offline</span>
+            <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest hidden sm:inline">Offline</span>
           </div>
         )}
       </div>
@@ -32,17 +32,17 @@ export function SyncStatus() {
         {isSyncing ? (
           <div className="flex items-center gap-1.5 text-indigo-600">
             <RefreshCw size={14} className="animate-spin" />
-            <span className="text-[10px] font-black uppercase tracking-widest">Syncing {pendingCount}</span>
+            <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">Syncing {pendingCount}</span>
           </div>
         ) : pendingCount > 0 ? (
           <div className="flex items-center gap-1.5 text-amber-500">
             <RefreshCw size={14} />
-            <span className="text-[10px] font-black uppercase tracking-widest">{pendingCount} Pending</span>
+            <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">{pendingCount} Pending</span>
           </div>
         ) : (
           <div className="flex items-center gap-1.5 text-emerald-600">
             <CheckCircle2 size={14} />
-            <span className="text-[10px] font-black uppercase tracking-widest">Synced</span>
+            <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">Synced</span>
           </div>
         )}
       </div>

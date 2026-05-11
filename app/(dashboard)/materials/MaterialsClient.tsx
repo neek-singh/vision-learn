@@ -125,7 +125,8 @@ export default function MaterialsClient({
         </div>
       ) : (
         <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden animate-in fade-in duration-500">
-          <div className="overflow-x-auto">
+          {/* Desktop Table View */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50 text-slate-400 text-[9px] uppercase font-black tracking-[0.2em] border-b border-slate-100">
@@ -206,6 +207,66 @@ export default function MaterialsClient({
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile Card View */}
+          <div className="md:hidden divide-y divide-slate-50">
+            {filteredMaterials.map((item: any) => (
+              <div key={item.id} className="p-6 space-y-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                      item.type === 'pdf' ? 'bg-red-50 text-red-600' : 
+                      item.type === 'video' ? 'bg-blue-50 text-blue-600' : 
+                      (item.type === 'note' || item.type === 'code') ? 'bg-amber-50 text-amber-600' :
+                      'bg-indigo-50 text-indigo-600'
+                    }`}>
+                      {item.type === 'pdf' ? <FileText size={18} /> : 
+                       item.type === 'video' ? <Video size={18} /> : 
+                       (item.type === 'note' || item.type === 'code') ? <BookOpen size={18} /> :
+                       <ExternalLink size={18} />}
+                    </div>
+                    <div>
+                      <p className="font-black text-slate-900 text-sm leading-tight">{item.title}</p>
+                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                        {item.courses?.title}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="shrink-0">
+                    {(item.type === 'note' || item.type === 'code') ? (
+                      <button 
+                        onClick={() => setViewingCode(item)}
+                        className="p-2.5 bg-amber-100 text-amber-700 rounded-xl active:scale-95 transition-all"
+                        aria-label="Read Note"
+                      >
+                        <BookOpen size={16} />
+                      </button>
+                    ) : (
+                      <a 
+                        href={item.content_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className={`p-2.5 rounded-xl active:scale-95 transition-all block ${
+                          item.type === 'pdf' ? 'bg-slate-100 text-slate-600' : 'bg-indigo-600 text-white'
+                        }`}
+                        aria-label="Open Material"
+                      >
+                        {item.type === 'pdf' ? <Download size={16} /> : <ExternalLink size={16} />}
+                      </a>
+                    )}
+                  </div>
+                </div>
+                <div className="flex justify-between items-center pt-1">
+                   <span className="text-[10px] font-bold text-slate-400">
+                     {new Date(item.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                   </span>
+                   <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-2 py-0.5 rounded">
+                     {item.file_size || item.duration || (item.type !== 'note' && item.type !== 'code' ? item.type.toUpperCase() : 'NOTE')}
+                   </span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}

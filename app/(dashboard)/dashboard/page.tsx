@@ -24,7 +24,7 @@ import {
   ProfileSkeleton, 
   NextLessonSkeleton
 } from "@/components/dashboard/DashboardSkeletons";
-import { StatCard, QuickLinks } from "@/components/dashboard/DashboardComponents";
+import { StatCard, QuickLinks, UpcomingEvents, RecentActivity, NoticeBoard, StreakWidget } from "@/components/dashboard/DashboardComponents";
 
 export default async function DashboardPage() {
   const cookieStore = await cookies();
@@ -41,6 +41,10 @@ export default async function DashboardPage() {
         <DashboardHeader userId={payload.id} />
       </Suspense>
 
+      <Suspense fallback={null}>
+        <NoticeBoardSection userId={payload.id} />
+      </Suspense>
+
       <Suspense fallback={<StatsSkeleton />}>
         <DashboardStats userId={payload.id} />
       </Suspense>
@@ -51,7 +55,22 @@ export default async function DashboardPage() {
         </Suspense>
 
         <Suspense fallback={<ProfileSkeleton />}>
-          <ProfileSection userId={payload.id} />
+          <div className="space-y-6">
+            <ProfileSection userId={payload.id} />
+            <Suspense fallback={<div className="h-28 bg-white rounded-2xl animate-pulse" />}>
+              <StreakSection userId={payload.id} />
+            </Suspense>
+          </div>
+        </Suspense>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Suspense fallback={<div className="lg:col-span-2 h-48 bg-white rounded-2xl animate-pulse" />}>
+          <UpcomingEventsSection userId={payload.id} />
+        </Suspense>
+        
+        <Suspense fallback={<div className="h-48 bg-white rounded-2xl animate-pulse" />}>
+          <RecentActivitySection userId={payload.id} />
         </Suspense>
       </div>
 
@@ -218,7 +237,7 @@ async function ActiveCourseSection({ userId }: { userId: string }) {
   return (
     <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
       <div className="flex flex-col md:flex-row gap-6 items-center">
-        <div className="relative w-36 h-36 shrink-0">
+        <div className="relative w-28 h-28 md:w-36 md:h-36 shrink-0">
           <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
             <circle cx="18" cy="18" r="15.5" fill="none" className="stroke-slate-100" strokeWidth="3" />
             <defs>
@@ -239,7 +258,7 @@ async function ActiveCourseSection({ userId }: { userId: string }) {
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-3xl font-black text-slate-900 leading-none tabular-nums">{progress}%</span>
+            <span className="text-2xl md:text-3xl font-black text-slate-900 leading-none tabular-nums">{progress}%</span>
             <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1">Complete</span>
           </div>
         </div>
@@ -498,4 +517,120 @@ async function NextLessonBanner({ userId }: { userId: string }) {
        </div>
     </section>
   );
+}
+async function UpcomingEventsSection({ userId }: { userId: string }) {
+  const supabase = createPublicSupabaseClient();
+  
+  // 1. Get student batch
+  const { data: student } = await supabase.from("students").select("batch").eq("id", userId).single();
+  const { data: enrollment } = await supabase.from("enrollments").select("course_id").eq("student_id", userId).limit(1).single();
+  
+  if (!enrollment) return null;
+
+  const normalizedBatch = student?.batch?.trim().toLowerCase();
+
+  // 2. Fetch events and schedules
+  const [eventsRes, schedulesRes] = await Promise.all([
+    supabase.from("events").select("*").gte("event_date", new Date().toISOString().split('T')[0]).order("event_date", { ascending: true }).limit(5),
+    supabase.from("schedules").select("*").eq("course_id", enrollment.course_id).gte("date", new Date().toISOString().split('T')[0]).order("date", { ascending: true }).limit(5)
+  ]);
+
+  const events = eventsRes.data || [];
+  const schedules = (schedulesRes.data || []).filter(s => {
+    const sBatch = s.batch?.trim().toLowerCase();
+    return !sBatch || sBatch === "all batches" || sBatch === normalizedBatch;
+  });
+
+  const combinedEvents = [
+    ...events.map(e => ({ ...e, event_date: e.event_date, type: 'event' })),
+    ...schedules.map(s => ({ ...s, event_date: s.date, type: 'class' }))
+  ].sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime());
+
+  return (
+    <div className="lg:col-span-2">
+      <UpcomingEvents events={combinedEvents} />
+    </div>
+  );
+}
+
+async function RecentActivitySection({ userId }: { userId: string }) {
+  const supabase = createPublicSupabaseClient();
+  
+  const { data: progress } = await supabase
+    .from("user_progress")
+    .select(`
+      completed_at,
+      lessons (title)
+    `)
+    .eq("user_id", userId)
+    .eq("completed", true)
+    .order("completed_at", { ascending: false })
+    .limit(3);
+
+  const activities = progress?.map((p: any) => ({
+    title: p.lessons?.title || "Lesson Completed",
+    completed_at: p.completed_at
+  })) || [];
+
+  return <RecentActivity activities={activities} />;
+}
+async function NoticeBoardSection({ userId }: { userId: string }) {
+  const supabase = createPublicSupabaseClient();
+  
+  const { data: notifications } = await supabase
+    .from("user_notifications")
+    .select(`
+      id,
+      notifications (title, message)
+    `)
+    .eq("user_id", userId)
+    .eq("is_read", false)
+    .order("created_at", { ascending: false })
+    .limit(1);
+
+  return <NoticeBoard notifications={notifications || []} />;
+}
+
+async function StreakSection({ userId }: { userId: string }) {
+  const supabase = createPublicSupabaseClient();
+  
+  const { data: progress } = await supabase
+    .from("user_progress")
+    .select("completed_at")
+    .eq("user_id", userId)
+    .eq("completed", true)
+    .order("completed_at", { ascending: false });
+
+  if (!progress || progress.length === 0) return <StreakWidget streak={0} />;
+
+  // Calculate streak
+  const completedDates = Array.from(new Set(progress.map(p => new Date(p.completed_at!).toDateString())));
+  let streak = 0;
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+
+  const lastCompletedDate = new Date(completedDates[0]);
+  
+  // If last completion was not today or yesterday, streak is 0
+  if (lastCompletedDate.toDateString() !== today.toDateString() && 
+      lastCompletedDate.toDateString() !== yesterday.toDateString()) {
+    return <StreakWidget streak={0} />;
+  }
+
+  let currentDate = lastCompletedDate;
+  for (const dateStr of completedDates) {
+    const date = new Date(dateStr);
+    const diffTime = Math.abs(currentDate.getTime() - date.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays <= 1) {
+      streak++;
+      currentDate = date;
+    } else {
+      break;
+    }
+  }
+
+  return <StreakWidget streak={streak} />;
 }

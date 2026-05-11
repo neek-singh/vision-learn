@@ -102,7 +102,7 @@ export default async function StudentFeesPage() {
                     <StatusBadge status={fee.status} />
                   </div>
                   <p className="text-[11px] font-black uppercase tracking-[0.2em] opacity-50">Current Balance</p>
-                  <h2 className="text-5xl md:text-6xl font-black tracking-tighter flex items-baseline gap-2">
+                  <h2 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tighter flex items-baseline gap-2">
                     <span className="text-2xl font-bold opacity-50 text-indigo-400">₹</span>
                     {balance.toLocaleString()}
                   </h2>
@@ -155,7 +155,8 @@ export default async function StudentFeesPage() {
                  {fee.installments?.length || 0} Scheduled
                </div>
             </div>
-            <div className="overflow-x-auto">
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
                <table className="w-full text-left">
                   <thead>
                      <tr className="bg-slate-50/50 text-[10px] font-black uppercase tracking-widest text-slate-400">
@@ -185,6 +186,29 @@ export default async function StudentFeesPage() {
                      ))}
                   </tbody>
                </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden divide-y divide-slate-50">
+               {fee.installments?.map((inst: any) => (
+                  <div key={inst.id} className="p-6 space-y-3">
+                     <div className="flex justify-between items-start">
+                        <div className={`flex items-center gap-2 text-[9px] font-black uppercase ${inst.status === 'paid' ? 'text-emerald-600' : 'text-rose-500 animate-pulse'}`}>
+                           {inst.status === 'paid' ? <CheckCircle2 size={12}/> : <Clock size={12}/>}
+                           {inst.status}
+                        </div>
+                        <span className="text-[10px] font-bold text-slate-400">
+                           {new Date(inst.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </span>
+                     </div>
+                     <div className="flex justify-between items-end">
+                        <p className="text-xl font-black text-slate-900">₹{inst.amount}</p>
+                        <span className="text-[9px] font-bold text-slate-300 italic uppercase tracking-wider">
+                           {inst.status === 'paid' ? 'Receipt Generated' : 'Pending Action'}
+                        </span>
+                     </div>
+                  </div>
+               ))}
             </div>
          </div>
 

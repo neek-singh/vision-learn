@@ -262,8 +262,8 @@ export function CalendarSkeleton() {
             </div>
           </div>
           <div className="grid grid-cols-7 gap-4">
-            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d) => (
-              <div key={d} className="h-4 text-center text-[10px] font-black text-slate-300">{d}</div>
+            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+              <div key={`${d}-${i}`} className="h-4 text-center text-[10px] font-black text-slate-300">{d}</div>
             ))}
             {Array.from({ length: 35 }).map((_, i) => (
               <div key={i} className="aspect-square bg-slate-50 rounded-2xl border border-slate-100/50" />
