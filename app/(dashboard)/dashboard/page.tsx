@@ -413,30 +413,64 @@ async function OtherCoursesSection({ userId }: { userId: string }) {
 async function NextLessonBanner({ userId }: { userId: string }) {
   const supabase = createPublicSupabaseClient();
   
-  // 1. Fetch main enrollment
-  const { data: enrollment } = await supabase
-    .from("enrollments")
-    .select("course_id")
-    .eq("student_id", userId)
-    .limit(1)
-    .single();
+  // 1. Fetch main enrollment and student batch
+  const [enrollmentRes, studentRes] = await Promise.all([
+    supabase.from("enrollments").select("course_id, batch").eq("student_id", userId).limit(1).single(),
+    supabase.from("students").select("batch").eq("id", userId).single()
+  ]);
+  
+  const enrollment = enrollmentRes.data;
+  const student = studentRes.data;
 
   if (!enrollment) return null;
 
-  // 2. Fetch progress and modules in parallel
-  const [progressRes, modulesRes] = await Promise.all([
+  const activeBatch = (student?.batch || enrollment?.batch)?.trim().toLowerCase();
+
+  // 2. Fetch progress, modules, and schedules in parallel
+  const [progressRes, modulesRes, schedulesRes] = await Promise.all([
     supabase.from("user_progress").select("lesson_id").eq("user_id", userId).eq("completed", true),
-    supabase.from("lms_modules").select(`id, order_index, lessons (id, title, order_index, type)`).eq("course_id", enrollment.course_id).order("order_index")
+    supabase.from("lms_modules").select(`id, title, order_index, lessons (id, title, order_index, type)`).eq("course_id", enrollment.course_id).order("order_index"),
+    supabase.from("schedules").select("title, batch, type, date, start_time").eq("course_id", enrollment.course_id).eq("type", "class")
   ]);
 
   const completedIds = progressRes.data?.map(p => p.lesson_id) || [];
   const modules = modulesRes.data || [];
+  const schedules = schedulesRes.data || [];
+  const now = new Date();
 
-  const allLessons = modules.flatMap(m => 
-    (m.lessons || []).sort((a: any, b: any) => a.order_index - b.order_index)
-  );
+  // 3. Find next AVAILABLE lesson
+  let nextLesson = null;
   
-  const nextLesson = allLessons.find(l => !completedIds.includes(l.id));
+  // Flatten modules to lessons
+  const allModulesWithLessons = modules.sort((a: any, b: any) => a.order_index - b.order_index);
+  
+  for (const module of allModulesWithLessons) {
+    const lessons = (module.lessons || []).sort((a: any, b: any) => a.order_index - b.order_index);
+    for (const lesson of lessons) {
+      if (completedIds.includes(lesson.id)) continue;
+
+      // Check if lesson is unlocked by schedule
+      const fullLessonTitle = `${module.title}: ${lesson.title}`.trim();
+      const schedule = schedules.find(s => {
+        const sTitle = s.title?.trim();
+        const sBatch = s.batch?.trim().toLowerCase();
+        const batchMatch = !sBatch || sBatch === "all batches" || sBatch === activeBatch;
+        return sTitle === fullLessonTitle && batchMatch;
+      });
+
+      if (schedule) {
+        const schedDate = new Date(schedule.date);
+        const [sh, sm] = (schedule.start_time || "00:00").split(':');
+        schedDate.setHours(parseInt(sh), parseInt(sm), 0);
+        
+        if (now >= schedDate) {
+          nextLesson = lesson;
+          break;
+        }
+      }
+    }
+    if (nextLesson) break;
+  }
 
   if (!nextLesson) return null;
 
@@ -456,7 +490,7 @@ async function NextLessonBanner({ userId }: { userId: string }) {
             </div>
           </div>
           <Link 
-            href="/curriculum"
+            href={`/curriculum?lessonId=${nextLesson.id}`}
             className="bg-white text-indigo-600 px-6 py-3 rounded-xl font-black text-sm flex items-center gap-2 hover:scale-105 transition-all shadow-xl shadow-indigo-900/20 active:scale-95 shrink-0"
           >
             <PlayCircle size={18} /> Start Now

@@ -20,6 +20,7 @@ import dynamic from "next/dynamic";
 import { CacheManager } from "@/lib/cache-manager";
 import { useCachedCurriculum } from "@/hooks/use-cached-curriculum";
 import { DownloadButton } from "@/components/DownloadButton";
+import { useSearchParams } from "next/navigation";
 
 const LessonViewer = dynamic(() => import("./LessonViewer"), {
   loading: () => <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center">
@@ -74,6 +75,9 @@ export function CurriculumClient({
   const [currentSchedules, setCurrentSchedules] = useState<any[]>(initialSchedules);
   const [activeBatch] = useState<string | null>(initialBatch);
   const [now, setNow] = useState(new Date());
+
+  const searchParams = useSearchParams();
+  const lessonIdParam = searchParams.get('lessonId');
 
   // Use cached modules if available, otherwise fallback to initial
   const displayModules = cachedModules && cachedModules.length > 0 ? cachedModules : initialModules;
@@ -144,6 +148,17 @@ export function CurriculumClient({
     if (allLessons.length === 0) return 0;
     return Math.round((userProgress.length / allLessons.length) * 100);
   }, [allLessons, userProgress]);
+
+  // Auto-open lesson if lessonId is in URL
+  useEffect(() => {
+    if (lessonIdParam && allLessons.length > 0 && !activeLesson) {
+      const lessonToOpen = allLessons.find(l => l.id === lessonIdParam);
+      if (lessonToOpen) {
+        setActiveLesson(lessonToOpen);
+        setIsFullScreen(true);
+      }
+    }
+  }, [lessonIdParam, allLessons, activeLesson]);
 
   const resumeLesson = useMemo(() => {
     return allLessons.find(l => !userProgress.includes(l.id));
