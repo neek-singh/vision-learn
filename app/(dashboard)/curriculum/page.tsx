@@ -68,7 +68,6 @@ async function CurriculumContent({ userId }: { userId: string }) {
   // Filter schedules in JS
   const normalizedActiveBatch = activeBatch?.trim().toLowerCase();
   const scheduledItems = rawSchedules.filter(s => {
-    if (s.type !== "class") return false;
     const sBatch = s.batch?.trim().toLowerCase();
     return !sBatch || sBatch === "all batches" || sBatch === normalizedActiveBatch;
   });

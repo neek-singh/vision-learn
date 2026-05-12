@@ -80,7 +80,9 @@ export function UpcomingEvents({ events }: { events: any[] }) {
         {events.slice(0, 3).map((event, i) => (
           <div key={i} className="flex items-center gap-4 p-3 rounded-xl bg-slate-50 border border-slate-100 group hover:bg-white hover:border-indigo-100 transition-all">
             <div className={`w-10 h-10 rounded-xl flex flex-col items-center justify-center shrink-0 ${
-              event.type === 'test' ? 'bg-rose-50 text-rose-600' : 'bg-indigo-50 text-indigo-600'
+              event.type === 'test' ? 'bg-rose-50 text-rose-600' : 
+              event.type === 'assignment' ? 'bg-amber-50 text-amber-600' :
+              'bg-indigo-50 text-indigo-600'
             }`}>
               <span className="text-[10px] font-black uppercase">{new Date(event.event_date).toLocaleDateString('en-US', { month: 'short' })}</span>
               <span className="text-sm font-black leading-none">{new Date(event.event_date).getDate()}</span>
@@ -88,7 +90,7 @@ export function UpcomingEvents({ events }: { events: any[] }) {
             <div className="min-w-0 flex-1">
               <p className="text-sm font-bold text-slate-900 truncate group-hover:text-indigo-600 transition-colors">{event.title}</p>
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">
-                {event.type === 'test' ? 'Exam' : 'Class'} • {event.start_time || 'Full Day'}
+                {event.type === 'test' ? 'Exam' : event.type === 'assignment' ? 'Note' : 'Class'} • {event.start_time || 'Full Day'}
               </p>
             </div>
             <ChevronRight size={16} className="text-slate-300 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all" />

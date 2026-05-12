@@ -449,7 +449,7 @@ async function NextLessonBanner({ userId }: { userId: string }) {
   const [progressRes, modulesRes, schedulesRes] = await Promise.all([
     supabase.from("user_progress").select("lesson_id").eq("user_id", userId).eq("completed", true),
     supabase.from("lms_modules").select(`id, title, order_index, lessons (id, title, order_index, type)`).eq("course_id", enrollment.course_id).order("order_index"),
-    supabase.from("schedules").select("title, batch, type, date, start_time").eq("course_id", enrollment.course_id).eq("type", "class")
+    supabase.from("schedules").select("title, batch, type, date, start_time").eq("course_id", enrollment.course_id)
   ]);
 
   const completedIds = progressRes.data?.map(p => p.lesson_id) || [];
@@ -542,8 +542,8 @@ async function UpcomingEventsSection({ userId }: { userId: string }) {
   });
 
   const combinedEvents = [
-    ...events.map(e => ({ ...e, event_date: e.event_date, type: 'event' })),
-    ...schedules.map(s => ({ ...s, event_date: s.date, type: 'class' }))
+    ...events.map(e => ({ ...e, event_date: e.event_date, type: e.type || 'event' })),
+    ...schedules.map(s => ({ ...s, event_date: s.date, type: s.type || 'class' }))
   ].sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime());
 
   return (
