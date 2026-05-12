@@ -139,7 +139,7 @@ export default function LessonViewer({
                          dangerouslySetInnerHTML={{ __html: lesson.notes_content }} 
                          className="rich-content"
                        />
-                     ) : lesson.type?.toLowerCase().includes('offline') ? (
+                     ) : (lesson.lesson_type || lesson.type)?.toLowerCase().includes('offline') ? (
                        <div>
                          <p className="text-blue-600 font-bold mb-4">Offline Class Details:</p>
                          <p>{lesson.content_url}</p>
