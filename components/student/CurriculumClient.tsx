@@ -415,8 +415,11 @@ function LessonItem({
 }: any) {
   const isCompleted = userProgress.includes(lesson.id);
   
-  const fullLessonTitle = `${moduleTitle}: ${lesson.title}`.trim();
-  const schedule = currentSchedules.find((st: any) => st.title.trim() === fullLessonTitle);
+  const schedule = currentSchedules.find((st: any) => {
+    const sTitle = st.title.toLowerCase();
+    const lTitle = lesson.title.toLowerCase();
+    return sTitle === lTitle || sTitle.includes(lTitle);
+  });
   
   let isScheduled = false;
   let isTimeReached = false;
