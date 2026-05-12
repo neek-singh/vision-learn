@@ -41,6 +41,34 @@ export default function LessonViewer({
 
   const isCompleted = userProgress.includes(lesson.id);
 
+  // Add Copy buttons to code blocks
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const preBlocks = document.querySelectorAll('.rich-content pre');
+      preBlocks.forEach((pre) => {
+        if (pre.querySelector('.copy-button')) return;
+        
+        pre.style.position = 'relative';
+        const button = document.createElement('button');
+        button.innerHTML = 'Copy';
+        button.className = 'copy-button absolute top-3 right-3 px-3 py-1 bg-slate-800 text-slate-400 hover:text-white rounded text-[10px] font-black uppercase tracking-widest transition-all opacity-0 group-hover:opacity-100';
+        
+        // Add a wrapper group class to pre if it doesn't have one
+        pre.classList.add('group');
+        
+        button.onclick = () => {
+          const code = pre.querySelector('code')?.innerText || pre.innerText;
+          navigator.clipboard.writeText(code);
+          button.innerHTML = 'Copied!';
+          setTimeout(() => button.innerHTML = 'Copy', 2000);
+        };
+        
+        pre.appendChild(button);
+      });
+    }, 500); // Wait for content to render
+    return () => clearTimeout(timer);
+  }, [lesson.notes_content]);
+
   return (
     <div className={`fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[100] flex items-center justify-center animate-in fade-in duration-300 ${isFullScreen ? 'p-0' : 'p-4'}`} role="dialog" aria-modal="true">
       <div className={`bg-white shadow-2xl animate-in zoom-in-95 duration-300 flex flex-col transition-all duration-500 ease-in-out ${
