@@ -46,7 +46,8 @@ export default function LessonViewer({
   useEffect(() => {
     const timer = setTimeout(() => {
       const preBlocks = document.querySelectorAll('.rich-content pre');
-      preBlocks.forEach((pre) => {
+      preBlocks.forEach((el) => {
+        const pre = el as HTMLElement;
         if (pre.querySelector('.copy-button')) return;
         
         pre.style.position = 'relative';
@@ -58,7 +59,8 @@ export default function LessonViewer({
         pre.classList.add('group');
         
         button.onclick = () => {
-          const code = pre.querySelector('code')?.innerText || pre.innerText;
+          const codeElement = pre.querySelector('code') as HTMLElement;
+          const code = codeElement?.innerText || pre.innerText;
           navigator.clipboard.writeText(code);
           button.innerHTML = 'Copied!';
           setTimeout(() => button.innerHTML = 'Copy', 2000);
