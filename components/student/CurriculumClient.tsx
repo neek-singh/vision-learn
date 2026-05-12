@@ -158,11 +158,35 @@ export function CurriculumClient({
     if (lessonIdParam && allLessons.length > 0 && !activeLesson) {
       const lessonToOpen = allLessons.find(l => l.id === lessonIdParam);
       if (lessonToOpen) {
-        setActiveLesson(lessonToOpen);
-        setIsFullScreen(true);
+        // Check if locked before auto-opening
+        const schedule = currentSchedules.find((st: any) => {
+          const normalize = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
+          const sTitle = normalize(st.title);
+          const lTitle = normalize(lessonToOpen.title);
+          return sTitle.includes(lTitle);
+        });
+        
+        let isScheduled = false;
+        let isTimeReached = false;
+        
+        if (schedule) {
+          isScheduled = true;
+          const schedDate = new Date(schedule.date);
+          const schedTime = schedule.start_time || "00:00";
+          const [sh, sm] = schedTime.split(':');
+          schedDate.setHours(parseInt(sh), parseInt(sm), 0);
+          isTimeReached = now >= schedDate;
+        }
+
+        const isLocked = !isScheduled || !isTimeReached;
+
+        if (!isLocked) {
+          setActiveLesson(lessonToOpen);
+          setIsFullScreen(true);
+        }
       }
     }
-  }, [lessonIdParam, allLessons, activeLesson]);
+  }, [lessonIdParam, allLessons, activeLesson, currentSchedules, now]);
 
   const resumeLesson = useMemo(() => {
     return allLessons.find(l => !userProgress.includes(l.id));
@@ -437,7 +461,7 @@ function LessonItem({
     isTimeReached = now >= schedDate;
   }
 
-  const isLocked = isScheduled && !isTimeReached;
+  const isLocked = !isScheduled || !isTimeReached;
   const isInProgress = !isCompleted && !isLocked;
 
   return (
