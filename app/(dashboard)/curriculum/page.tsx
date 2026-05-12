@@ -5,6 +5,9 @@ import { verifyToken } from "@/lib/auth-custom";
 import { createPublicSupabaseClient } from "@/lib/supabase-server";
 import { CurriculumClient } from "@/components/student/CurriculumClient";
 import { CurriculumSkeleton } from "@/components/dashboard/DashboardSkeletons";
+ 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function CurriculumPage() {
   const cookieStore = await cookies();
