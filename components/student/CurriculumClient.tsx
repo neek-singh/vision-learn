@@ -416,9 +416,10 @@ function LessonItem({
   const isCompleted = userProgress.includes(lesson.id);
   
   const schedule = currentSchedules.find((st: any) => {
-    const sTitle = st.title.toLowerCase();
-    const lTitle = lesson.title.toLowerCase();
-    return sTitle === lTitle || sTitle.includes(lTitle);
+    const normalize = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
+    const sTitle = normalize(st.title);
+    const lTitle = normalize(lesson.title);
+    return sTitle.includes(lTitle);
   });
   
   let isScheduled = false;
