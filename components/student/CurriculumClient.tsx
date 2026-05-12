@@ -102,7 +102,10 @@ export function CurriculumClient({
         const filtered = rawSchedules
           .filter(s => {
             const sBatch = s.batch?.trim().toLowerCase();
-            return !sBatch || sBatch === "all batches" || !normalizedActiveBatch || sBatch === normalizedActiveBatch;
+            const batchMatch = !sBatch || sBatch === "all batches" || !normalizedActiveBatch || 
+                               sBatch === normalizedActiveBatch || sBatch.includes(normalizedActiveBatch) || 
+                               normalizedActiveBatch.includes(sBatch);
+            return batchMatch;
           });
         setCurrentSchedules(filtered);
       }

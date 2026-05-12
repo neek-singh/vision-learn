@@ -72,7 +72,10 @@ async function CurriculumContent({ userId }: { userId: string }) {
   const normalizedActiveBatch = activeBatch?.trim().toLowerCase();
   const scheduledItems = rawSchedules.filter(s => {
     const sBatch = s.batch?.trim().toLowerCase();
-    return !sBatch || sBatch === "all batches" || !normalizedActiveBatch || sBatch === normalizedActiveBatch;
+    const batchMatch = !sBatch || sBatch === "all batches" || !normalizedActiveBatch || 
+                       sBatch === normalizedActiveBatch || sBatch.includes(normalizedActiveBatch) || 
+                       normalizedActiveBatch.includes(sBatch);
+    return batchMatch;
   });
 
   return (

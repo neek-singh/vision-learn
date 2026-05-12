@@ -473,7 +473,9 @@ async function NextLessonBanner({ userId }: { userId: string }) {
       const schedule = schedules.find(s => {
         const sTitle = s.title?.trim();
         const sBatch = s.batch?.trim().toLowerCase();
-        const batchMatch = !sBatch || sBatch === "all batches" || sBatch === activeBatch;
+        const batchMatch = !sBatch || sBatch === "all batches" || !activeBatch || 
+                           sBatch === activeBatch || sBatch.includes(activeBatch) || 
+                           activeBatch.includes(sBatch);
         return sTitle === fullLessonTitle && batchMatch;
       });
 
@@ -550,7 +552,10 @@ async function UpcomingEventsSection({ userId }: { userId: string }) {
   const events = eventsRes.data || [];
   const schedules = (schedulesRes.data || []).filter(s => {
     const sBatch = s.batch?.trim().toLowerCase();
-    return !sBatch || sBatch === "all batches" || sBatch === normalizedBatch;
+    const batchMatch = !sBatch || sBatch === "all batches" || !normalizedBatch || 
+                       sBatch === normalizedBatch || sBatch.includes(normalizedBatch) || 
+                       normalizedBatch.includes(sBatch);
+    return batchMatch;
   });
 
   const combinedEvents = [
