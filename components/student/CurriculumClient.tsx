@@ -434,7 +434,7 @@ function LessonItem({
     isTimeReached = now >= schedDate;
   }
 
-  const isLocked = !isScheduled || !isTimeReached;
+  const isLocked = isScheduled && !isTimeReached;
   const isInProgress = !isCompleted && !isLocked;
 
   return (

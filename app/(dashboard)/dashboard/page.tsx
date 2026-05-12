@@ -491,6 +491,18 @@ async function NextLessonBanner({ userId }: { userId: string }) {
     if (nextLesson) break;
   }
 
+  // 4. Fallback: Find first incomplete lesson if no scheduled lesson found
+  if (!nextLesson) {
+    for (const module of allModulesWithLessons) {
+      const lessons = (module.lessons || []).sort((a: any, b: any) => a.order_index - b.order_index);
+      const firstIncomplete = lessons.find(l => !completedIds.includes(l.id));
+      if (firstIncomplete) {
+        nextLesson = firstIncomplete;
+        break;
+      }
+    }
+  }
+
   if (!nextLesson) return null;
 
   return (
