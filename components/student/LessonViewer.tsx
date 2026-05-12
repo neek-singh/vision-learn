@@ -121,7 +121,7 @@ export default function LessonViewer({
              ) : (
                <div className="mb-10">
                   <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-10">
-                     <h2 className="text-3xl font-bold text-slate-900">{lesson.title}</h2>
+
                      {lesson.content_url?.startsWith('http') && (
                        <a 
                          href={lesson.content_url} 
