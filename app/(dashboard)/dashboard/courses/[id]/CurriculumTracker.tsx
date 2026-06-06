@@ -87,7 +87,7 @@ export default function CurriculumTracker({
             <div className="divide-y divide-slate-800/30">
               {lessons.map((lesson, lessonIdx) => {
                 const lessonId = typeof lesson === 'string' ? lesson : lesson.id || `${modIdx}-${lessonIdx}`;
-                const lessonTitle = typeof lesson === 'string' ? lesson : lesson.title || `Lesson ${lessonIdx + 1}`;
+                const lessonTitle = typeof lesson === 'string' ? lesson : lesson.title || `Class ${lessonIdx + 1}`;
                 const isDone = completedLessons.includes(lessonId);
                 const isLoading = loadingId === lessonId;
 
@@ -97,7 +97,7 @@ export default function CurriculumTracker({
                     className="flex items-center justify-between px-6 py-4 hover:bg-white/[0.01] transition-colors"
                   >
                     <span className={`text-sm ${isDone ? 'text-slate-400 line-through' : 'text-slate-200'}`}>
-                      {lessonTitle}
+                      Class {lessonIdx + 1}: {lessonTitle}
                     </span>
 
                     <button

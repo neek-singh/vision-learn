@@ -14,7 +14,11 @@ import {
   Zap,
   Award,
   Clock,
-  Calendar
+  Calendar,
+  Layers,
+  Search,
+  CheckCircle2,
+  Sparkles
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import dynamic from "next/dynamic";
@@ -40,7 +44,9 @@ export function CurriculumClient({
   initialTests = [],
   initialMaterials = [],
   initialBatch = null,
-  initialCourseId = null
+  initialCourseId = null,
+  availableBatches = [],
+  initialChapters = []
 }: { 
   initialModules: any[], 
   initialProgress: string[], 
@@ -49,9 +55,12 @@ export function CurriculumClient({
   initialTests?: any[],
   initialMaterials?: any[],
   initialBatch?: string | null,
-  initialCourseId?: string | null
+  initialCourseId?: string | null,
+  availableBatches?: any[],
+  initialChapters?: any[]
 }) {
   const [courseId] = useState<string | null>(initialCourseId || initialModules[0]?.course_id || null);
+  const [chapters] = useState<any[]>(initialChapters);
   
   // Use cached data
   const { modules: cachedModules, progress: cachedProgress } = useCachedCurriculum(courseId || "", studentId);
@@ -76,6 +85,11 @@ export function CurriculumClient({
   const [currentSchedules, setCurrentSchedules] = useState<any[]>(initialSchedules);
   const [activeBatch] = useState<string | null>(initialBatch);
   const [now, setNow] = useState(new Date());
+
+  // Search and filter states
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterType, setFilterType] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
 
   const searchParams = useSearchParams();
   const lessonIdParam = searchParams.get('lessonId');
@@ -153,6 +167,108 @@ export function CurriculumClient({
     return Math.round((userProgress.length / allLessons.length) * 100);
   }, [allLessons, userProgress]);
 
+  const totalHours = useMemo(() => {
+    const totalMins = allLessons
+      .filter(l => userProgress.includes(l.id))
+      .reduce((sum, l) => sum + (Number(l.duration) || 0), 0);
+    return (totalMins / 60).toFixed(1);
+  }, [allLessons, userProgress]);
+
+  const upcomingCount = useMemo(() => {
+    return currentSchedules.filter((s: any) => {
+      const schedDate = new Date(s.date);
+      const schedTime = s.start_time || "00:00";
+      const [sh, sm] = schedTime.split(':');
+      schedDate.setHours(parseInt(sh), parseInt(sm), 0);
+      return schedDate > now;
+    }).length;
+  }, [currentSchedules, now]);
+
+  // Next unlocked, uncompleted lesson to recommend
+  const nextUpLesson = useMemo(() => {
+    return allLessons.find(lesson => {
+      const isCompleted = userProgress.includes(lesson.id);
+      if (isCompleted) return false;
+
+      const schedule = currentSchedules.find((st: any) => {
+        const normalize = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
+        const sTitle = normalize(st.title);
+        const lTitle = normalize(lesson.title);
+        return sTitle.includes(lTitle);
+      });
+      
+      let isScheduled = false;
+      let isTimeReached = false;
+      if (schedule) {
+        isScheduled = true;
+        const schedDate = new Date(schedule.date);
+        const schedTime = schedule.start_time || "00:00";
+        const [sh, sm] = schedTime.split(':');
+        schedDate.setHours(parseInt(sh), parseInt(sm), 0);
+        isTimeReached = now >= schedDate;
+      }
+      const isLocked = !isScheduled || !isTimeReached;
+      return !isLocked;
+    });
+  }, [allLessons, userProgress, currentSchedules, now]);
+
+  // Filter displayModules down to matching search/filter constraints
+  const filteredModules = useMemo(() => {
+    return displayModules.map((module: any) => {
+      const lessons = (module.lessons || []).sort((a: any, b: any) => a.order_index - b.order_index);
+      
+      const filteredLessons = lessons.filter((lesson: any) => {
+        // Search term filter
+        if (searchTerm.trim() !== "") {
+          const lTitle = lesson.title.toLowerCase();
+          const sTerm = searchTerm.toLowerCase();
+          if (!lTitle.includes(sTerm)) return false;
+        }
+
+        // Type filter
+        const lType = (lesson.lesson_type || lesson.type || '').toLowerCase();
+        if (filterType !== 'all') {
+          if (filterType === 'video' && lType !== 'video') return false;
+          if (filterType === 'article' && lType !== 'article') return false;
+          if (filterType === 'document' && lType !== 'document') return false;
+          if (filterType === 'offline' && !lType.includes('offline') && lType !== 'assignment') return false;
+        }
+
+        // Status filter
+        const isCompleted = userProgress.includes(lesson.id);
+        const schedule = currentSchedules.find((st: any) => {
+          const normalize = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
+          const sTitle = normalize(st.title);
+          const lTitle = normalize(lesson.title);
+          return sTitle.includes(lTitle);
+        });
+        
+        let isScheduled = false;
+        let isTimeReached = false;
+        if (schedule) {
+          isScheduled = true;
+          const schedDate = new Date(schedule.date);
+          const schedTime = schedule.start_time || "00:00";
+          const [sh, sm] = schedTime.split(':');
+          schedDate.setHours(parseInt(sh), parseInt(sm), 0);
+          isTimeReached = now >= schedDate;
+        }
+        const isLocked = !isScheduled || !isTimeReached;
+
+        if (filterStatus === 'completed' && !isCompleted) return false;
+        if (filterStatus === 'in_progress' && (isCompleted || isLocked)) return false;
+        if (filterStatus === 'locked' && !isLocked) return false;
+
+        return true;
+      });
+
+      return {
+        ...module,
+        lessons: filteredLessons
+      };
+    }).filter((module: any) => module.lessons.length > 0);
+  }, [displayModules, searchTerm, filterType, filterStatus, userProgress, currentSchedules, now]);
+
   // Auto-open lesson if lessonId is in URL
   useEffect(() => {
     if (lessonIdParam && allLessons.length > 0 && !activeLesson) {
@@ -188,10 +304,6 @@ export function CurriculumClient({
     }
   }, [lessonIdParam, allLessons, activeLesson, currentSchedules, now]);
 
-  const resumeLesson = useMemo(() => {
-    return allLessons.find(l => !userProgress.includes(l.id));
-  }, [allLessons, userProgress]);
-
   async function toggleLessonCompletion(lessonId: string, currentStatus: boolean) {
     setIsUpdating(lessonId);
     const newStatus = !currentStatus;
@@ -207,7 +319,6 @@ export function CurriculumClient({
       await CacheManager.saveProgress(studentId, lessonId, newStatus);
     } catch (err) {
       console.error("Error updating progress:", err);
-      // Revert if totally failed? No, CacheManager handles offline.
     } finally {
       setIsUpdating(null);
     }
@@ -266,7 +377,7 @@ export function CurriculumClient({
             </div>
             <div className="text-right">
               <p className="text-[9px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100 uppercase tracking-widest inline-block">
-                {userProgress.length} / {allLessons.length} Lessons
+                {userProgress.length} / {allLessons.length} Classes
               </p>
             </div>
           </div>
@@ -280,38 +391,147 @@ export function CurriculumClient({
         </div>
       </div>
 
-      {/* Resume Learning Section */}
-      {resumeLesson && (
-        <div className="bg-gradient-to-r from-slate-900 to-indigo-950 rounded-2xl p-5 text-white flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl shadow-indigo-100 animate-in slide-in-from-top-4 duration-700">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/10">
-              <Play size={20} fill="white" />
+      {/* Premium Stats Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
+          <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">
+            <BookOpen size={20} />
+          </div>
+          <div>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider leading-none mb-1">Total Classes</p>
+            <p className="text-lg font-black text-slate-900">{allLessons.length}</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
+            <CheckCircle2 size={20} />
+          </div>
+          <div>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider leading-none mb-1">Completed</p>
+            <p className="text-lg font-black text-slate-900">{userProgress.length}</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
+          <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600 shrink-0">
+            <Clock size={20} />
+          </div>
+          <div>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider leading-none mb-1">Hours Learnt</p>
+            <p className="text-lg font-black text-slate-900">{totalHours}h</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
+          <div className="w-12 h-12 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-600 shrink-0">
+            <Calendar size={20} />
+          </div>
+          <div>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider leading-none mb-1">Upcoming</p>
+            <p className="text-lg font-black text-slate-900">{upcomingCount}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Next Up Lesson Section */}
+      {nextUpLesson && (
+        <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-[2.5rem] p-6 text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl shadow-indigo-100 border border-indigo-900/30 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-700" />
+          <div className="flex items-center gap-5 relative z-10">
+            <div className="w-14 h-14 bg-indigo-500/20 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/10 shrink-0 text-indigo-300">
+              <Sparkles className="animate-pulse" size={24} />
             </div>
             <div>
-              <p className="text-[9px] font-black text-white/50 uppercase tracking-widest mb-0.5">Resume Learning</p>
-              <h4 className="text-sm font-bold truncate max-w-[200px] sm:max-w-md">{resumeLesson.title}</h4>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[9px] font-black bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-md border border-indigo-400/20 uppercase tracking-widest">Next Up Class</span>
+                <span className="text-[9px] font-bold text-white/50">• {nextUpLesson.duration ? `${nextUpLesson.duration} Mins` : 'Self-paced'}</span>
+              </div>
+              <h4 className="text-base font-black tracking-tight line-clamp-1">{nextUpLesson.title}</h4>
+              <p className="text-xs text-white/60 line-clamp-1 mt-0.5">Start this lesson to continue your learning journey.</p>
             </div>
           </div>
           <button 
-            onClick={() => openLesson(resumeLesson)}
-            className="px-8 py-3 bg-white text-slate-900 rounded-xl font-black text-xs hover:bg-indigo-50 transition-all active:scale-95 shadow-lg"
+            onClick={() => openLesson(nextUpLesson)}
+            className="px-8 py-3 bg-white text-indigo-950 hover:bg-indigo-50 rounded-xl font-black text-xs transition-all active:scale-95 shadow-lg shadow-black/20 relative z-10 shrink-0 uppercase tracking-wider flex items-center gap-2 hover:gap-3"
           >
-            Continue Learning
+            Start Learning <Play size={12} fill="currentColor" />
           </button>
         </div>
       )}
 
+      {/* Search and Filters Bar */}
+      <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm space-y-4">
+        <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
+          <div className="relative w-full md:max-w-md">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+              <Search size={18} />
+            </div>
+            <input 
+              type="text"
+              placeholder="Search classes..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm font-semibold text-slate-700"
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+            {/* Filter Status Selector */}
+            <div className="flex rounded-xl bg-slate-50 p-1 border border-slate-100 text-xs font-bold text-slate-500">
+              <button 
+                onClick={() => setFilterStatus('all')}
+                className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${filterStatus === 'all' ? 'bg-white text-indigo-600 shadow-sm font-black' : 'hover:text-slate-900'}`}
+              >
+                All
+              </button>
+              <button 
+                onClick={() => setFilterStatus('completed')}
+                className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${filterStatus === 'completed' ? 'bg-white text-emerald-600 shadow-sm font-black' : 'hover:text-slate-900'}`}
+              >
+                Completed
+              </button>
+              <button 
+                onClick={() => setFilterStatus('in_progress')}
+                className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${filterStatus === 'in_progress' ? 'bg-white text-indigo-600 shadow-sm font-black' : 'hover:text-slate-900'}`}
+              >
+                In Progress
+              </button>
+              <button 
+                onClick={() => setFilterStatus('locked')}
+                className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${filterStatus === 'locked' ? 'bg-white text-rose-600 shadow-sm font-black' : 'hover:text-slate-900'}`}
+              >
+                Locked
+              </button>
+            </div>
+
+            {/* Filter Type Selector */}
+            <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-xs font-bold text-slate-600 cursor-pointer"
+            >
+              <option value="all">All Formats</option>
+              <option value="video">Videos</option>
+              <option value="article">Articles</option>
+              <option value="document">Documents</option>
+              <option value="offline">Offline / Assignments</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
       {/* Modules List */}
       <div className="space-y-4">
-        {displayModules.length === 0 ? (
+        {filteredModules.length === 0 ? (
           <div className="bg-white p-20 rounded-[3rem] border border-slate-100 text-center">
             <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center text-slate-200 mx-auto mb-6">
                <BookOpen size={40} />
             </div>
-            <h3 className="text-xl font-black text-slate-900 mb-2">My Classes Empty</h3>
-            <p className="text-slate-500 font-medium max-w-sm mx-auto">No lessons have been published for this course yet. Check back later!</p>
+            <h3 className="text-xl font-black text-slate-900 mb-2">No Classes Found</h3>
+            <p className="text-slate-500 font-medium max-w-sm mx-auto">Try adjusting your search terms or filters to find what you are looking for.</p>
           </div>
-        ) : displayModules.sort((a: any, b: any) => a.order_index - b.order_index).map((module: any, mIdx: number) => (
+        ) : filteredModules.sort((a: any, b: any) => a.order_index - b.order_index).map((module: any, mIdx: number) => (
           <ModuleItem 
             key={module.id}
             module={module}
@@ -326,6 +546,8 @@ export function CurriculumClient({
             isUpdating={isUpdating}
             toggleLessonCompletion={toggleLessonCompletion}
             openLesson={openLesson}
+            availableBatches={availableBatches}
+            chapters={chapters}
           />
         ))}
       </div>
@@ -360,12 +582,37 @@ function ModuleItem({
   formatTime, 
   isUpdating, 
   toggleLessonCompletion, 
-  openLesson 
+  openLesson,
+  availableBatches,
+  chapters
 }: any) {
   const lessons = useMemo(() => 
     (module.lessons || []).sort((a: any, b: any) => a.order_index - b.order_index),
     [module.lessons]
   );
+
+  const moduleChapters = useMemo(() => {
+    const relevantChapters = chapters.filter((c: any) => c.module_id === module.id).sort((a: any, b: any) => a.order_index - b.order_index);
+    return relevantChapters.map((chapter: any) => ({
+      ...chapter,
+      lessons: lessons.filter((l: any) => l.chapter_id === chapter.id)
+    }));
+  }, [chapters, lessons, module.id]);
+
+  const uncategorizedLessons = useMemo(() => 
+    lessons.filter((l: any) => !l.chapter_id),
+    [lessons]
+  );
+
+  const [expandedChapters, setExpandedChapters] = useState<string[]>(
+    moduleChapters.length > 0 ? [moduleChapters[0].id] : []
+  );
+
+  const toggleChapter = (id: string) => {
+    setExpandedChapters(prev => 
+      prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]
+    );
+  };
 
   return (
     <div className={`bg-white rounded-2xl border transition-all duration-500 ${
@@ -373,7 +620,7 @@ function ModuleItem({
     }`}>
       <button 
         onClick={() => toggleModule(module.id)}
-        className="w-full px-6 py-5 flex items-center justify-between text-left group"
+        className="w-full px-6 py-5 flex items-center justify-between text-left group cursor-pointer"
       >
         <div className="flex items-center gap-5">
           <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 ${
@@ -385,7 +632,7 @@ function ModuleItem({
             <h3 className="text-lg font-black text-slate-900 leading-tight mb-1">{module.title}</h3>
             <div className="flex items-center gap-4">
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                <BookOpen size={12} /> {lessons.length} Lessons
+                <BookOpen size={12} /> {lessons.length} Classes
               </span>
               <div className="flex items-center gap-3">
                 <div className="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/50 p-[1px]">
@@ -406,23 +653,81 @@ function ModuleItem({
         </div>
       </button>
 
-      <div className={`overflow-hidden transition-all duration-500 ${isExpanded ? 'max-h-[2000px] opacity-100 pb-8' : 'max-h-0 opacity-0'}`}>
+      <div className={`overflow-hidden transition-all duration-500 ${isExpanded ? 'max-h-[5000px] opacity-100 pb-8' : 'max-h-0 opacity-0'}`}>
         <div className="mx-8 h-[1px] bg-slate-50 mb-6" />
-        <div className="px-8 space-y-3">
-          {lessons.map((lesson: any) => (
-            <LessonItem 
-              key={lesson.id}
-              lesson={lesson}
-              moduleTitle={module.title}
-              userProgress={userProgress}
-              currentSchedules={currentSchedules}
-              now={now}
-              formatTime={formatTime}
-              isUpdating={isUpdating}
-              toggleLessonCompletion={toggleLessonCompletion}
-              openLesson={openLesson}
-            />
+        <div className="px-6 space-y-6">
+          {/* Categorized Chapters */}
+          {moduleChapters.map((chapter: any, cIdx: number) => (
+            <div key={chapter.id} className="space-y-4">
+              <button 
+                onClick={() => toggleChapter(chapter.id)}
+                className="w-full flex items-center justify-between gap-4 p-4 rounded-2xl bg-slate-50/50 hover:bg-slate-50 transition-all border border-slate-100 group/chapter cursor-pointer"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 group-hover/chapter:text-indigo-600 transition-colors">
+                    <Layers size={18} />
+                  </div>
+                  <div className="text-left">
+                    <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest">{chapter.title}</h4>
+                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{chapter.lessons.length} Classes</p>
+                  </div>
+                </div>
+                <div className={`transition-transform duration-300 ${expandedChapters.includes(chapter.id) ? 'rotate-180 text-indigo-600' : 'text-slate-300'}`}>
+                   <ChevronDown size={16} />
+                </div>
+              </button>
+
+              {expandedChapters.includes(chapter.id) && (
+                <div className="pl-4 space-y-3">
+                  {chapter.lessons.map((lesson: any, lIdx: number) => (
+                    <LessonItem 
+                      key={lesson.id}
+                      lIdx={lIdx}
+                      lesson={lesson}
+                      moduleTitle={module.title}
+                      userProgress={userProgress}
+                      currentSchedules={currentSchedules}
+                      now={now}
+                      formatTime={formatTime}
+                      isUpdating={isUpdating}
+                      toggleLessonCompletion={toggleLessonCompletion}
+                      openLesson={openLesson}
+                      availableBatches={availableBatches}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           ))}
+
+          {/* Uncategorized Lessons */}
+          {uncategorizedLessons.length > 0 && (
+            <div className="space-y-4">
+               <div className="flex items-center gap-3 px-3">
+                  <div className="h-[1px] flex-1 bg-slate-100" />
+                  <h4 className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] whitespace-nowrap">Uncategorized Classes</h4>
+                  <div className="h-[1px] flex-1 bg-slate-100" />
+               </div>
+               <div className="pl-4 space-y-3">
+                 {uncategorizedLessons.map((lesson: any, lIdx: number) => (
+                   <LessonItem 
+                     key={lesson.id}
+                     lIdx={lIdx}
+                     lesson={lesson}
+                     moduleTitle={module.title}
+                     userProgress={userProgress}
+                     currentSchedules={currentSchedules}
+                     now={now}
+                     formatTime={formatTime}
+                     isUpdating={isUpdating}
+                     toggleLessonCompletion={toggleLessonCompletion}
+                     openLesson={openLesson}
+                     availableBatches={availableBatches}
+                   />
+                 ))}
+               </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -438,7 +743,9 @@ function LessonItem({
   formatTime, 
   isUpdating, 
   toggleLessonCompletion, 
-  openLesson 
+  openLesson,
+  lIdx,
+  availableBatches
 }: any) {
   const isCompleted = userProgress.includes(lesson.id);
   
@@ -467,7 +774,7 @@ function LessonItem({
   return (
     <div className={`flex flex-col sm:flex-row sm:items-center justify-between p-5 rounded-2xl border transition-all group ${
       isLocked ? 'opacity-60 bg-slate-50/50 border-transparent cursor-not-allowed' :
-      isCompleted ? 'bg-emerald-50/30 border-emerald-100/50' :
+      isCompleted ? 'bg-emerald-50/30 border-emerald-100/50 hover:border-emerald-200' :
       isInProgress ? 'bg-white border-indigo-100 shadow-lg shadow-indigo-50/30 ring-1 ring-indigo-50' :
       'bg-white border-slate-50 hover:border-slate-200'
     }`}>
@@ -485,16 +792,29 @@ function LessonItem({
            <PenTool size={18} />}
         </div>
         <div className="min-w-0">
-          <div className="flex items-center gap-2 mb-0.5">
+          <div className="flex flex-wrap items-center gap-2 mb-0.5">
             <h5 className={`font-bold text-sm truncate ${isCompleted ? 'text-slate-500 line-through' : 'text-slate-900'}`}>
-              {lesson.title}
+              Class {lIdx + 1}: {lesson.title}
             </h5>
             {isCompleted && <span className="text-[8px] font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md uppercase tracking-widest border border-emerald-100">Completed</span>}
             {isInProgress && <span className="text-[8px] font-black text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded-md uppercase tracking-widest border border-indigo-100">In Progress</span>}
+            {lesson.batches && lesson.batches.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {lesson.batches.map((bid: string) => {
+                  const b = availableBatches.find((x: any) => x.id === bid);
+                  if (!b) return null;
+                  return (
+                    <span key={bid} className="text-[8px] font-black text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-md uppercase tracking-widest border border-blue-100">
+                      {b.type}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-3">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
-              {(lesson.lesson_type || lesson.type || 'Lesson')?.toUpperCase()} {lesson.duration ? `• ${lesson.duration}m` : ''}
+              {(lesson.lesson_type || lesson.type || 'Class')?.toUpperCase()} {lesson.duration ? `• ${lesson.duration}m` : ''}
               {schedule && (
                 <span className="ml-2 text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded-md border border-indigo-100 flex items-center gap-1.5">
                   <Calendar size={10} /> 
@@ -517,8 +837,8 @@ function LessonItem({
         ) : (
             <button 
               onClick={() => openLesson(lesson)}
-              className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-md ${
-                isCompleted ? 'bg-slate-900 text-white hover:bg-black' :
+              className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-md cursor-pointer ${
+                isCompleted ? 'bg-slate-900 text-white hover:bg-black shadow-slate-100' :
                 isInProgress ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-100' :
                 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
@@ -530,3 +850,4 @@ function LessonItem({
     </div>
   );
 }
+
