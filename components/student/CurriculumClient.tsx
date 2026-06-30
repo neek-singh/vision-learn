@@ -491,56 +491,57 @@ export function CurriculumClient({
       </div>
 
       {/* Next Up Lesson Section */}
-      {nextUpLesson && (
-        <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-[2.5rem] p-6 text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl shadow-indigo-100 border border-indigo-900/30 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-700" />
-          <div className="flex items-center gap-5 relative z-10">
-            <div className="w-14 h-14 bg-indigo-500/20 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/10 shrink-0 text-indigo-300">
-              <Sparkles className="animate-pulse" size={24} />
-            </div>
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-[9px] font-black bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-md border border-indigo-400/20 uppercase tracking-widest">Next Up Class</span>
-                <span className="text-[9px] font-bold text-white/50">• {nextUpLesson.duration ? `${nextUpLesson.duration} Mins` : 'Self-paced'}</span>
+      {(nextLockedLesson || nextUpLesson) && (
+        nextLockedLesson ? (
+          // Show the next SCHEDULED (locked) class in the banner
+          <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-[2.5rem] p-6 text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl shadow-indigo-100 border border-indigo-900/30 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-700" />
+            <div className="flex items-center gap-5 relative z-10">
+              <div className="w-14 h-14 bg-amber-500/20 rounded-2xl flex items-center justify-center backdrop-blur-md border border-amber-400/20 shrink-0 text-amber-300">
+                <Lock size={24} />
               </div>
-              <h4 className="text-base font-black tracking-tight line-clamp-1">{nextUpLesson.title}</h4>
-              <p className="text-xs text-white/60 line-clamp-1 mt-0.5">Start this lesson to continue your learning journey.</p>
-            </div>
-          </div>
-          <button 
-            onClick={() => openLesson(nextUpLesson)}
-            className="px-8 py-3 bg-white text-indigo-950 hover:bg-indigo-50 rounded-xl font-black text-xs transition-all active:scale-95 shadow-lg shadow-black/20 relative z-10 shrink-0 uppercase tracking-wider flex items-center gap-2 hover:gap-3"
-          >
-            Start Learning <Play size={12} fill="currentColor" />
-          </button>
-        </div>
-      )}
-
-      {/* Next Scheduled Class Preview — shows below NEXT UP CLASS banner */}
-      {nextLockedLesson && (
-        <div className="bg-white border border-amber-100 rounded-[2rem] p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-500 shrink-0">
-              <Lock size={20} />
-            </div>
-            <div>
-              <div className="flex items-center gap-2 mb-0.5">
-                <span className="text-[9px] font-black bg-amber-50 text-amber-600 px-2 py-0.5 rounded-md border border-amber-100 uppercase tracking-widest">Next Scheduled</span>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[9px] font-black bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-md border border-amber-400/20 uppercase tracking-widest">Next Scheduled Class</span>
+                  <span className="text-[9px] font-bold text-white/50 flex items-center gap-1">
+                    <Calendar size={9} />
+                    {new Date(nextLockedLesson.schedule.date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}
+                    {nextLockedLesson.schedule.start_time && ` · ${formatTime(nextLockedLesson.schedule.start_time)}`}
+                  </span>
+                </div>
+                <h4 className="text-base font-black tracking-tight line-clamp-1">{nextLockedLesson.lesson.title}</h4>
+                <p className="text-xs text-white/60 line-clamp-1 mt-0.5">This class will unlock on the scheduled date.</p>
               </div>
-              <h4 className="text-sm font-black text-slate-900 leading-tight">{nextLockedLesson.lesson.title}</h4>
-              <p className="text-[11px] text-slate-400 font-medium mt-0.5 flex items-center gap-1">
-                <Calendar size={10} />
-                {new Date(nextLockedLesson.schedule.date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}
-                {nextLockedLesson.schedule.start_time && (
-                  <span>· {formatTime(nextLockedLesson.schedule.start_time)}</span>
-                )}
-              </p>
+            </div>
+            <div className="flex items-center gap-2 px-6 py-3 bg-white/10 border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-wider text-amber-300 shrink-0">
+              <Lock size={12} /> Locked
             </div>
           </div>
-          <div className="flex items-center gap-2 text-[10px] font-black text-amber-400 uppercase tracking-widest shrink-0">
-            <Lock size={12} /> Locked
+        ) : nextUpLesson ? (
+          // Show the unlocked next lesson normally
+          <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-[2.5rem] p-6 text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl shadow-indigo-100 border border-indigo-900/30 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-700" />
+            <div className="flex items-center gap-5 relative z-10">
+              <div className="w-14 h-14 bg-indigo-500/20 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/10 shrink-0 text-indigo-300">
+                <Sparkles className="animate-pulse" size={24} />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[9px] font-black bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-md border border-indigo-400/20 uppercase tracking-widest">Next Up Class</span>
+                  <span className="text-[9px] font-bold text-white/50">• {nextUpLesson.duration ? `${nextUpLesson.duration} Mins` : 'Self-paced'}</span>
+                </div>
+                <h4 className="text-base font-black tracking-tight line-clamp-1">{nextUpLesson.title}</h4>
+                <p className="text-xs text-white/60 line-clamp-1 mt-0.5">Start this lesson to continue your learning journey.</p>
+              </div>
+            </div>
+            <button 
+              onClick={() => openLesson(nextUpLesson)}
+              className="px-8 py-3 bg-white text-indigo-950 hover:bg-indigo-50 rounded-xl font-black text-xs transition-all active:scale-95 shadow-lg shadow-black/20 relative z-10 shrink-0 uppercase tracking-wider flex items-center gap-2 hover:gap-3"
+            >
+              Start Learning <Play size={12} fill="currentColor" />
+            </button>
           </div>
-        </div>
+        ) : null
       )}
 
       {/* Search and Filters Bar */}
