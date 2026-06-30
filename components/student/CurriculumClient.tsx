@@ -256,6 +256,18 @@ export function CurriculumClient({
     return null;
   }, [allLessons, userProgress, currentSchedules, now]);
 
+  // Full object {lesson, schedule} for the next scheduled class (for the Coming Next card)
+  const nextLockedLesson = useMemo(() => {
+    if (!nextLockedLessonId) return null;
+    const normalize = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
+    const lesson = allLessons.find(l => l.id === nextLockedLessonId);
+    if (!lesson) return null;
+    const schedule = currentSchedules.find((st: any) => {
+      return normalize(st.title).includes(normalize(lesson.title));
+    });
+    return schedule ? { lesson, schedule } : null;
+  }, [nextLockedLessonId, allLessons, currentSchedules]);
+
   // Filter displayModules down to matching search/filter constraints
   const filteredModules = useMemo(() => {
     return displayModules.map((module: any) => {
@@ -501,6 +513,33 @@ export function CurriculumClient({
           >
             Start Learning <Play size={12} fill="currentColor" />
           </button>
+        </div>
+      )}
+
+      {/* Next Scheduled Class Preview — shows below NEXT UP CLASS banner */}
+      {nextLockedLesson && (
+        <div className="bg-white border border-amber-100 rounded-[2rem] p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-500 shrink-0">
+              <Lock size={20} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-0.5">
+                <span className="text-[9px] font-black bg-amber-50 text-amber-600 px-2 py-0.5 rounded-md border border-amber-100 uppercase tracking-widest">Next Scheduled</span>
+              </div>
+              <h4 className="text-sm font-black text-slate-900 leading-tight">{nextLockedLesson.lesson.title}</h4>
+              <p className="text-[11px] text-slate-400 font-medium mt-0.5 flex items-center gap-1">
+                <Calendar size={10} />
+                {new Date(nextLockedLesson.schedule.date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}
+                {nextLockedLesson.schedule.start_time && (
+                  <span>· {formatTime(nextLockedLesson.schedule.start_time)}</span>
+                )}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 text-[10px] font-black text-amber-400 uppercase tracking-widest shrink-0">
+            <Lock size={12} /> Locked
+          </div>
         </div>
       )}
 
