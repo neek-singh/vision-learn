@@ -235,24 +235,23 @@ export function CurriculumClient({
     return fallbackMatch ? fallbackMatch.lesson : (incompleteLessons[0] || null);
   }, [allLessons, userProgress, currentSchedules, now]);
 
-  // The first incomplete+locked lesson (shown prominently as "Coming Next")
+  // The first incomplete lesson with a FUTURE schedule (shown prominently as "Coming Next")
   const nextLockedLessonId = useMemo(() => {
     const normalize = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
     for (const lesson of allLessons) {
       if (userProgress.includes(lesson.id)) continue; // skip completed
+      // Only consider lessons that have an explicit schedule
       const schedule = currentSchedules.find((st: any) => {
         const sTitle = normalize(st.title);
         const lTitle = normalize(lesson.title);
         return sTitle.includes(lTitle);
       });
-      let isLocked = true;
-      if (schedule) {
-        const schedDate = new Date(schedule.date);
-        const [sh, sm] = (schedule.start_time || "00:00").split(':');
-        schedDate.setHours(parseInt(sh), parseInt(sm), 0);
-        isLocked = now < schedDate;
-      }
-      if (isLocked) return lesson.id; // first locked incomplete lesson
+      if (!schedule) continue; // self-paced = skip, not a "Coming Next" candidate
+      // Check if the schedule is in the future (still locked)
+      const schedDate = new Date(schedule.date);
+      const [sh, sm] = (schedule.start_time || "00:00").split(':');
+      schedDate.setHours(parseInt(sh), parseInt(sm), 0);
+      if (now < schedDate) return lesson.id; // first future-scheduled incomplete lesson
     }
     return null;
   }, [allLessons, userProgress, currentSchedules, now]);
