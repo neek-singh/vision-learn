@@ -49,6 +49,7 @@ interface DashboardClientProps {
   };
   nextLesson: any;
   isLessonScheduledToday?: boolean;
+  nextScheduledClass?: { lesson: any; schedule: any } | null;
   upcomingEvents: any[];
   recentActivities: any[];
   notifications: any[];
@@ -63,6 +64,7 @@ export default function DashboardClient({
   stats,
   nextLesson,
   isLessonScheduledToday = false,
+  nextScheduledClass = null,
   upcomingEvents,
   recentActivities,
   notifications,
@@ -632,27 +634,56 @@ export default function DashboardClient({
 
           {/* Next Lesson Banner section */}
           {nextLesson && isLessonScheduledToday ? (
-            <section className={`bg-gradient-to-r ${style.gradient} rounded-2xl p-6 text-white relative overflow-hidden shadow-xl ${style.glow}`}>
-               <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl pointer-events-none" />
-               <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+            <>
+              <section className={`bg-gradient-to-r ${style.gradient} rounded-2xl p-6 text-white relative overflow-hidden shadow-xl ${style.glow}`}>
+                 <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl pointer-events-none" />
+                 <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div className="flex items-center gap-4">
+                       <div className="w-12 h-12 bg-white/15 rounded-xl flex items-center justify-center backdrop-blur-sm border border-white/20">
+                         <PlayCircle size={22} />
+                       </div>
+                       <div className="space-y-1">
+                         <span className="px-2.5 py-0.5 bg-white/20 rounded-md text-[9px] font-black uppercase tracking-widest">Up Next</span>
+                         <h2 className="text-lg font-black leading-tight">{nextLesson.title}</h2>
+                         <p className="text-indigo-100 text-xs font-medium">Click below to continue learning!</p>
+                       </div>
+                    </div>
+                    <Link 
+                      href={`/curriculum?lessonId=${nextLesson.id}`}
+                      className="bg-white text-slate-900 px-6 py-3 rounded-xl font-black text-sm flex items-center gap-2 hover:scale-105 transition-all shadow-md active:scale-95 shrink-0 hover:text-indigo-600"
+                    >
+                      <PlayCircle size={18} /> Start Now
+                    </Link>
+                 </div>
+              </section>
+
+              {/* Next Scheduled Class Preview */}
+              {nextScheduledClass && (
+                <section className="bg-white border border-slate-100 rounded-2xl p-5 relative overflow-hidden shadow-sm flex flex-col md:flex-row items-center justify-between gap-4 w-full">
                   <div className="flex items-center gap-4">
-                     <div className="w-12 h-12 bg-white/15 rounded-xl flex items-center justify-center backdrop-blur-sm border border-white/20">
-                       <PlayCircle size={22} />
-                     </div>
-                     <div className="space-y-1">
-                       <span className="px-2.5 py-0.5 bg-white/20 rounded-md text-[9px] font-black uppercase tracking-widest">Up Next</span>
-                       <h2 className="text-lg font-black leading-tight">{nextLesson.title}</h2>
-                       <p className="text-indigo-100 text-xs font-medium">Click below to continue learning!</p>
-                     </div>
+                    <div className={`w-10 h-10 ${style.bgLight} rounded-xl flex items-center justify-center ${style.text}`}>
+                      <Clock size={18} />
+                    </div>
+                    <div className="space-y-0.5">
+                      <span className={`px-2 py-0.5 ${style.badge} border rounded-md text-[9px] font-black uppercase tracking-widest`}>Next Class</span>
+                      <h3 className="text-sm font-black text-slate-900 leading-tight">{nextScheduledClass.lesson.title}</h3>
+                      <p className="text-slate-400 text-[11px] font-medium">
+                        {new Date(nextScheduledClass.schedule.date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}
+                        {nextScheduledClass.schedule.start_time && (
+                          <span className="ml-1">· {nextScheduledClass.schedule.start_time.slice(0, 5)}</span>
+                        )}
+                      </p>
+                    </div>
                   </div>
-                  <Link 
-                    href={`/curriculum?lessonId=${nextLesson.id}`}
-                    className="bg-white text-slate-900 px-6 py-3 rounded-xl font-black text-sm flex items-center gap-2 hover:scale-105 transition-all shadow-md active:scale-95 shrink-0 hover:text-indigo-600"
+                  <Link
+                    href={`/curriculum?lessonId=${nextScheduledClass.lesson.id}`}
+                    className={`shrink-0 inline-flex items-center gap-2 text-xs font-bold px-4 py-2 rounded-xl border transition-all active:scale-95 ${style.btnText}`}
                   >
-                    <PlayCircle size={18} /> Start Now
+                    Preview <ChevronRight size={14} />
                   </Link>
-               </div>
-            </section>
+                </section>
+              )}
+            </>
           ) : (
             <section className="bg-white border border-slate-100 rounded-2xl p-6 relative overflow-hidden shadow-sm flex flex-col md:flex-row items-center justify-between gap-6 w-full">
                <div className="flex items-center gap-4">

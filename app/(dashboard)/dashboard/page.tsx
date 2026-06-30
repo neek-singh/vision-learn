@@ -62,6 +62,7 @@ export default async function DashboardPage() {
   // 3. Find next available lesson (scheduled/unscheduled)
   let nextLesson = null;
   let isLessonScheduledToday = false;
+  let nextScheduledClass: { lesson: any; schedule: any } | null = null;
   if (mainEnrollment?.course_id) {
     const activeBatch = (student?.batch || mainEnrollment?.batch)?.trim().toLowerCase();
     const [modulesRes, schedulesRes] = await Promise.all([
@@ -120,6 +121,20 @@ export default async function DashboardPage() {
     if (todayMatch) {
       nextLesson = todayMatch.lesson;
       isLessonScheduledToday = true;
+
+      // Find the next upcoming class: any incomplete lesson with a schedule date AFTER today
+      // Sort all candidates by date to pick the earliest upcoming one
+      const futureCandidates = incompleteLessonsWithSchedules
+        .filter(item => item.schedule && item.schedule.date > todayStr)
+        .sort((a, b) => {
+          const dateA = a.schedule.date + (a.schedule.start_time || "00:00");
+          const dateB = b.schedule.date + (b.schedule.start_time || "00:00");
+          return dateA.localeCompare(dateB);
+        });
+
+      if (futureCandidates.length > 0) {
+        nextScheduledClass = futureCandidates[0];
+      }
     }
 
     // 2. If no class today, try to find a lesson scheduled for a past date/time
@@ -256,6 +271,7 @@ export default async function DashboardPage() {
       }}
       nextLesson={nextLesson}
       isLessonScheduledToday={isLessonScheduledToday}
+      nextScheduledClass={nextScheduledClass}
       upcomingEvents={upcomingEvents}
       recentActivities={recentActivities}
       notifications={notifications}
