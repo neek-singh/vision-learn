@@ -235,6 +235,28 @@ export function CurriculumClient({
     return fallbackMatch ? fallbackMatch.lesson : (incompleteLessons[0] || null);
   }, [allLessons, userProgress, currentSchedules, now]);
 
+  // The first incomplete+locked lesson (shown prominently as "Coming Next")
+  const nextLockedLessonId = useMemo(() => {
+    const normalize = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
+    for (const lesson of allLessons) {
+      if (userProgress.includes(lesson.id)) continue; // skip completed
+      const schedule = currentSchedules.find((st: any) => {
+        const sTitle = normalize(st.title);
+        const lTitle = normalize(lesson.title);
+        return sTitle.includes(lTitle);
+      });
+      let isLocked = true;
+      if (schedule) {
+        const schedDate = new Date(schedule.date);
+        const [sh, sm] = (schedule.start_time || "00:00").split(':');
+        schedDate.setHours(parseInt(sh), parseInt(sm), 0);
+        isLocked = now < schedDate;
+      }
+      if (isLocked) return lesson.id; // first locked incomplete lesson
+    }
+    return null;
+  }, [allLessons, userProgress, currentSchedules, now]);
+
   // Filter displayModules down to matching search/filter constraints
   const filteredModules = useMemo(() => {
     return displayModules.map((module: any) => {
@@ -571,6 +593,7 @@ export function CurriculumClient({
             openLesson={openLesson}
             availableBatches={availableBatches}
             chapters={chapters}
+            nextLockedLessonId={nextLockedLessonId}
           />
         ))}
       </div>
@@ -619,7 +642,8 @@ function ModuleItem({
   toggleLessonCompletion, 
   openLesson,
   availableBatches,
-  chapters
+  chapters,
+  nextLockedLessonId
 }: any) {
   const lessons = useMemo(() => 
     (module.lessons || []).sort((a: any, b: any) => a.order_index - b.order_index),
@@ -728,6 +752,7 @@ function ModuleItem({
                       toggleLessonCompletion={toggleLessonCompletion}
                       openLesson={openLesson}
                       availableBatches={availableBatches}
+                      isNextLocked={lesson.id === nextLockedLessonId}
                     />
                   ))}
                 </div>
@@ -758,6 +783,7 @@ function ModuleItem({
                      toggleLessonCompletion={toggleLessonCompletion}
                      openLesson={openLesson}
                      availableBatches={availableBatches}
+                     isNextLocked={lesson.id === nextLockedLessonId}
                    />
                  ))}
                </div>
@@ -780,7 +806,8 @@ function LessonItem({
   toggleLessonCompletion, 
   openLesson,
   lIdx,
-  availableBatches
+  availableBatches,
+  isNextLocked = false
 }: any) {
   const isCompleted = userProgress.includes(lesson.id);
   
@@ -808,19 +835,22 @@ function LessonItem({
 
   return (
     <div className={`flex flex-col sm:flex-row sm:items-center justify-between p-5 rounded-2xl border transition-all group ${
-      isLocked ? 'opacity-60 bg-slate-50/50 border-transparent cursor-not-allowed' :
-      isCompleted ? 'bg-emerald-50/30 border-emerald-100/50 hover:border-emerald-200' :
-      isInProgress ? 'bg-white border-indigo-100 shadow-lg shadow-indigo-50/30 ring-1 ring-indigo-50' :
-      'bg-white border-slate-50 hover:border-slate-200'
+      isNextLocked
+        ? 'bg-white border-indigo-100 shadow-md shadow-indigo-50/40 ring-1 ring-indigo-100'
+        : isLocked ? 'opacity-40 bg-slate-50/50 border-transparent cursor-not-allowed' :
+          isCompleted ? 'bg-emerald-50/30 border-emerald-100/50 hover:border-emerald-200' :
+          isInProgress ? 'bg-white border-indigo-100 shadow-lg shadow-indigo-50/30 ring-1 ring-indigo-50' :
+          'bg-white border-slate-50 hover:border-slate-200'
     }`}>
       <div className="flex items-center gap-4">
         <div className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all shrink-0 ${
+          isNextLocked ? 'bg-amber-50 text-amber-500 border border-amber-100' :
           isLocked ? 'bg-slate-100 text-slate-300' :
           isCompleted ? 'bg-emerald-500 text-white' :
           isInProgress ? 'bg-indigo-600 text-white animate-pulse' :
           'bg-slate-100 text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-600'
         }`}>
-          {isLocked ? <Lock size={18} /> : 
+          {(isLocked || isNextLocked) ? <Lock size={18} /> : 
            (lesson.lesson_type || lesson.type)?.toLowerCase() === 'video' ? <PlayCircle size={18} /> :
            (lesson.lesson_type || lesson.type)?.toLowerCase() === 'article' ? <BookOpen size={18} /> :
            (lesson.lesson_type || lesson.type)?.toLowerCase() === 'document' ? <FileText size={18} /> :
@@ -833,6 +863,7 @@ function LessonItem({
             </h5>
             {isCompleted && <span className="text-[8px] font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md uppercase tracking-widest border border-emerald-100">Completed</span>}
             {isInProgress && <span className="text-[8px] font-black text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded-md uppercase tracking-widest border border-indigo-100">In Progress</span>}
+            {isNextLocked && <span className="text-[8px] font-black text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-md uppercase tracking-widest border border-amber-100">Coming Next</span>}
             {lesson.batches && lesson.batches.length > 0 && (
               <div className="flex flex-wrap gap-1">
                 {lesson.batches.map((bid: string) => {
@@ -865,7 +896,11 @@ function LessonItem({
       </div>
 
       <div className="flex items-center gap-3 mt-4 sm:mt-0 ml-14 sm:ml-0">
-        {isLocked ? (
+        {isNextLocked ? (
+          <div className="flex items-center gap-2 text-[10px] font-black text-amber-400 uppercase tracking-widest">
+            <Lock size={12} /> Locked
+          </div>
+        ) : isLocked ? (
           <div className="flex items-center gap-2 text-[10px] font-black text-slate-300 uppercase tracking-widest">
              <Lock size={12} /> Locked
           </div>
