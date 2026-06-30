@@ -48,6 +48,7 @@ interface DashboardClientProps {
     remainingCount: number;
   };
   nextLesson: any;
+  isLessonScheduledToday?: boolean;
   upcomingEvents: any[];
   recentActivities: any[];
   notifications: any[];
@@ -61,6 +62,7 @@ export default function DashboardClient({
   otherCourses,
   stats,
   nextLesson,
+  isLessonScheduledToday = false,
   upcomingEvents,
   recentActivities,
   notifications,
@@ -84,8 +86,21 @@ export default function DashboardClient({
   // 5. Quote of the day state
   const [quote, setQuote] = useState("");
 
+  // 6. Time-based greeting state
+  const [greeting, setGreeting] = useState("Welcome back");
+
   // Load local settings on mount
   useEffect(() => {
+    // Time-based greeting
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) {
+      setGreeting("Good morning");
+    } else if (hour >= 12 && hour < 17) {
+      setGreeting("Good afternoon");
+    } else {
+      setGreeting("Good evening");
+    }
+
     // Theme Accent
     const savedAccent = localStorage.getItem("vision_dashboard_accent");
     if (savedAccent && ["indigo", "emerald", "violet", "orange"].includes(savedAccent)) {
@@ -199,12 +214,6 @@ export default function DashboardClient({
   };
 
   const style = accentStyles[accent];
-
-  // Handler for accent change
-  const handleAccentChange = (newAccent: typeof accent) => {
-    setAccent(newAccent);
-    localStorage.setItem("vision_dashboard_accent", newAccent);
-  };
 
   // Daily target triggers
   const handleTargetChange = (val: number) => {
@@ -443,7 +452,7 @@ export default function DashboardClient({
           <div className="space-y-2">
             <div className="flex items-center gap-2.5">
               <span className="bg-white/20 text-white font-black text-[9px] tracking-widest uppercase px-2 py-0.5 rounded backdrop-blur-md border border-white/10 flex items-center gap-1">
-                <Sparkles size={10} className="animate-spin" /> student hub
+                <Sparkles size={10} /> student hub
               </span>
               {student?.batch && (
                 <span className="bg-white/15 text-white font-black text-[9px] tracking-wider uppercase px-2 py-0.5 rounded backdrop-blur-md border border-white/10 flex items-center gap-1">
@@ -453,43 +462,12 @@ export default function DashboardClient({
             </div>
             
             <h1 className="text-3xl font-black tracking-tight leading-none">
-              Welcome back, {student?.name?.split(" ")[0] || "Learner"}!
+              {greeting}, {student?.name?.split(" ")[0] || "Learner"}!
             </h1>
             
             <p className="text-sm text-indigo-100 font-medium italic max-w-lg leading-relaxed">
               "{quote}"
             </p>
-          </div>
-
-          {/* Quick theme accent configuration */}
-          <div className="flex flex-col items-end gap-2.5 bg-black/15 p-4 rounded-2xl border border-white/10 backdrop-blur-md shrink-0 self-start md:self-auto">
-            <span className="text-[9px] font-black tracking-wider text-slate-300 uppercase">Personalize theme</span>
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleAccentChange("indigo")}
-                className={`w-6 h-6 rounded-full bg-indigo-500 border-2 transition-all duration-300 hover:scale-110 cursor-pointer ${accent === "indigo" ? "border-white scale-110 shadow-lg" : "border-transparent opacity-60"}`}
-                title="Royal Indigo"
-                aria-label="Set accent theme to Royal Indigo"
-              />
-              <button
-                onClick={() => handleAccentChange("emerald")}
-                className={`w-6 h-6 rounded-full bg-emerald-500 border-2 transition-all duration-300 hover:scale-110 cursor-pointer ${accent === "emerald" ? "border-white scale-110 shadow-lg" : "border-transparent opacity-60"}`}
-                title="Emerald Green"
-                aria-label="Set accent theme to Emerald Green"
-              />
-              <button
-                onClick={() => handleAccentChange("violet")}
-                className={`w-6 h-6 rounded-full bg-violet-500 border-2 transition-all duration-300 hover:scale-110 cursor-pointer ${accent === "violet" ? "border-white scale-110 shadow-lg" : "border-transparent opacity-60"}`}
-                title="Electric Violet"
-                aria-label="Set accent theme to Electric Violet"
-              />
-              <button
-                onClick={() => handleAccentChange("orange")}
-                className={`w-6 h-6 rounded-full bg-orange-500 border-2 transition-all duration-300 hover:scale-110 cursor-pointer ${accent === "orange" ? "border-white scale-110 shadow-lg" : "border-transparent opacity-60"}`}
-                title="Sunrise Amber"
-                aria-label="Set accent theme to Sunrise Amber"
-              />
-            </div>
           </div>
         </div>
       </section>
@@ -653,19 +631,19 @@ export default function DashboardClient({
           </div>
 
           {/* Next Lesson Banner section */}
-          {nextLesson && (
+          {nextLesson && isLessonScheduledToday ? (
             <section className={`bg-gradient-to-r ${style.gradient} rounded-2xl p-6 text-white relative overflow-hidden shadow-xl ${style.glow}`}>
                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl pointer-events-none" />
                <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-white/15 rounded-xl flex items-center justify-center backdrop-blur-sm border border-white/20">
-                      <PlayCircle size={22} />
-                    </div>
-                    <div className="space-y-1">
-                      <span className="px-2.5 py-0.5 bg-white/20 rounded-md text-[9px] font-black uppercase tracking-widest">Up Next</span>
-                      <h2 className="text-lg font-black leading-tight">{nextLesson.title}</h2>
-                      <p className="text-indigo-100 text-xs font-medium">Click below to continue learning!</p>
-                    </div>
+                     <div className="w-12 h-12 bg-white/15 rounded-xl flex items-center justify-center backdrop-blur-sm border border-white/20">
+                       <PlayCircle size={22} />
+                     </div>
+                     <div className="space-y-1">
+                       <span className="px-2.5 py-0.5 bg-white/20 rounded-md text-[9px] font-black uppercase tracking-widest">Up Next</span>
+                       <h2 className="text-lg font-black leading-tight">{nextLesson.title}</h2>
+                       <p className="text-indigo-100 text-xs font-medium">Click below to continue learning!</p>
+                     </div>
                   </div>
                   <Link 
                     href={`/curriculum?lessonId=${nextLesson.id}`}
@@ -673,6 +651,19 @@ export default function DashboardClient({
                   >
                     <PlayCircle size={18} /> Start Now
                   </Link>
+               </div>
+            </section>
+          ) : (
+            <section className="bg-white border border-slate-100 rounded-2xl p-6 relative overflow-hidden shadow-sm flex flex-col md:flex-row items-center justify-between gap-6 w-full">
+               <div className="flex items-center gap-4">
+                 <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400">
+                   <Calendar size={22} />
+                 </div>
+                 <div className="space-y-1">
+                   <span className="px-2.5 py-0.5 bg-slate-100 text-slate-500 rounded-md text-[9px] font-black uppercase tracking-widest">Schedule</span>
+                   <h2 className="text-lg font-black text-slate-900 leading-tight">Today, no any class</h2>
+                   <p className="text-slate-400 text-xs font-medium">Enjoy your day or review previous study materials!</p>
+                 </div>
                </div>
             </section>
           )}

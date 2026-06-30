@@ -18,6 +18,7 @@ import {
 import { verifyToken } from "@/lib/auth-custom";
 import { createPublicSupabaseClient } from "@/lib/supabase-server";
 import { ProfilePageSkeleton } from "@/components/dashboard/DashboardSkeletons";
+import { ThemePicker } from "@/components/student/ThemePicker";
 
 export default async function ProfilePage() {
   const cookieStore = await cookies();
@@ -135,6 +136,11 @@ async function ProfileContent({ userId }: { userId: string }) {
                 <p className="text-sm font-black text-emerald-700">{student.category || "General"}</p>
              </div>
           </div>
+        </div>
+
+        {/* Theme Settings Section */}
+        <div className="md:col-span-2">
+          <ThemePicker />
         </div>
       </div>
 

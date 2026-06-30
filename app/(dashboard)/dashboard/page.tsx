@@ -61,6 +61,7 @@ export default async function DashboardPage() {
 
   // 3. Find next available lesson (scheduled/unscheduled)
   let nextLesson = null;
+  let isLessonScheduledToday = false;
   if (mainEnrollment?.course_id) {
     const activeBatch = (student?.batch || mainEnrollment?.batch)?.trim().toLowerCase();
     const [modulesRes, schedulesRes] = await Promise.all([
@@ -73,45 +74,76 @@ export default async function DashboardPage() {
     const schedules = schedulesRes.data || [];
     const now = new Date();
 
+    // Get local today string in YYYY-MM-DD format
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const todayStr = `${year}-${month}-${day}`;
+
+    const normalize = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
+
     const allModulesWithLessons = modules.sort((a: any, b: any) => a.order_index - b.order_index);
+    const incompleteLessonsWithSchedules: { lesson: any; schedule: any }[] = [];
+
     for (const module of allModulesWithLessons) {
       const lessons = (module.lessons || []).sort((a: any, b: any) => a.order_index - b.order_index);
       for (const lesson of lessons) {
         if (completedIds.includes(lesson.id)) continue;
 
-        const fullLessonTitle = `${module.title}: ${lesson.title}`.trim();
+        const mTitle = normalize(module.title);
+        const lTitle = normalize(lesson.title);
+
         const schedule = schedules.find(s => {
           const sTitle = s.title?.trim();
+          if (!sTitle) return false;
+
           const sBatch = s.batch?.trim().toLowerCase();
           const batchMatch = !sBatch || sBatch === "all batches" || !activeBatch || 
                              sBatch === activeBatch || sBatch.includes(activeBatch) || 
                              activeBatch.includes(sBatch);
-          return sTitle === fullLessonTitle && batchMatch;
+          if (!batchMatch) return false;
+
+          const normSTitle = normalize(sTitle);
+          return normSTitle.includes(lTitle) && normSTitle.includes(mTitle);
         });
 
-        if (schedule) {
-          const schedDate = new Date(schedule.date);
-          const [sh, sm] = (schedule.start_time || "00:00").split(':');
-          schedDate.setHours(parseInt(sh), parseInt(sm), 0);
-          
-          if (now >= schedDate) {
-            nextLesson = lesson;
-            break;
-          }
-        }
+        incompleteLessonsWithSchedules.push({ lesson, schedule });
       }
-      if (nextLesson) break;
     }
 
-    // Fallback to first incomplete lesson
+    // 1. Try to find an incomplete lesson scheduled for TODAY (current day)
+    const todayMatch = incompleteLessonsWithSchedules.find(item => {
+      if (!item.schedule) return false;
+      return item.schedule.date === todayStr;
+    });
+
+    if (todayMatch) {
+      nextLesson = todayMatch.lesson;
+      isLessonScheduledToday = true;
+    }
+
+    // 2. If no class today, try to find a lesson scheduled for a past date/time
     if (!nextLesson) {
-      for (const module of allModulesWithLessons) {
-        const lessons = (module.lessons || []).sort((a: any, b: any) => a.order_index - b.order_index);
-        const firstIncomplete = lessons.find(l => !completedIds.includes(l.id));
-        if (firstIncomplete) {
-          nextLesson = firstIncomplete;
-          break;
-        }
+      const pastMatch = incompleteLessonsWithSchedules.find(item => {
+        if (!item.schedule) return false;
+
+        const schedDate = new Date(item.schedule.date);
+        const [sh, sm] = (item.schedule.start_time || "00:00").split(':');
+        schedDate.setHours(parseInt(sh), parseInt(sm), 0);
+
+        return now >= schedDate;
+      });
+
+      if (pastMatch) {
+        nextLesson = pastMatch.lesson;
+      }
+    }
+
+    // 3. Fallback to first incomplete lesson
+    if (!nextLesson) {
+      const firstIncomplete = incompleteLessonsWithSchedules[0];
+      if (firstIncomplete) {
+        nextLesson = firstIncomplete.lesson;
       }
     }
   }
@@ -223,6 +255,7 @@ export default async function DashboardPage() {
         remainingCount
       }}
       nextLesson={nextLesson}
+      isLessonScheduledToday={isLessonScheduledToday}
       upcomingEvents={upcomingEvents}
       recentActivities={recentActivities}
       notifications={notifications}

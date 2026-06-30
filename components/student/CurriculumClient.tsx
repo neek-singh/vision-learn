@@ -25,7 +25,7 @@ import dynamic from "next/dynamic";
 import { CacheManager } from "@/lib/cache-manager";
 import { useCachedCurriculum } from "@/hooks/use-cached-curriculum";
 import { DownloadButton } from "@/components/DownloadButton";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 
 const LessonViewer = dynamic(() => import("./LessonViewer"), {
   loading: () => <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center">
@@ -81,6 +81,7 @@ export function CurriculumClient({
 
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
   const [activeLesson, setActiveLesson] = useState<any>(null);
+  const [lastClosedLessonId, setLastClosedLessonId] = useState<string | null>(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [currentSchedules, setCurrentSchedules] = useState<any[]>(initialSchedules);
   const [activeBatch] = useState<string | null>(initialBatch);
@@ -92,6 +93,7 @@ export function CurriculumClient({
   const [filterStatus, setFilterStatus] = useState("all");
 
   const searchParams = useSearchParams();
+  const router = useRouter();
   const lessonIdParam = searchParams.get('lessonId');
 
   // Use cached modules if available, otherwise fallback to initial
@@ -186,17 +188,21 @@ export function CurriculumClient({
 
   // Next unlocked, uncompleted lesson to recommend
   const nextUpLesson = useMemo(() => {
-    return allLessons.find(lesson => {
-      const isCompleted = userProgress.includes(lesson.id);
-      if (isCompleted) return false;
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const todayStr = `${year}-${month}-${day}`;
 
+    const incompleteLessons = allLessons.filter(lesson => !userProgress.includes(lesson.id));
+
+    const lessonsWithSchedules = incompleteLessons.map(lesson => {
       const schedule = currentSchedules.find((st: any) => {
         const normalize = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
         const sTitle = normalize(st.title);
         const lTitle = normalize(lesson.title);
         return sTitle.includes(lTitle);
       });
-      
+
       let isScheduled = false;
       let isTimeReached = false;
       if (schedule) {
@@ -207,9 +213,26 @@ export function CurriculumClient({
         schedDate.setHours(parseInt(sh), parseInt(sm), 0);
         isTimeReached = now >= schedDate;
       }
+      
       const isLocked = !isScheduled || !isTimeReached;
-      return !isLocked;
+      return { lesson, schedule, isLocked };
     });
+
+    // 1. Try to find today's scheduled lesson that is unlocked
+    const todayMatch = lessonsWithSchedules.find(item => {
+      return item.schedule && item.schedule.date === todayStr && !item.isLocked;
+    });
+    if (todayMatch) return todayMatch.lesson;
+
+    // 2. Try to find any other past scheduled lesson that is unlocked
+    const pastMatch = lessonsWithSchedules.find(item => {
+      return item.schedule && !item.isLocked;
+    });
+    if (pastMatch) return pastMatch.lesson;
+
+    // 3. Fallback to the first unlocked lesson
+    const fallbackMatch = lessonsWithSchedules.find(item => !item.isLocked);
+    return fallbackMatch ? fallbackMatch.lesson : (incompleteLessons[0] || null);
   }, [allLessons, userProgress, currentSchedules, now]);
 
   // Filter displayModules down to matching search/filter constraints
@@ -271,7 +294,7 @@ export function CurriculumClient({
 
   // Auto-open lesson if lessonId is in URL
   useEffect(() => {
-    if (lessonIdParam && allLessons.length > 0 && !activeLesson) {
+    if (lessonIdParam && allLessons.length > 0 && !activeLesson && lessonIdParam !== lastClosedLessonId) {
       const lessonToOpen = allLessons.find(l => l.id === lessonIdParam);
       if (lessonToOpen) {
         // Check if locked before auto-opening
@@ -557,7 +580,19 @@ export function CurriculumClient({
         <LessonViewer 
           lesson={activeLesson}
           isFullScreen={isFullScreen}
-          onClose={() => { setActiveLesson(null); setIsFullScreen(false); }}
+          onClose={() => { 
+            if (activeLesson) {
+              setLastClosedLessonId(activeLesson.id);
+            }
+            setActiveLesson(null); 
+            setIsFullScreen(false); 
+            // Reconstruct search parameters without lessonId to clean URL via vanilla history API
+            const params = new URLSearchParams(window.location.search);
+            params.delete("lessonId");
+            const queryStr = params.toString();
+            const newUrl = `${window.location.pathname}${queryStr ? '?' + queryStr : ''}`;
+            window.history.replaceState(null, "", newUrl);
+          }}
           userProgress={userProgress}
           toggleCompletion={toggleLessonCompletion}
           initialTests={initialTests}
