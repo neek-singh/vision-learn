@@ -26,7 +26,7 @@ export default async function DashboardPage() {
       progress_percentage,
       courses(id, title, course_code)
     `).eq("student_id", userId),
-    supabase.from("user_progress").select("lesson_id, completed_at").eq("user_id", userId).eq("completed", true),
+    supabase.from("user_progress").select("lesson_id, last_watched_at").eq("user_id", userId).eq("completed", true),
     supabase.from("user_notifications").select(`
       id,
       notifications (title, message)
@@ -56,7 +56,9 @@ export default async function DashboardPage() {
   }
 
   const completedCount = progressRecords.length;
-  const progressPercentage = mainEnrollment?.progress_percentage || 0;
+  const progressPercentage = totalLessonsCount > 0
+    ? Math.round((completedCount / totalLessonsCount) * 100)
+    : 0;
   const remainingCount = Math.max(0, totalLessonsCount - completedCount);
 
   // 3. Find next available lesson (scheduled/unscheduled)
@@ -192,23 +194,23 @@ export default async function DashboardPage() {
   const { data: recentProgress } = await supabase
     .from("user_progress")
     .select(`
-      completed_at,
+      last_watched_at,
       lessons (title)
     `)
     .eq("user_id", userId)
     .eq("completed", true)
-    .order("completed_at", { ascending: false })
+    .order("last_watched_at", { ascending: false })
     .limit(3);
 
   const recentActivities = recentProgress?.map((p: any) => ({
     title: p.lessons?.title || "Lesson Completed",
-    completed_at: p.completed_at
+    completed_at: p.last_watched_at
   })) || [];
 
   // 6. Calculate Streak count
   const completedDates = Array.from(new Set(
     progressRecords
-      .map(p => p.completed_at ? new Date(p.completed_at).toDateString() : null)
+      .map(p => p.last_watched_at ? new Date(p.last_watched_at).toDateString() : null)
       .filter((d): d is string => d !== null)
   ));
 
@@ -250,7 +252,7 @@ export default async function DashboardPage() {
   const progressHistory = past7Days.map(day => {
     const dayStr = day.toDateString();
     const count = progressRecords.filter(r => 
-      r.completed_at && new Date(r.completed_at).toDateString() === dayStr
+      r.last_watched_at && new Date(r.last_watched_at).toDateString() === dayStr
     ).length || 0;
     return {
       date: day.toISOString(),

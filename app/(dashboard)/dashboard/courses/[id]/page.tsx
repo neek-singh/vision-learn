@@ -20,22 +20,31 @@ export default async function CoursePage({ params }: { params: Promise<{ id: str
   const supabase = await createServerSupabaseClient();
 
   // Fetch Enrollment & Course
-  const { data: enrollment } = await supabase
-    .from("enrollments")
-    .select(`
-      id,
-      progress_percentage,
-      completed_lessons,
-      course_id,
-      courses(title, course_code, curriculum)
-    `)
-    .eq("id", id)
-    .single();
+  const [enrollmentRes, progressRes] = await Promise.all([
+    supabase
+      .from("enrollments")
+      .select(`
+        id,
+        progress_percentage,
+        course_id,
+        courses(title, course_code, curriculum)
+      `)
+      .eq("id", id)
+      .single(),
+    supabase
+      .from("user_progress")
+      .select("lesson_id")
+      .eq("user_id", payload.id)
+      .eq("completed", true)
+  ]);
+
+  const enrollment = enrollmentRes.data;
 
   if (!enrollment) {
     redirect("/dashboard");
   }
 
+  const completedLessons = progressRes.data?.map(p => p.lesson_id) || [];
   const course = enrollment.courses as any;
   
   // Normalize curriculum
@@ -93,7 +102,7 @@ export default async function CoursePage({ params }: { params: Promise<{ id: str
           <CurriculumTracker 
             enrollmentId={enrollment.id}
             curriculum={curriculum}
-            initialCompleted={enrollment.completed_lessons || []}
+            initialCompleted={completedLessons}
           />
         </div>
 

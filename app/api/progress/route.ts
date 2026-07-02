@@ -17,78 +17,61 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { enrollmentId, lessonId, completed } = await request.json();
+    const { lessonId, completed } = await request.json();
 
-    if (!enrollmentId || !lessonId) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    if (!lessonId) {
+      return NextResponse.json({ error: "Missing lessonId" }, { status: 400 });
     }
 
     const supabase = await createServerSupabaseClient();
 
-    // 1. Fetch current enrollment
-    const { data: enrollment, error: enrollError } = await supabase
-      .from("enrollments")
-      .select("completed_lessons, course_id, student_id")
-      .eq("id", enrollmentId)
+    // 1. Upsert into user_progress
+    const { error: upsertError } = await supabase
+      .from("user_progress")
+      .upsert({
+        user_id: payload.id,
+        lesson_id: lessonId,
+        completed,
+        last_watched_at: new Date().toISOString()
+      });
+
+    if (upsertError) {
+      return NextResponse.json({ error: upsertError.message }, { status: 500 });
+    }
+
+    // 2. Fetch course_id from lesson and module to locate enrollment
+    let progressPercentage = 0;
+    const { data: lesson } = await supabase
+      .from("lessons")
+      .select("module_id")
+      .eq("id", lessonId)
       .single();
 
-    if (enrollError || !enrollment) {
-      return NextResponse.json({ error: "Enrollment not found" }, { status: 404 });
-    }
+    if (lesson?.module_id) {
+      const { data: moduleData } = await supabase
+        .from("lms_modules")
+        .select("course_id")
+        .eq("id", lesson.module_id)
+        .single();
 
-    // Security check: ensure this enrollment belongs to the student
-    if (enrollment.student_id !== payload.id) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+      if (moduleData?.course_id) {
+        // 3. Fetch progress_percentage updated by DB trigger
+        const { data: enrollment } = await supabase
+          .from("enrollments")
+          .select("progress_percentage")
+          .eq("student_id", payload.id)
+          .eq("course_id", moduleData.course_id)
+          .single();
 
-    // 2. Fetch course curriculum
-    const { data: course, error: courseError } = await supabase
-      .from("courses")
-      .select("curriculum")
-      .eq("id", enrollment.course_id)
-      .single();
-
-    if (courseError || !course) {
-      return NextResponse.json({ error: "Course not found" }, { status: 404 });
-    }
-
-    // 3. Update completed lessons array
-    let completedLessons = enrollment.completed_lessons;
-    if (!Array.isArray(completedLessons)) {
-      completedLessons = [];
-    }
-
-    if (completed) {
-      if (!completedLessons.includes(lessonId)) {
-        completedLessons.push(lessonId);
+        if (enrollment) {
+          progressPercentage = enrollment.progress_percentage;
+        }
       }
-    } else {
-      completedLessons = completedLessons.filter((id: string) => id !== lessonId);
-    }
-
-    // 4. Calculate progress percentage
-    const totalLessons = countLessons(course.curriculum);
-    const progressPercentage = totalLessons > 0 
-      ? Math.min(100, Math.round((completedLessons.length / totalLessons) * 100)) 
-      : 0;
-
-    // 5. Save to DB
-    const { error: updateError } = await supabase
-      .from("enrollments")
-      .update({
-        completed_lessons: completedLessons,
-        progress_percentage: progressPercentage
-      })
-      .eq("id", enrollmentId);
-
-    if (updateError) {
-      return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
 
     return NextResponse.json({
       success: true,
-      progress_percentage: progressPercentage,
-      completed_lessons: completedLessons
+      progress_percentage: progressPercentage
     });
 
   } catch (error: any) {
@@ -97,38 +80,3 @@ export async function POST(request: Request) {
   }
 }
 
-function countLessons(curriculum: any): number {
-  if (!curriculum) return 0;
-  
-  let parsed = curriculum;
-  if (typeof curriculum === 'string') {
-    try {
-      parsed = JSON.parse(curriculum);
-    } catch {
-      return 0;
-    }
-  }
-
-  if (!Array.isArray(parsed)) return 0;
-  
-  let count = 0;
-  for (const item of parsed) {
-    if (item && typeof item === 'object') {
-      if (Array.isArray(item.lessons)) {
-        count += item.lessons.length;
-      } else if (item.modules && Array.isArray(item.modules)) {
-        for (const mod of item.modules) {
-          if (mod.lessons && Array.isArray(mod.lessons)) {
-            count += mod.lessons.length;
-          }
-        }
-      } else {
-        count++;
-      }
-    } else if (typeof item === 'string') {
-      count++;
-    }
-  }
-  
-  return count === 0 ? parsed.length : count;
-}

@@ -80,7 +80,7 @@ export class CacheManager {
           user_id: userId,
           lesson_id: lessonId,
           completed,
-          updated_at: progressData.last_updated
+          last_watched_at: progressData.last_updated
         });
 
       if (error) throw error;
@@ -93,7 +93,7 @@ export class CacheManager {
       await db.sync_queue.add({
         table: 'user_progress',
         action: 'UPSERT',
-        data: { user_id: userId, lesson_id: lessonId, completed, updated_at: progressData.last_updated },
+        data: { user_id: userId, lesson_id: lessonId, completed, last_watched_at: progressData.last_updated },
         timestamp: Date.now()
       });
     }
@@ -112,7 +112,12 @@ export class CacheManager {
       try {
         let error;
         if (item.table === 'user_progress') {
-          const res = await supabase.from('user_progress').upsert(item.data);
+          const syncData = { ...item.data };
+          if ('updated_at' in syncData) {
+            syncData.last_watched_at = syncData.updated_at;
+            delete syncData.updated_at;
+          }
+          const res = await supabase.from('user_progress').upsert(syncData);
           error = res.error;
         }
 
