@@ -18,7 +18,8 @@ import {
   Layers,
   Search,
   CheckCircle2,
-  Sparkles
+  Sparkles,
+  HelpCircle
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import dynamic from "next/dynamic";
@@ -510,7 +511,15 @@ export function CurriculumClient({
             </div>
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-[9px] font-black bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-md border border-amber-400/20 uppercase tracking-widest">Next Scheduled Class</span>
+                <span className="text-[9px] font-black bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-md border border-amber-400/20 uppercase tracking-widest">
+                  {(() => {
+                    const lType = (nextLockedLesson.lesson.lesson_type || nextLockedLesson.lesson.type || '').toLowerCase();
+                    return lType === 'mcq' ? 'Next Scheduled Quiz' :
+                           lType === 'assignment' ? 'Next Scheduled Assignment' :
+                           lType === 'project' ? 'Next Scheduled Project' :
+                           'Next Scheduled Class';
+                  })()}
+                </span>
                 <span className="text-[9px] font-bold text-white/50 flex items-center gap-1">
                   <Calendar size={9} />
                   {new Date(nextLockedLesson.schedule.date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}
@@ -518,7 +527,15 @@ export function CurriculumClient({
                 </span>
               </div>
               <h4 className="text-base font-black tracking-tight line-clamp-1">{nextLockedLesson.lesson.title}</h4>
-              <p className="text-xs text-white/60 line-clamp-1 mt-0.5">This class will unlock on the scheduled date.</p>
+              <p className="text-xs text-white/60 line-clamp-1 mt-0.5">
+                {(() => {
+                  const lType = (nextLockedLesson.lesson.lesson_type || nextLockedLesson.lesson.type || '').toLowerCase();
+                  return lType === 'mcq' ? 'This quiz will unlock on the scheduled date.' :
+                         lType === 'assignment' ? 'This assignment will unlock on the scheduled date.' :
+                         lType === 'project' ? 'This project will unlock on the scheduled date.' :
+                         'This class will unlock on the scheduled date.';
+                })()}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-2 px-6 py-3 bg-white/10 border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-wider text-amber-300 shrink-0">
@@ -531,22 +548,52 @@ export function CurriculumClient({
           <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-700" />
           <div className="flex items-center gap-5 relative z-10">
             <div className="w-14 h-14 bg-indigo-500/20 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/10 shrink-0 text-indigo-300">
-              <Sparkles className="animate-pulse" size={24} />
+              {(() => {
+                const lType = (nextUpLesson.lesson_type || nextUpLesson.type || '').toLowerCase();
+                return lType === 'video' ? <PlayCircle className="animate-pulse" size={24} /> :
+                       lType === 'article' || lType === 'notes' ? <BookOpen className="animate-pulse" size={24} /> :
+                       lType === 'document' ? <FileText className="animate-pulse" size={24} /> :
+                       lType === 'mcq' ? <HelpCircle className="animate-pulse" size={24} /> :
+                       lType === 'assignment' ? <Award className="animate-pulse" size={24} /> :
+                       <Sparkles className="animate-pulse" size={24} />;
+              })()}
             </div>
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-[9px] font-black bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-md border border-indigo-400/20 uppercase tracking-widest">Next Up Class</span>
+                <span className="text-[9px] font-black bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-md border border-indigo-400/20 uppercase tracking-widest">
+                  {(() => {
+                    const lType = (nextUpLesson.lesson_type || nextUpLesson.type || '').toLowerCase();
+                    return lType === 'mcq' ? 'Next Up Quiz' :
+                           lType === 'assignment' ? 'Next Up Assignment' :
+                           lType === 'project' ? 'Next Up Project' :
+                           'Next Up Class';
+                  })()}
+                </span>
                 <span className="text-[9px] font-bold text-white/50">• {nextUpLesson.duration ? `${nextUpLesson.duration} Mins` : 'Self-paced'}</span>
               </div>
               <h4 className="text-base font-black tracking-tight line-clamp-1">{nextUpLesson.title}</h4>
-              <p className="text-xs text-white/60 line-clamp-1 mt-0.5">Start this lesson to continue your learning journey.</p>
+              <p className="text-xs text-white/60 line-clamp-1 mt-0.5">
+                {(() => {
+                  const lType = (nextUpLesson.lesson_type || nextUpLesson.type || '').toLowerCase();
+                  return lType === 'mcq' ? 'Start this quiz to test your understanding.' :
+                         lType === 'assignment' ? 'Start this assignment to practice your skills.' :
+                         lType === 'project' ? 'Start this project to apply your knowledge.' :
+                         'Start this lesson to continue your learning journey.';
+                })()}
+              </p>
             </div>
           </div>
           <button 
             onClick={() => openLesson(nextUpLesson)}
             className="px-8 py-3 bg-white text-indigo-950 hover:bg-indigo-50 rounded-xl font-black text-xs transition-all active:scale-95 shadow-lg shadow-black/20 relative z-10 shrink-0 uppercase tracking-wider flex items-center gap-2 hover:gap-3"
           >
-            Start Learning <Play size={12} fill="currentColor" />
+            {(() => {
+              const lType = (nextUpLesson.lesson_type || nextUpLesson.type || '').toLowerCase();
+              return lType === 'mcq' ? 'Start Quiz' :
+                     lType === 'assignment' ? 'Start Assignment' :
+                     lType === 'project' ? 'Start Project' :
+                     'Start Learning';
+            })()} <Play size={12} fill="currentColor" />
           </button>
         </div>
       ) : (
@@ -798,23 +845,35 @@ function ModuleItem({
 
               {expandedChapters.includes(chapter.id) && (
                 <div className="pl-4 space-y-3">
-                  {chapter.lessons.map((lesson: any, lIdx: number) => (
-                    <LessonItem 
-                      key={lesson.id}
-                      lIdx={lIdx}
-                      lesson={lesson}
-                      moduleTitle={module.title}
-                      userProgress={userProgress}
-                      currentSchedules={currentSchedules}
-                      now={now}
-                      formatTime={formatTime}
-                      isUpdating={isUpdating}
-                      toggleLessonCompletion={toggleLessonCompletion}
-                      openLesson={openLesson}
-                      availableBatches={availableBatches}
-                      isNextLocked={lesson.id === nextLockedLessonId}
-                    />
-                  ))}
+                  {(() => {
+                    let classCounter = 0;
+                    const sortedLessons = [...chapter.lessons].sort((a: any, b: any) => a.order_index - b.order_index).map((l: any) => {
+                      const lessonType = (l.lesson_type || l.type || 'video').toLowerCase();
+                      const isClass = lessonType === 'video' || lessonType === 'notes';
+                      if (isClass) {
+                        classCounter++;
+                        return { ...l, classIndex: classCounter };
+                      }
+                      return l;
+                    });
+                    return sortedLessons.map((lesson: any, lIdx: number) => (
+                      <LessonItem 
+                        key={lesson.id}
+                        lIdx={lIdx}
+                        lesson={lesson}
+                        moduleTitle={module.title}
+                        userProgress={userProgress}
+                        currentSchedules={currentSchedules}
+                        now={now}
+                        formatTime={formatTime}
+                        isUpdating={isUpdating}
+                        toggleLessonCompletion={toggleLessonCompletion}
+                        openLesson={openLesson}
+                        availableBatches={availableBatches}
+                        isNextLocked={lesson.id === nextLockedLessonId}
+                      />
+                    ));
+                  })()}
                 </div>
               )}
             </div>
@@ -829,24 +888,36 @@ function ModuleItem({
                   <div className="h-[1px] flex-1 bg-slate-100" />
                </div>
                <div className="pl-4 space-y-3">
-                 {uncategorizedLessons.map((lesson: any, lIdx: number) => (
-                   <LessonItem 
-                     key={lesson.id}
-                     lIdx={lIdx}
-                     lesson={lesson}
-                     moduleTitle={module.title}
-                     userProgress={userProgress}
-                     currentSchedules={currentSchedules}
-                     now={now}
-                     formatTime={formatTime}
-                     isUpdating={isUpdating}
-                     toggleLessonCompletion={toggleLessonCompletion}
-                     openLesson={openLesson}
-                     availableBatches={availableBatches}
-                     isNextLocked={lesson.id === nextLockedLessonId}
-                   />
-                 ))}
-               </div>
+                  {(() => {
+                    let classCounter = 0;
+                    const sortedLessons = [...uncategorizedLessons].sort((a: any, b: any) => a.order_index - b.order_index).map((l: any) => {
+                      const lessonType = (l.lesson_type || l.type || 'video').toLowerCase();
+                      const isClass = lessonType === 'video' || lessonType === 'notes';
+                      if (isClass) {
+                        classCounter++;
+                        return { ...l, classIndex: classCounter };
+                      }
+                      return l;
+                    });
+                    return sortedLessons.map((lesson: any, lIdx: number) => (
+                      <LessonItem 
+                        key={lesson.id}
+                        lIdx={lIdx}
+                        lesson={lesson}
+                        moduleTitle={module.title}
+                        userProgress={userProgress}
+                        currentSchedules={currentSchedules}
+                        now={now}
+                        formatTime={formatTime}
+                        isUpdating={isUpdating}
+                        toggleLessonCompletion={toggleLessonCompletion}
+                        openLesson={openLesson}
+                        availableBatches={availableBatches}
+                        isNextLocked={lesson.id === nextLockedLessonId}
+                      />
+                    ));
+                  })()}
+                </div>
             </div>
           )}
         </div>
@@ -914,12 +985,18 @@ function LessonItem({
            (lesson.lesson_type || lesson.type)?.toLowerCase() === 'video' ? <PlayCircle size={18} /> :
            (lesson.lesson_type || lesson.type)?.toLowerCase() === 'article' ? <BookOpen size={18} /> :
            (lesson.lesson_type || lesson.type)?.toLowerCase() === 'document' ? <FileText size={18} /> :
+           (lesson.lesson_type || lesson.type)?.toLowerCase() === 'mcq' ? <HelpCircle size={18} /> :
+           (lesson.lesson_type || lesson.type)?.toLowerCase() === 'assignment' ? <Award size={18} /> :
            <PenTool size={18} />}
         </div>
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2 mb-0.5">
             <h5 className={`font-bold text-sm truncate ${isCompleted ? 'text-slate-500 line-through' : 'text-slate-900'}`}>
-              Class {lIdx + 1}: {lesson.title}
+              {lesson.classIndex ? `Class ${lesson.classIndex}: ${lesson.title}` :
+               (lesson.lesson_type || lesson.type)?.toLowerCase() === 'mcq' ? `Quiz: ${lesson.title}` :
+               (lesson.lesson_type || lesson.type)?.toLowerCase() === 'assignment' ? `Assignment: ${lesson.title}` :
+               (lesson.lesson_type || lesson.type)?.toLowerCase() === 'project' ? `Project: ${lesson.title}` :
+               `${lesson.title}`}
             </h5>
             {isCompleted && <span className="text-[8px] font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md uppercase tracking-widest border border-emerald-100">Completed</span>}
             {isInProgress && <span className="text-[8px] font-black text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded-md uppercase tracking-widest border border-indigo-100">In Progress</span>}

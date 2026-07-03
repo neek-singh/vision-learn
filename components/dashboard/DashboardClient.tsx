@@ -22,7 +22,8 @@ import {
   Target,
   Clock,
   Smile,
-  X
+  X,
+  HelpCircle
 } from "lucide-react";
 import { StatCard, QuickLinks, UpcomingEvents, RecentActivity, NoticeBoard, StreakWidget } from "@/components/dashboard/DashboardComponents";
 
@@ -640,19 +641,47 @@ export default function DashboardClient({
                  <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
                     <div className="flex items-center gap-4">
                        <div className="w-12 h-12 bg-white/15 rounded-xl flex items-center justify-center backdrop-blur-sm border border-white/20">
-                         <PlayCircle size={22} />
+                         {(() => {
+                            const lType = (nextLesson.lesson_type || nextLesson.type || '').toLowerCase();
+                            return lType === 'mcq' ? <HelpCircle size={22} /> :
+                                   lType === 'assignment' ? <Award size={22} /> :
+                                   lType === 'video' ? <PlayCircle size={22} /> :
+                                   lType === 'article' || lType === 'notes' ? <BookOpen size={22} /> :
+                                   lType === 'document' ? <FileText size={22} /> :
+                                   <PlayCircle size={22} />;
+                          })()}
                        </div>
                        <div className="space-y-1">
-                         <span className="px-2.5 py-0.5 bg-white/20 rounded-md text-[9px] font-black uppercase tracking-widest">Up Next</span>
+                         <span className="px-2.5 py-0.5 bg-white/20 rounded-md text-[9px] font-black uppercase tracking-widest">
+                           {(() => {
+                              const lType = (nextLesson.lesson_type || nextLesson.type || '').toLowerCase();
+                              return lType === 'mcq' ? 'Next Quiz' :
+                                     lType === 'assignment' ? 'Next Assignment' :
+                                     lType === 'project' ? 'Next Project' :
+                                     'Up Next';
+                            })()}
+                         </span>
                          <h2 className="text-lg font-black leading-tight">{nextLesson.title}</h2>
-                         <p className="text-indigo-100 text-xs font-medium">Click below to continue learning!</p>
+                         <p className="text-indigo-100 text-xs font-medium">
+                           {(() => {
+                              const lType = (nextLesson.lesson_type || nextLesson.type || '').toLowerCase();
+                              return lType === 'mcq' ? 'Click below to start your quiz!' :
+                                     lType === 'assignment' ? 'Click below to start your assignment!' :
+                                     'Click below to continue learning!';
+                            })()}
+                         </p>
                        </div>
                     </div>
                     <Link 
                       href={`/curriculum?lessonId=${nextLesson.id}`}
                       className="bg-white text-slate-900 px-6 py-3 rounded-xl font-black text-sm flex items-center gap-2 hover:scale-105 transition-all shadow-md active:scale-95 shrink-0 hover:text-indigo-600"
                     >
-                      <PlayCircle size={18} /> Start Now
+                      {(() => {
+                         const lType = (nextLesson.lesson_type || nextLesson.type || '').toLowerCase();
+                         return lType === 'mcq' ? <><HelpCircle size={18} /> Start Quiz</> :
+                                lType === 'assignment' ? <><Award size={18} /> Start Assignment</> :
+                                <><PlayCircle size={18} /> Start Now</>;
+                       })()}
                     </Link>
                  </div>
               </section>
@@ -662,10 +691,23 @@ export default function DashboardClient({
                 <section className="bg-white border border-slate-100 rounded-2xl p-5 relative overflow-hidden shadow-sm flex flex-col md:flex-row items-center justify-between gap-4 w-full">
                   <div className="flex items-center gap-4">
                     <div className={`w-10 h-10 ${style.bgLight} rounded-xl flex items-center justify-center ${style.text}`}>
-                      <Clock size={18} />
+                      {(() => {
+                        const lType = (nextScheduledClass.lesson.lesson_type || nextScheduledClass.lesson.type || '').toLowerCase();
+                        return lType === 'mcq' ? <HelpCircle size={18} /> :
+                               lType === 'assignment' ? <Award size={18} /> :
+                               lType === 'video' ? <PlayCircle size={18} /> :
+                               <Clock size={18} />;
+                      })()}
                     </div>
                     <div className="space-y-0.5">
-                      <span className={`px-2 py-0.5 ${style.badge} border rounded-md text-[9px] font-black uppercase tracking-widest`}>Next Class</span>
+                      <span className={`px-2 py-0.5 ${style.badge} border rounded-md text-[9px] font-black uppercase tracking-widest`}>
+                        {(() => {
+                          const lType = (nextScheduledClass.lesson.lesson_type || nextScheduledClass.lesson.type || '').toLowerCase();
+                          return lType === 'mcq' ? 'Next Quiz' :
+                                 lType === 'assignment' ? 'Next Assignment' :
+                                 'Next Class';
+                        })()}
+                      </span>
                       <h3 className="text-sm font-black text-slate-900 leading-tight">{nextScheduledClass.lesson.title}</h3>
                       <p className="text-slate-400 text-[11px] font-medium">
                         {new Date(nextScheduledClass.schedule.date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}
