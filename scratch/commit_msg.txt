@@ -1,0 +1,8 @@
+fix: dashboard progress and hydration issues
+
+- Replace completed_at with last_watched_at in dashboard page query
+- Calculate progressPercentage live from completedCount and totalLessonsCount
+- Rewrite progress API route to write to user_progress table
+- Fix cache-manager: use last_watched_at, add legacy queue healing in syncPending
+- Fix course detail page to read completed lessons from user_progress
+- Add suppressHydrationWarning to html tag in layout.tsx
