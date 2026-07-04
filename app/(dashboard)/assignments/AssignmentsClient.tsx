@@ -1,36 +1,63 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   PenTool, 
   FileUp,
   BookOpen,
   X,
   Calendar,
-  FileText,
   Info,
   CheckCircle2,
   Upload,
   Loader2,
-  Clock
+  Clock,
+  Zap
 } from "lucide-react";
 import { createClient as createPublicSupabaseClient } from "@/lib/supabase-browser";
-import { useRouter } from "next/navigation";
 
-export default function AssignmentsClient({ initialAssignments, initialSubmissions, studentId }: { initialAssignments: any[], initialSubmissions: any[], studentId: string }) {
-  const router = useRouter();
+export default function AssignmentsClient({ 
+  initialAssignments, 
+  initialSubmissions, 
+  studentId 
+}: { 
+  initialAssignments: any[], 
+  initialSubmissions: any[], 
+  studentId: string 
+}) {
   const [selectedCourse, setSelectedCourse] = useState("all");
   const [isSubmittingModal, setIsSubmittingModal] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [activeAssignment, setActiveAssignment] = useState<any>(null);
   const [submissionUrl, setSubmissionUrl] = useState("");
   const [submissions, setSubmissions] = useState<any[]>(initialSubmissions);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const supabase = createPublicSupabaseClient();
 
+  if (!mounted) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-4 bg-white rounded-3xl border border-slate-100 shadow-sm">
+        <Loader2 className="animate-spin text-indigo-600" size={32} />
+        <p className="text-slate-500 font-black text-xs uppercase tracking-widest">Loading Assignments...</p>
+      </div>
+    );
+  }
+
+  const getSubmission = (item: any) => {
+    if (item.source === "lesson") {
+      return submissions.find(s => s.lesson_id === item.id);
+    }
+    return submissions.find(s => s.assignment_id === item.id);
+  };
+
   const handleOpenSubmission = (assignment: any) => {
     setActiveAssignment(assignment);
-    const existing = initialSubmissions.find(s => s.assignment_id === assignment.id);
+    const existing = getSubmission(assignment);
     setSubmissionUrl(existing?.content_url || "");
     setIsSubmittingModal(true);
   };
@@ -40,28 +67,36 @@ export default function AssignmentsClient({ initialAssignments, initialSubmissio
     setIsUploading(true);
 
     try {
-      const { error } = await supabase
-        .from("submissions")
-        .upsert([{
-          assignment_id: activeAssignment.id,
-          student_id: studentId,
-          content_url: submissionUrl,
-          status: 'submitted'
-        }], { onConflict: 'assignment_id,student_id' });
+      if (activeAssignment.source === "lesson") {
+        const { error } = await supabase
+          .from("submissions")
+          .upsert([{
+            lesson_id: activeAssignment.id,
+            student_id: studentId,
+            content_url: submissionUrl,
+            status: "submitted"
+          }], { onConflict: "lesson_id,student_id" });
+        if (error) throw error;
+        setSubmissions(prev => [
+          ...prev.filter(s => s.lesson_id !== activeAssignment.id),
+          { lesson_id: activeAssignment.id, student_id: studentId, content_url: submissionUrl, status: "submitted" }
+        ]);
+      } else {
+        const { error } = await supabase
+          .from("submissions")
+          .upsert([{
+            assignment_id: activeAssignment.id,
+            student_id: studentId,
+            content_url: submissionUrl,
+            status: "submitted"
+          }], { onConflict: "assignment_id,student_id" });
+        if (error) throw error;
+        setSubmissions(prev => [
+          ...prev.filter(s => s.assignment_id !== activeAssignment.id),
+          { assignment_id: activeAssignment.id, student_id: studentId, content_url: submissionUrl, status: "submitted" }
+        ]);
+      }
 
-      if (error) throw error;
-      
-      // Update local state
-      setSubmissions(prev => [
-        ...prev.filter(s => s.assignment_id !== activeAssignment.id),
-        {
-          assignment_id: activeAssignment.id,
-          student_id: studentId,
-          content_url: submissionUrl,
-          status: 'submitted'
-        }
-      ]);
-      
       setIsSubmittingModal(false);
     } catch (err) {
       console.error("Error submitting assignment:", err);
@@ -71,10 +106,41 @@ export default function AssignmentsClient({ initialAssignments, initialSubmissio
     }
   };
 
-  const coursesList = Array.from(new Set(initialAssignments.map(a => a.courses?.title))).filter(Boolean);
-  const filteredAssignments = selectedCourse === "all" 
-    ? initialAssignments 
-    : initialAssignments.filter(a => a.courses?.title === selectedCourse);
+  const getCourseTitle = (item: any) => {
+    if (item.source === "lesson") {
+      return item.enrollmentBatch || "My Course";
+    }
+    return item.courses?.title || "";
+  };
+
+  const getCourseName = (item: any) => item.courses?.title || item.enrollmentBatch || "My Course";
+
+  const getDueDate = (item: any) => {
+    if (item.source === "lesson") {
+      if (item.schedule?.date) {
+        return new Date(`${item.schedule.date}T${item.schedule.end_time || "23:59:00"}`);
+      }
+      return null;
+    }
+    return item.due_date ? new Date(item.due_date) : null;
+  };
+
+  const isLiveNow = (item: any) => {
+    if (item.source !== "lesson" || !item.schedule) return false;
+    const startDate = new Date(`${item.schedule.date}T${item.schedule.start_time || "00:00:00"}`);
+    const endDate = item.schedule.end_time
+      ? new Date(`${item.schedule.date}T${item.schedule.end_time}`)
+      : null;
+    const now = new Date();
+    if (endDate) return now >= startDate && now <= endDate;
+    return now >= startDate;
+  };
+
+  const coursesList = Array.from(new Set(initialAssignments.map(a => getCourseName(a)))).filter(Boolean);
+
+  const filteredAssignments = selectedCourse === "all"
+    ? initialAssignments
+    : initialAssignments.filter(a => getCourseName(a) === selectedCourse);
 
   return (
     <div className="space-y-8">
@@ -117,61 +183,85 @@ export default function AssignmentsClient({ initialAssignments, initialSubmissio
                   <th className="px-6 py-4">Task Title</th>
                   <th className="px-6 py-4">Course</th>
                   <th className="px-6 py-4">Date</th>
-                  <th className="px-6 py-4">Due Date</th>
+                  <th className="px-6 py-4">Due / Schedule</th>
                   <th className="px-6 py-4 text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {filteredAssignments.map((task: any) => (
-                  <tr key={task.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-600">
-                          <PenTool size={16} />
+                {filteredAssignments.map((task: any) => {
+                  const submission = getSubmission(task);
+                  const dueDate = getDueDate(task);
+                  const live = isLiveNow(task);
+                  return (
+                    <tr key={task.id} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${task.source === "lesson" ? "bg-amber-50 text-amber-600" : "bg-indigo-50 text-indigo-600"}`}>
+                            <PenTool size={16} />
+                          </div>
+                          <div>
+                            <p className="font-black text-slate-900 text-sm">{task.title}</p>
+                            {live && !submission && (
+                              <span className="flex items-center gap-1 px-2 py-0.5 bg-rose-50 text-rose-600 rounded-full text-[8px] font-black uppercase tracking-widest border border-rose-100 w-fit mt-0.5">
+                                <Zap size={8} fill="currentColor" /> Live Now
+                              </span>
+                            )}
+                            {submission && (
+                              <span className="flex items-center gap-1 px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-full text-[8px] font-black uppercase tracking-widest border border-emerald-100 w-fit mt-0.5">
+                                <CheckCircle2 size={8} /> Submitted
+                              </span>
+                            )}
+                          </div>
                         </div>
-                        <p className="font-black text-slate-900 text-sm">{task.title}</p>
-                        {submissions.find(s => s.assignment_id === task.id) && (
-                          <span className="flex items-center gap-1 px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-full text-[8px] font-black uppercase tracking-widest border border-emerald-100">
-                            Completed
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-xs font-bold text-slate-500">
-                      {task.courses?.title}
-                    </td>
-                    <td className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                      {new Date(task.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-col gap-1 text-slate-500">
-                        <div className="flex items-center gap-2">
-                          <Calendar size={12} className="text-amber-500" />
-                          <span className="text-xs font-bold">{new Date(task.due_date).toLocaleDateString()}</span>
+                      </td>
+                      <td className="px-6 py-4 text-xs font-bold text-slate-500">
+                        {getCourseName(task)}
+                      </td>
+                      <td className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        {new Date(task.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col gap-1 text-slate-500">
+                          {dueDate ? (
+                            <>
+                              <div className="flex items-center gap-2">
+                                <Calendar size={12} className="text-amber-500" />
+                                <span className="text-xs font-bold">{dueDate.toLocaleDateString()}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Clock size={12} className="text-indigo-400" />
+                                <span className="text-[10px] font-bold">
+                                  {dueDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              </div>
+                            </>
+                          ) : task.source === "lesson" && task.schedule ? (
+                            <div className="flex items-center gap-2">
+                              <Calendar size={12} className="text-amber-500" />
+                              <span className="text-xs font-bold">{task.schedule.date}</span>
+                            </div>
+                          ) : (
+                            <span className="text-[10px] text-slate-300 font-bold">No deadline</span>
+                          )}
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Clock size={12} className="text-indigo-400" />
-                          <span className="text-[10px] font-bold">
-                            {new Date(task.due_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                       <button 
-                         onClick={() => handleOpenSubmission(task)}
-                         disabled={!!submissions.find(s => s.assignment_id === task.id)}
-                         className={`inline-flex items-center gap-2 px-4 py-2 text-[10px] font-black rounded-xl transition-all shadow-md active:scale-95 ${
-                         submissions.find(s => s.assignment_id === task.id)
-                           ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-                           : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-100"
-                       }`}>
-                        <FileUp size={12} />
-                        {submissions.find(s => s.assignment_id === task.id) ? "Submitted" : "Submit Task"}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <button 
+                          onClick={() => handleOpenSubmission(task)}
+                          disabled={!!submission}
+                          className={`inline-flex items-center gap-2 px-4 py-2 text-[10px] font-black rounded-xl transition-all shadow-md active:scale-95 ${
+                            submission
+                              ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                              : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-100"
+                          }`}
+                        >
+                          <FileUp size={12} />
+                          {submission ? "Submitted" : "Submit Task"}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -189,7 +279,7 @@ export default function AssignmentsClient({ initialAssignments, initialSubmissio
                 </div>
                 <div>
                   <h3 className="font-black text-slate-900">Submit Assignment</h3>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{activeAssignment.courses?.title}</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{getCourseName(activeAssignment)}</p>
                 </div>
               </div>
               <button onClick={() => setIsSubmittingModal(false)} className="p-2 hover:bg-slate-100 rounded-xl transition-all"><X size={20} /></button>
@@ -204,17 +294,19 @@ export default function AssignmentsClient({ initialAssignments, initialSubmissio
                 </h4>
                 <div className="prose prose-sm max-h-40 overflow-y-auto pr-2 scrollbar-hide">
                   <p className="text-xs text-slate-600 font-medium leading-relaxed">
-                    {activeAssignment.description || "No specific instructions provided for this task."}
+                    {activeAssignment.description || activeAssignment.notes_content?.replace(/<[^>]*>/g, "").substring(0, 300) || "No specific instructions provided."}
                   </p>
                 </div>
                 <div className="mt-4 pt-4 border-t border-indigo-100 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Clock size={14} className="text-rose-500" />
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                      Due: {new Date(activeAssignment.due_date).toLocaleString()}
-                    </span>
-                  </div>
-                  {submissions.find(s => s.assignment_id === activeAssignment.id) && (
+                  {getDueDate(activeAssignment) && (
+                    <div className="flex items-center gap-2">
+                      <Clock size={14} className="text-rose-500" />
+                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                        Due: {getDueDate(activeAssignment)?.toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+                  {getSubmission(activeAssignment) && (
                     <span className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500 text-white rounded-full text-[8px] font-black uppercase tracking-widest">
                       <CheckCircle2 size={10} /> Already Submitted
                     </span>
@@ -253,7 +345,8 @@ export default function AssignmentsClient({ initialAssignments, initialSubmissio
                     Cancel
                   </button>
                   <button 
-                    disabled={isUploading || !!submissions.find(s => s.assignment_id === activeAssignment.id)}
+                    type="submit"
+                    disabled={isUploading || !!getSubmission(activeAssignment)}
                     className="flex-[2] py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all shadow-xl shadow-indigo-100 disabled:opacity-50 disabled:bg-slate-200 disabled:text-slate-400 flex items-center justify-center gap-2"
                   >
                     {isUploading ? (
@@ -261,7 +354,7 @@ export default function AssignmentsClient({ initialAssignments, initialSubmissio
                     ) : (
                       <CheckCircle2 size={18} />
                     )}
-                    {submissions.find(s => s.assignment_id === activeAssignment.id) ? "Already Submitted" : "Submit Assignment"}
+                    {getSubmission(activeAssignment) ? "Already Submitted" : "Submit Assignment"}
                   </button>
                 </div>
               </form>

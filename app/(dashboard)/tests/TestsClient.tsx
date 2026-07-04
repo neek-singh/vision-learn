@@ -19,13 +19,17 @@ export default function TestsClient({
   schedules,
   activeBatch,
   studentId, 
-  initialResults 
+  initialResults,
+  quizLessons = [],
+  quizSubmissions = []
 }: { 
   initialTests: any[], 
   schedules: any[],
   activeBatch: string,
   studentId: string, 
-  initialResults: any[] 
+  initialResults: any[],
+  quizLessons?: any[],
+  quizSubmissions?: any[]
 }) {
   const [activeTest, setActiveTest] = useState<any>(null);
   const [questions, setQuestions] = useState<any[]>([]);
@@ -36,57 +40,74 @@ export default function TestsClient({
   const [score, setScore] = useState(0);
   const [selectedCourse, setSelectedCourse] = useState("all");
   const [results, setResults] = useState<any[]>(initialResults);
+  const [mounted, setMounted] = useState(false);
 
-  const now = new Date();
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-  // 1. Filter by Schedule
-  const scheduledTitles = useMemo(() => {
+  const now = useMemo(() => new Date(), []);
+
+  const normalize = (txt: string) => txt.toLowerCase().replace(/[^a-z0-9]/g, "").trim();
+
+  // 1. Filter live schedules for this batch
+  const liveSchedules = useMemo(() => {
     const nowTime = now.getTime();
-    const scheduledTests = schedules.filter(s => {
+    return schedules.filter(s => {
       const sBatch = s.batch?.trim().toLowerCase();
       const batchMatch = !sBatch || sBatch === "all batches" || sBatch.includes(activeBatch) || activeBatch.includes(sBatch);
       if (!batchMatch) return false;
-
       const timeStr = s.start_time?.includes(':') ? s.start_time : '00:00:00';
       const sDate = new Date(`${s.date}T${timeStr}`).getTime();
       return nowTime >= sDate;
     });
-    return scheduledTests.map(s => s.title.toLowerCase());
   }, [schedules, activeBatch, now]);
+
+  const scheduledTitles = useMemo(() => liveSchedules.map(s => s.title.toLowerCase()), [liveSchedules]);
 
   // 2. Apply Schedule Filter to initialTests
   const currentlyAvailableTests = useMemo(() => {
     return initialTests.filter((t) => {
-      // First check if it's scheduled
       const isScheduled = scheduledTitles.some((st: string) => {
-        const normalize = (txt: string) => {
-          return txt.toLowerCase()
-            .replace(/^(test|note|assignment|class|lecture|event):/i, '')
-            .trim();
-        };
-        const cleanST = normalize(st);
+        const cleanST = normalize(st.replace(/^(test|note|assignment|class|lecture|event):/i, ""));
         const cleanTT = normalize(t.title);
         return cleanST.includes(cleanTT) || cleanTT.includes(cleanST);
       });
       if (!isScheduled) return false;
-
-      // Batch check from test column (as fallback)
       if (!t.batch || t.batch === "All Batches") return true;
       const tBatch = t.batch.trim().toLowerCase();
       return tBatch.includes(activeBatch) || activeBatch.includes(tBatch);
     });
   }, [initialTests, scheduledTitles, activeBatch]);
 
+  // 3. Live quiz-type schedules → match with curriculum lesson quizzes
+  const liveQuizSchedules = useMemo(() => liveSchedules.filter(s => (s.type || "").toLowerCase() === "quiz"), [liveSchedules]);
+
+  const scheduledQuizLessons = useMemo(() => {
+    return quizLessons.filter(lesson =>
+      liveQuizSchedules.some(s =>
+        normalize(s.title).includes(normalize(lesson.title)) ||
+        normalize(lesson.title).includes(normalize(s.title))
+      )
+    ).map(lesson => ({ ...lesson, source: "lesson" as const }));
+  }, [quizLessons, liveQuizSchedules]);
+
+  // Merge: traditional tests + scheduled curriculum quizzes
+  const allAvailableTests = useMemo(() => [
+    ...currentlyAvailableTests.map(t => ({ ...t, source: "test" as const })),
+    ...scheduledQuizLessons
+  ], [currentlyAvailableTests, scheduledQuizLessons]);
+
   const coursesList = useMemo(() => 
-    Array.from(new Set(currentlyAvailableTests.map((t: any) => t.courses?.title))).filter(Boolean),
-    [currentlyAvailableTests]
+    Array.from(new Set(allAvailableTests.map((t: any) => t.courses?.title || "My Course"))).filter(Boolean),
+    [allAvailableTests]
   );
   
   const filteredTests = useMemo(() => 
     selectedCourse === "all" 
-      ? currentlyAvailableTests 
-      : currentlyAvailableTests.filter((t: any) => t.courses?.title === selectedCourse),
-    [selectedCourse, currentlyAvailableTests]
+      ? allAvailableTests
+      : allAvailableTests.filter((t: any) => (t.courses?.title || "My Course") === selectedCourse),
+    [selectedCourse, allAvailableTests]
   );
 
   const fetchQuestions = async (testId: string) => {
@@ -154,6 +175,15 @@ export default function TestsClient({
       console.error("Error saving test result:", err);
     }
   };
+
+  if (!mounted) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-4 bg-white rounded-3xl border border-slate-100 shadow-sm animate-pulse">
+        <Loader2 className="animate-spin text-indigo-600" size={32} />
+        <p className="text-slate-500 font-black text-xs uppercase tracking-widest">Loading Tests...</p>
+      </div>
+    );
+  }
 
   if (activeTest) {
     if (isLoading) {
@@ -308,7 +338,7 @@ export default function TestsClient({
             <Trophy size={32} />
           </div>
           <h2 className="text-xl font-black text-slate-900 mb-2">Tests Coming Soon</h2>
-          <p className="text-sm text-slate-500 max-w-sm mx-auto">Online tests for your enrolled courses will be available here soon.</p>
+          <p className="text-sm text-slate-500 max-w-sm mx-auto">Online tests and quizzes will appear here once they are scheduled.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -316,8 +346,10 @@ export default function TestsClient({
             <TestCard 
               key={test.id} 
               test={test} 
-              result={results.find((r: any) => r.test_id === test.id)}
-              onStart={handleStartTest}
+              result={test.source === "lesson"
+                ? quizSubmissions.find((s: any) => s.lesson_id === test.id)
+                : results.find((r: any) => r.test_id === test.id)}
+              onStart={test.source === "lesson" ? () => {} : handleStartTest}
             />
           ))}
         </div>
@@ -327,33 +359,46 @@ export default function TestsClient({
 }
 
 // Memoized Test Card for better performance
-const TestCard = memo(({ test, result, onStart }: { test: any, result: any, onStart: (t: any) => void }) => (
-  <div key={test.id} className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-lg transition-all duration-500 group">
+const TestCard = memo(({ test, result, onStart }: { test: any, result: any, onStart: (t: any) => void }) => {
+  const isLesson = test.source === "lesson";
+  return (
+  <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-lg transition-all duration-500 group">
     <div className="flex justify-between items-start mb-4">
-      <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform ${isLesson ? "bg-purple-50 text-purple-600" : "bg-indigo-50 text-indigo-600"}`}>
         <FileText size={20} />
       </div>
-      {result && (
+      {result ? (
         <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-emerald-100">
           <CheckCircle2 size={12} />
           Completed
         </span>
-      )}
+      ) : isLesson ? (
+        <span className="flex items-center gap-1.5 px-3 py-1 bg-purple-50 text-purple-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-purple-100">
+          Quiz
+        </span>
+      ) : null}
     </div>
 
     <div className="space-y-0.5 mb-6">
       <div className="flex items-center gap-2 mb-2">
-        <span className={`px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-widest border ${
-          test.type === 'monthly' ? 'bg-purple-50 text-purple-700 border-purple-100' : 
-          test.type === 'weekly' ? 'bg-blue-50 text-blue-700 border-blue-100' : 
-          'bg-emerald-50 text-emerald-700 border-emerald-100'
-        }`}>
-          {test.type || 'daily'}
-        </span>
+        {!isLesson && (
+          <span className={`px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-widest border ${
+            test.type === 'monthly' ? 'bg-purple-50 text-purple-700 border-purple-100' : 
+            test.type === 'weekly' ? 'bg-blue-50 text-blue-700 border-blue-100' : 
+            'bg-emerald-50 text-emerald-700 border-emerald-100'
+          }`}>
+            {test.type || 'daily'}
+          </span>
+        )}
+        {isLesson && (
+          <span className="px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-widest border bg-purple-50 text-purple-700 border-purple-100">
+            Curriculum Quiz
+          </span>
+        )}
       </div>
       <h3 className="text-lg font-black text-slate-900 line-clamp-1">{test.title}</h3>
       <div className="flex items-center justify-between mt-1">
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">{test.courses?.title}</p>
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">{test.courses?.title || "My Course"}</p>
         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
           {new Date(test.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
         </p>
@@ -361,32 +406,47 @@ const TestCard = memo(({ test, result, onStart }: { test: any, result: any, onSt
     </div>
 
     <div className="flex items-center gap-4 mb-6">
-      <div className="flex items-center gap-2 text-slate-500">
-        <Clock size={12} className="text-amber-400" />
-        <span className="text-[10px] font-bold">{test.duration_minutes}m</span>
-      </div>
+      {!isLesson && (
+        <div className="flex items-center gap-2 text-slate-500">
+          <Clock size={12} className="text-amber-400" />
+          <span className="text-[10px] font-bold">{test.duration_minutes}m</span>
+        </div>
+      )}
       {result && (
         <div className="flex items-center gap-2 text-emerald-600">
           <Trophy size={12} />
-          <span className="text-[10px] font-black">Score: {result.score}/{result.total_questions}</span>
+          <span className="text-[10px] font-black">
+            Score: {result.score || (result.content_url?.match(/Score (.+)/)?.[1])}/{result.total_questions || "—"}
+          </span>
         </div>
       )}
     </div>
 
-    <button 
-      onClick={() => onStart(test)}
-      aria-label={result ? `Retake test: ${test.title}` : `Start test: ${test.title}`}
-      className={`w-full py-3 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 shadow-md active:scale-95 ${
-        result
-          ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-100"
-          : "bg-slate-900 hover:bg-indigo-600 text-white shadow-slate-100"
-      }`}
-    >
-      {result ? (
-        <><CheckCircle2 size={14} /> Retake Test</>
-      ) : (
-        <><Play size={14} fill="currentColor" /> Start Test</>
-      )}
-    </button>
+    {isLesson ? (
+      <a
+        href="/curriculum"
+        className="w-full py-3 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 shadow-md active:scale-95 bg-purple-600 hover:bg-purple-700 text-white shadow-purple-100"
+      >
+        {result ? <><CheckCircle2 size={14} /> View in Curriculum</> : <><Play size={14} fill="currentColor" /> Attempt in Curriculum</>}
+      </a>
+    ) : (
+      <button 
+        onClick={() => onStart(test)}
+        aria-label={result ? `Retake test: ${test.title}` : `Start test: ${test.title}`}
+        className={`w-full py-3 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 shadow-md active:scale-95 ${
+          result
+            ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-100"
+            : "bg-slate-900 hover:bg-indigo-600 text-white shadow-slate-100"
+        }`}
+      >
+        {result ? (
+          <><CheckCircle2 size={14} /> Retake Test</>
+        ) : (
+          <><Play size={14} fill="currentColor" /> Start Test</>
+        )}
+      </button>
+    )}
   </div>
-));
+  );
+});
+TestCard.displayName = "TestCard";

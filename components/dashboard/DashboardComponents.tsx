@@ -21,6 +21,7 @@ export function StatCard({ icon, label, value, sub, color }: { icon: React.React
     blue: { bg: "bg-blue-50/50", text: "text-blue-700", border: "border-blue-100", iconBg: "bg-blue-100 text-blue-600" },
     indigo: { bg: "bg-indigo-50/50", text: "text-indigo-700", border: "border-indigo-100", iconBg: "bg-indigo-100 text-indigo-600" },
     amber: { bg: "bg-amber-50/50", text: "text-amber-700", border: "border-amber-100", iconBg: "bg-amber-100 text-amber-600" },
+    purple: { bg: "bg-purple-50/50", text: "text-purple-700", border: "border-purple-100", iconBg: "bg-purple-100 text-purple-600" },
   };
   const c = colorMap[color] || colorMap.indigo;
 

@@ -23,7 +23,9 @@ import {
   Clock,
   Smile,
   X,
-  HelpCircle
+  HelpCircle,
+  FolderCode,
+  Video
 } from "lucide-react";
 import { StatCard, QuickLinks, UpcomingEvents, RecentActivity, NoticeBoard, StreakWidget } from "@/components/dashboard/DashboardComponents";
 
@@ -47,6 +49,14 @@ interface DashboardClientProps {
     totalLessonsCount: number;
     progressPercentage: number;
     remainingCount: number;
+    completedClasses?: number;
+    totalClasses?: number;
+    completedQuizzes?: number;
+    totalQuizzes?: number;
+    completedAssignments?: number;
+    totalAssignments?: number;
+    completedProjects?: number;
+    totalProjects?: number;
   };
   nextLesson: any;
   isLessonScheduledToday?: boolean;
@@ -521,31 +531,31 @@ export default function DashboardClient({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <StatCard 
               icon={<CheckCircle2 size={18} />} 
-              label="Completed" 
-              value={`${stats.completedCount}`} 
-              sub="classes"
-              color="emerald" 
-            />
-            <StatCard 
-              icon={<BookOpen size={18} />} 
-              label="Total" 
-              value={`${stats.totalLessonsCount}`} 
-              sub="classes"
+              label="Classes" 
+              value={`${stats.completedClasses || 0}/${stats.totalClasses || 0}`} 
+              sub="done"
               color="blue" 
             />
             <StatCard 
-              icon={<TrendingUp size={18} />} 
-              label="Progress" 
-              value={`${stats.progressPercentage}%`} 
+              icon={<HelpCircle size={18} />} 
+              label="Quizzes" 
+              value={`${stats.completedQuizzes || 0}/${stats.totalQuizzes || 0}`} 
               sub="done"
-              color="indigo" 
+              color="purple" 
             />
             <StatCard 
-              icon={<Flame size={18} />} 
-              label="Remaining" 
-              value={`${stats.remainingCount}`} 
-              sub="to go"
+              icon={<Award size={18} />} 
+              label="Assignments" 
+              value={`${stats.completedAssignments || 0}/${stats.totalAssignments || 0}`} 
+              sub="done"
               color="amber" 
+            />
+            <StatCard 
+              icon={<FolderCode size={18} />} 
+              label="Projects" 
+              value={`${stats.completedProjects || 0}/${stats.totalProjects || 0}`} 
+              sub="done"
+              color="emerald" 
             />
           </div>
 
@@ -638,13 +648,14 @@ export default function DashboardClient({
             <>
               <section className={`bg-gradient-to-r ${style.gradient} rounded-2xl p-6 text-white relative overflow-hidden shadow-xl ${style.glow}`}>
                  <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl pointer-events-none" />
-                 <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+                  <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
                     <div className="flex items-center gap-4">
                        <div className="w-12 h-12 bg-white/15 rounded-xl flex items-center justify-center backdrop-blur-sm border border-white/20">
                          {(() => {
                             const lType = (nextLesson.lesson_type || nextLesson.type || '').toLowerCase();
                             return lType === 'mcq' ? <HelpCircle size={22} /> :
                                    lType === 'assignment' ? <Award size={22} /> :
+                                   lType === 'project' ? <FolderCode size={22} /> :
                                    lType === 'video' ? <PlayCircle size={22} /> :
                                    lType === 'article' || lType === 'notes' ? <BookOpen size={22} /> :
                                    lType === 'document' ? <FileText size={22} /> :
@@ -667,6 +678,7 @@ export default function DashboardClient({
                               const lType = (nextLesson.lesson_type || nextLesson.type || '').toLowerCase();
                               return lType === 'mcq' ? 'Click below to start your quiz!' :
                                      lType === 'assignment' ? 'Click below to start your assignment!' :
+                                     lType === 'project' ? 'Click below to start your project!' :
                                      'Click below to continue learning!';
                             })()}
                          </p>
@@ -680,12 +692,13 @@ export default function DashboardClient({
                          const lType = (nextLesson.lesson_type || nextLesson.type || '').toLowerCase();
                          return lType === 'mcq' ? <><HelpCircle size={18} /> Start Quiz</> :
                                 lType === 'assignment' ? <><Award size={18} /> Start Assignment</> :
+                                lType === 'project' ? <><FolderCode size={18} /> Start Project</> :
                                 <><PlayCircle size={18} /> Start Now</>;
                        })()}
                     </Link>
                  </div>
               </section>
-
+ 
               {/* Next Scheduled Class Preview */}
               {nextScheduledClass && (
                 <section className="bg-white border border-slate-100 rounded-2xl p-5 relative overflow-hidden shadow-sm flex flex-col md:flex-row items-center justify-between gap-4 w-full">
@@ -695,7 +708,10 @@ export default function DashboardClient({
                         const lType = (nextScheduledClass.lesson.lesson_type || nextScheduledClass.lesson.type || '').toLowerCase();
                         return lType === 'mcq' ? <HelpCircle size={18} /> :
                                lType === 'assignment' ? <Award size={18} /> :
+                               lType === 'project' ? <FolderCode size={18} /> :
                                lType === 'video' ? <PlayCircle size={18} /> :
+                               lType === 'article' || lType === 'notes' ? <BookOpen size={18} /> :
+                               lType === 'document' ? <FileText size={18} /> :
                                <Clock size={18} />;
                       })()}
                     </div>
@@ -705,6 +721,7 @@ export default function DashboardClient({
                           const lType = (nextScheduledClass.lesson.lesson_type || nextScheduledClass.lesson.type || '').toLowerCase();
                           return lType === 'mcq' ? 'Next Quiz' :
                                  lType === 'assignment' ? 'Next Assignment' :
+                                 lType === 'project' ? 'Next Project' :
                                  'Next Class';
                         })()}
                       </span>

@@ -42,20 +42,39 @@ export default async function DashboardPage() {
   const mainCourse = mainEnrollment?.courses;
   const otherCourses = enrollments.slice(1);
 
-  // 2. Fetch total lessons for the active course
-  let totalLessonsCount = 0;
+  // 2. Fetch all lessons for the active course
+  let allLessons: any[] = [];
   if (mainEnrollment?.course_id) {
-    const { data: modules } = await supabase
-      .from("lms_modules")
-      .select("lessons(id)")
+    const { data: lessons } = await supabase
+      .from("lessons")
+      .select("id, type, lesson_type")
       .eq("course_id", mainEnrollment.course_id);
-    
-    if (modules) {
-      totalLessonsCount = modules.reduce((acc, m) => acc + (m.lessons?.length || 0), 0);
+    if (lessons) {
+      allLessons = lessons;
     }
   }
 
-  const completedCount = progressRecords.length;
+  const getFormatType = (l: any) => {
+    return (l.lesson_type || l.type || 'video').toLowerCase();
+  };
+
+  const classLessons = allLessons.filter(l => {
+    const t = getFormatType(l);
+    return t === 'video' || t === 'notes' || t === 'article' || t === 'document';
+  });
+  const quizLessons = allLessons.filter(l => getFormatType(l) === 'mcq');
+  const assignmentLessons = allLessons.filter(l => getFormatType(l) === 'assignment');
+  const projectLessons = allLessons.filter(l => getFormatType(l) === 'project');
+
+  const completedIds = progressRecords.map(p => p.lesson_id);
+
+  const completedClasses = classLessons.filter(l => completedIds.includes(l.id));
+  const completedQuizzes = quizLessons.filter(l => completedIds.includes(l.id));
+  const completedAssignments = assignmentLessons.filter(l => completedIds.includes(l.id));
+  const completedProjects = projectLessons.filter(l => completedIds.includes(l.id));
+
+  const completedCount = completedClasses.length;
+  const totalLessonsCount = classLessons.length;
   const progressPercentage = totalLessonsCount > 0
     ? Math.round((completedCount / totalLessonsCount) * 100)
     : 0;
@@ -72,7 +91,6 @@ export default async function DashboardPage() {
       supabase.from("schedules").select("title, batch, type, date, start_time").eq("course_id", mainEnrollment.course_id)
     ]);
 
-    const completedIds = progressRecords.map(p => p.lesson_id);
     const modules = modulesRes.data || [];
     const schedules = schedulesRes.data || [];
     const now = new Date();
@@ -269,7 +287,15 @@ export default async function DashboardPage() {
         completedCount,
         totalLessonsCount,
         progressPercentage,
-        remainingCount
+        remainingCount,
+        completedClasses: completedClasses.length,
+        totalClasses: classLessons.length,
+        completedQuizzes: completedQuizzes.length,
+        totalQuizzes: quizLessons.length,
+        completedAssignments: completedAssignments.length,
+        totalAssignments: assignmentLessons.length,
+        completedProjects: completedProjects.length,
+        totalProjects: projectLessons.length,
       }}
       nextLesson={nextLesson}
       isLessonScheduledToday={isLessonScheduledToday}

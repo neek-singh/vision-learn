@@ -19,7 +19,9 @@ import {
   Search,
   CheckCircle2,
   Sparkles,
-  HelpCircle
+  HelpCircle,
+  FolderCode,
+  Video
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import dynamic from "next/dynamic";
@@ -165,17 +167,27 @@ export function CurriculumClient({
       .flatMap(m => (m.lessons || []).sort((a: any, b: any) => a.order_index - b.order_index));
   }, [displayModules]);
 
+  const classLessons = useMemo(() => {
+    return allLessons.filter(l => {
+      const t = (l.lesson_type || l.type || 'video').toLowerCase();
+      return t === 'video' || t === 'notes' || t === 'article' || t === 'document';
+    });
+  }, [allLessons]);
+
+  const completedClasses = useMemo(() => {
+    return classLessons.filter(l => userProgress.includes(l.id));
+  }, [classLessons, userProgress]);
+
   const totalProgress = useMemo(() => {
-    if (allLessons.length === 0) return 0;
-    return Math.round((userProgress.length / allLessons.length) * 100);
-  }, [allLessons, userProgress]);
+    if (classLessons.length === 0) return 0;
+    return Math.round((completedClasses.length / classLessons.length) * 100);
+  }, [classLessons, completedClasses]);
 
   const totalHours = useMemo(() => {
-    const totalMins = allLessons
-      .filter(l => userProgress.includes(l.id))
+    const totalMins = completedClasses
       .reduce((sum, l) => sum + (Number(l.duration) || 0), 0);
     return (totalMins / 60).toFixed(1);
-  }, [allLessons, userProgress]);
+  }, [completedClasses]);
 
   const upcomingCount = useMemo(() => {
     return currentSchedules.filter((s: any) => {
@@ -443,7 +455,7 @@ export function CurriculumClient({
             </div>
             <div className="text-right">
               <p className="text-[9px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100 uppercase tracking-widest inline-block">
-                {userProgress.length} / {allLessons.length} Classes
+                {completedClasses.length} / {classLessons.length} Classes
               </p>
             </div>
           </div>
@@ -465,7 +477,7 @@ export function CurriculumClient({
           </div>
           <div>
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider leading-none mb-1">Total Classes</p>
-            <p className="text-lg font-black text-slate-900">{allLessons.length}</p>
+            <p className="text-lg font-black text-slate-900">{classLessons.length}</p>
           </div>
         </div>
 
@@ -475,7 +487,7 @@ export function CurriculumClient({
           </div>
           <div>
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider leading-none mb-1">Completed</p>
-            <p className="text-lg font-black text-slate-900">{userProgress.length}</p>
+            <p className="text-lg font-black text-slate-900">{completedClasses.length}</p>
           </div>
         </div>
 
@@ -555,6 +567,7 @@ export function CurriculumClient({
                        lType === 'document' ? <FileText className="animate-pulse" size={24} /> :
                        lType === 'mcq' ? <HelpCircle className="animate-pulse" size={24} /> :
                        lType === 'assignment' ? <Award className="animate-pulse" size={24} /> :
+                       lType === 'project' ? <FolderCode className="animate-pulse" size={24} /> :
                        <Sparkles className="animate-pulse" size={24} />;
               })()}
             </div>
@@ -729,6 +742,7 @@ export function CurriculumClient({
           initialMaterials={initialMaterials}
           currentSchedules={currentSchedules}
           now={now}
+          studentId={studentId}
         />
       )}
     </div>
@@ -964,6 +978,56 @@ function LessonItem({
   const isLocked = !isScheduled || !isTimeReached;
   const isInProgress = !isCompleted && !isLocked;
 
+  const lessonType = (lesson.lesson_type || lesson.type || 'video').toLowerCase();
+  
+  let typeColorClasses = '';
+  let TypeIcon = PlayCircle;
+
+  if (lessonType === 'video') {
+    TypeIcon = PlayCircle;
+    typeColorClasses = isCompleted 
+      ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' 
+      : 'bg-blue-50 text-blue-600 border border-blue-100';
+  } else if (lessonType === 'notes' || lessonType === 'article') {
+    TypeIcon = BookOpen;
+    typeColorClasses = isCompleted 
+      ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' 
+      : 'bg-emerald-50 text-emerald-650 border border-emerald-100';
+  } else if (lessonType === 'assignment') {
+    TypeIcon = Award;
+    typeColorClasses = isCompleted 
+      ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' 
+      : 'bg-amber-50 text-amber-600 border border-amber-100';
+  } else if (lessonType === 'project') {
+    TypeIcon = FolderCode;
+    typeColorClasses = isCompleted 
+      ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' 
+      : 'bg-indigo-50 text-indigo-600 border border-indigo-100';
+  } else if (lessonType === 'mcq') {
+    TypeIcon = HelpCircle;
+    typeColorClasses = isCompleted 
+      ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' 
+      : 'bg-purple-50 text-purple-600 border border-purple-100';
+  } else if (lessonType === 'document') {
+    TypeIcon = FileText;
+    typeColorClasses = isCompleted 
+      ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' 
+      : 'bg-rose-50 text-rose-600 border border-rose-100';
+  } else {
+    TypeIcon = PlayCircle;
+    typeColorClasses = isCompleted 
+      ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' 
+      : 'bg-slate-50 text-slate-500 border border-slate-100';
+  }
+
+  if (isLocked) {
+    typeColorClasses = 'bg-slate-100 text-slate-300 border border-slate-200/60';
+  } else if (isNextLocked) {
+    typeColorClasses = 'bg-amber-50 text-amber-500 border border-amber-100';
+  } else if (isInProgress) {
+    typeColorClasses += ' animate-pulse';
+  }
+
   return (
     <div className={`flex flex-col sm:flex-row sm:items-center justify-between p-5 rounded-2xl border transition-all group ${
       isNextLocked
@@ -974,20 +1038,8 @@ function LessonItem({
           'bg-white border-slate-50 hover:border-slate-200'
     }`}>
       <div className="flex items-center gap-4">
-        <div className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all shrink-0 ${
-          isNextLocked ? 'bg-amber-50 text-amber-500 border border-amber-100' :
-          isLocked ? 'bg-slate-100 text-slate-300' :
-          isCompleted ? 'bg-emerald-500 text-white' :
-          isInProgress ? 'bg-indigo-600 text-white animate-pulse' :
-          'bg-slate-100 text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-600'
-        }`}>
-          {(isLocked || isNextLocked) ? <Lock size={18} /> : 
-           (lesson.lesson_type || lesson.type)?.toLowerCase() === 'video' ? <PlayCircle size={18} /> :
-           (lesson.lesson_type || lesson.type)?.toLowerCase() === 'article' ? <BookOpen size={18} /> :
-           (lesson.lesson_type || lesson.type)?.toLowerCase() === 'document' ? <FileText size={18} /> :
-           (lesson.lesson_type || lesson.type)?.toLowerCase() === 'mcq' ? <HelpCircle size={18} /> :
-           (lesson.lesson_type || lesson.type)?.toLowerCase() === 'assignment' ? <Award size={18} /> :
-           <PenTool size={18} />}
+        <div className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all shrink-0 ${typeColorClasses}`}>
+          {(isLocked || isNextLocked) ? <Lock size={18} /> : <TypeIcon size={18} />}
         </div>
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2 mb-0.5">
@@ -999,7 +1051,11 @@ function LessonItem({
                `${lesson.title}`}
             </h5>
             {isCompleted && <span className="text-[8px] font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md uppercase tracking-widest border border-emerald-100">Completed</span>}
-            {isInProgress && <span className="text-[8px] font-black text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded-md uppercase tracking-widest border border-indigo-100">In Progress</span>}
+            {isInProgress && (lessonType === 'video' || lessonType === 'notes' || lessonType === 'article' || lessonType === 'document') && (
+              <span className="text-[8px] font-black text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded-md uppercase tracking-widest border border-indigo-100">
+                In Progress
+              </span>
+            )}
             {isNextLocked && <span className="text-[8px] font-black text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-md uppercase tracking-widest border border-amber-100">Coming Next</span>}
             {lesson.batches && lesson.batches.length > 0 && (
               <div className="flex flex-wrap gap-1">
