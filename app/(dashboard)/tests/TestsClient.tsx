@@ -361,6 +361,18 @@ export default function TestsClient({
 // Memoized Test Card for better performance
 const TestCard = memo(({ test, result, onStart }: { test: any, result: any, onStart: (t: any) => void }) => {
   const isLesson = test.source === "lesson";
+
+  // Cleanly format the score, preventing double slash issues like "5/5/--"
+  const displayScore = useMemo(() => {
+    if (!result) return null;
+    const rawScore = result.score || (result.content_url?.match(/Score (.+)/)?.[1]);
+    if (!rawScore) return "—";
+    if (typeof rawScore === 'string' && rawScore.includes('/')) {
+      return rawScore;
+    }
+    return `${rawScore}/${result.total_questions || "—"}`;
+  }, [result]);
+
   return (
   <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-lg transition-all duration-500 group">
     <div className="flex justify-between items-start mb-4">
@@ -414,9 +426,9 @@ const TestCard = memo(({ test, result, onStart }: { test: any, result: any, onSt
       )}
       {result && (
         <div className="flex items-center gap-2 text-emerald-600">
-          <Trophy size={12} />
+          <Trophy size={12} className="shrink-0" />
           <span className="text-[10px] font-black">
-            Score: {result.score || (result.content_url?.match(/Score (.+)/)?.[1])}/{result.total_questions || "—"}
+            Score: {displayScore}
           </span>
         </div>
       )}
@@ -424,10 +436,10 @@ const TestCard = memo(({ test, result, onStart }: { test: any, result: any, onSt
 
     {isLesson ? (
       <a
-        href="/curriculum"
+        href={`/curriculum?lessonId=${test.id}`}
         className="w-full py-3 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 shadow-md active:scale-95 bg-purple-600 hover:bg-purple-700 text-white shadow-purple-100"
       >
-        {result ? <><CheckCircle2 size={14} /> View in Curriculum</> : <><Play size={14} fill="currentColor" /> Attempt in Curriculum</>}
+        {result ? <><CheckCircle2 size={14} /> Open Quiz</> : <><Play size={14} fill="currentColor" /> Start Quiz</>}
       </a>
     ) : (
       <button 

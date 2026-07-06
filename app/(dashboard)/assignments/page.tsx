@@ -46,23 +46,24 @@ export default async function AssignmentsPage() {
     return now >= sDate;
   });
 
-  // Assignment-type schedules that are now live
-  const liveAssignmentSchedules = liveSchedules.filter(s =>
-    (s.type || "").toLowerCase() === "assignment"
-  );
+  // Assignment and Project type schedules that are now live
+  const liveTaskSchedules = liveSchedules.filter(s => {
+    const t = (s.type || "").toLowerCase();
+    return t === "assignment" || t === "project";
+  });
 
-  // 3. Fetch curriculum lessons that are assignment type
-  const { data: assignmentLessons } = await supabase
+  // 3. Fetch curriculum lessons that are assignment or project type
+  const { data: taskLessons } = await supabase
     .from("lessons")
     .select("id, title, course_id, notes_content, assignment_file, lesson_type, type, created_at")
     .in("course_id", courseIds)
-    .or("lesson_type.eq.assignment,type.eq.assignment");
+    .or("lesson_type.eq.assignment,type.eq.assignment,lesson_type.eq.project,type.eq.project");
 
   const normalize = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, "").trim();
 
-  // Match curriculum lessons to live assignment schedules
-  const scheduledLessonAssignments = (assignmentLessons || []).filter(lesson => {
-    return liveAssignmentSchedules.some(s =>
+  // Match curriculum lessons to live schedules
+  const scheduledLessons = (taskLessons || []).filter(lesson => {
+    return liveTaskSchedules.some(s =>
       normalize(s.title).includes(normalize(lesson.title)) ||
       normalize(lesson.title).includes(normalize(s.title))
     );
@@ -89,8 +90,8 @@ export default async function AssignmentsPage() {
     .eq("student_id", payload.id);
 
   // 6. Find the matching schedule for each lesson to get due date
-  const scheduledLessonsWithSchedule = scheduledLessonAssignments.map(lesson => {
-    const matchedSchedule = liveAssignmentSchedules.find(s =>
+  const scheduledLessonsWithSchedule = scheduledLessons.map(lesson => {
+    const matchedSchedule = liveTaskSchedules.find(s =>
       normalize(s.title).includes(normalize(lesson.title)) ||
       normalize(lesson.title).includes(normalize(s.title))
     );

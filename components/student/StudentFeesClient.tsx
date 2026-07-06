@@ -100,87 +100,87 @@ export function StudentFeesClient({ fee }: { fee: any }) {
       </div>
 
       {/* Main Overview Card with SVG Donut Chart */}
-      <div className="bg-slate-900 rounded-[3rem] p-8 md:p-10 text-white relative overflow-hidden shadow-2xl shadow-indigo-950/20">
+      <div className="bg-slate-900 rounded-[2.5rem] p-6 md:p-8 text-white relative overflow-hidden shadow-2xl shadow-indigo-950/20">
          <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
          <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl -ml-20 -mb-20 pointer-events-none" />
          
-         <div className="relative z-10 flex flex-col lg:flex-row gap-10 items-center justify-between">
-            <div className="space-y-6 flex-1 w-full">
+         <div className="relative z-10 space-y-6">
+            {/* Top Row: Balance and Donut side-by-side */}
+            <div className="flex items-center justify-between gap-4">
                <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <span className={`text-[10px] font-black uppercase tracking-[0.2em] px-4 py-1.5 rounded-full border border-white/10 bg-white/5`}>
-                      ● {fee.status?.toUpperCase() || 'DUE'}
-                    </span>
+                     <span className={`text-[9px] font-black uppercase tracking-[0.2em] px-3.5 py-1.5 rounded-full border border-white/10 bg-white/5`}>
+                       ● {fee.status?.toUpperCase() || 'DUE'}
+                     </span>
                   </div>
-                  <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">Current Balance</p>
-                  <h2 className="text-4xl sm:text-5xl font-black tracking-tighter flex items-baseline gap-1">
-                    <span className="text-2xl font-bold text-indigo-400">₹</span>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Current Balance</p>
+                  <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tighter flex items-baseline gap-1">
+                    <span className="text-xl font-bold text-indigo-400">₹</span>
                     {balance.toLocaleString()}
                   </h2>
                </div>
 
-               <div className="space-y-3">
-                  <div className="flex justify-between items-end">
-                     <p className="text-xs font-black uppercase tracking-widest text-slate-400">Payment Progress</p>
-                     <p className="text-sm font-black text-indigo-400">{progress.toFixed(0)}% Complete</p>
-                  </div>
-                  <div className="h-3 bg-white/10 rounded-full overflow-hidden p-0.5">
-                     <div 
-                        className="h-full bg-gradient-to-r from-indigo-500 to-indigo-400 rounded-full transition-all duration-1000 shadow-[0_0_20px_rgba(99,102,241,0.5)]" 
-                        style={{ width: `${progress}%` }} 
-                     />
+               {/* Premium Interactive SVG Donut Chart */}
+               <div className="relative w-28 h-28 sm:w-32 sm:h-32 shrink-0 flex items-center justify-center bg-white/5 rounded-full p-3 border border-white/5 backdrop-blur-sm">
+                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r={radius}
+                      className="stroke-slate-800"
+                      strokeWidth="8"
+                      fill="transparent"
+                    />
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r={radius}
+                      className="stroke-indigo-500 transition-all duration-1000 ease-out"
+                      strokeWidth="8"
+                      strokeDasharray={circumference}
+                      strokeDashoffset={strokeDashoffset}
+                      strokeLinecap="round"
+                      fill="transparent"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-lg sm:text-xl font-black tracking-tight">{progress.toFixed(0)}%</span>
+                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Paid</span>
                   </div>
                </div>
             </div>
 
-            {/* Premium Interactive SVG Donut Chart */}
-            <div className="relative w-36 h-36 shrink-0 flex items-center justify-center bg-white/5 rounded-full p-4 border border-white/5 backdrop-blur-sm">
-               <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                 {/* Shadow circle */}
-                 <circle
-                   cx="50"
-                   cy="50"
-                   r={radius}
-                   className="stroke-slate-800"
-                   strokeWidth="7"
-                   fill="transparent"
-                 />
-                 {/* Progress circle */}
-                 <circle
-                   cx="50"
-                   cy="50"
-                   r={radius}
-                   className="stroke-indigo-500 transition-all duration-1000 ease-out"
-                   strokeWidth="7"
-                   strokeDasharray={circumference}
-                   strokeDashoffset={strokeDashoffset}
-                   strokeLinecap="round"
-                   fill="transparent"
-                 />
-               </svg>
-               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                 <span className="text-xl font-black tracking-tight">{progress.toFixed(0)}%</span>
-                 <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Paid</span>
+            {/* Middle Row: Progress Bar */}
+            <div className="space-y-2 pt-2 border-t border-white/5">
+               <div className="flex justify-between items-center">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Payment Progress</p>
+                  <p className="text-xs font-black text-indigo-400">{progress.toFixed(0)}% Complete</p>
+               </div>
+               <div className="h-2.5 bg-white/10 rounded-full overflow-hidden p-0.5">
+                  <div 
+                     className="h-full bg-gradient-to-r from-indigo-500 to-indigo-400 rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(99,102,241,0.5)]" 
+                     style={{ width: `${progress}%` }} 
+                  />
                </div>
             </div>
 
-            {/* Quick Stats Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full lg:w-80">
-               <div className="p-5 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-md">
+            {/* Bottom Row: Quick Stats Grid */}
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 pt-2">
+               <div className="p-4 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-md">
                   <p className="text-[9px] font-black uppercase tracking-widest text-indigo-400 mb-1">Total Fee</p>
-                  <p className="text-lg font-black">₹{fee.final_fee.toLocaleString()}</p>
+                  <p className="text-base sm:text-lg font-black">₹{fee.final_fee.toLocaleString()}</p>
                </div>
-               <div className="p-5 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-md">
+               <div className="p-4 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-md">
                   <p className="text-[9px] font-black uppercase tracking-widest text-emerald-400 mb-1">Total Paid</p>
-                  <p className="text-lg font-black">₹{totalPaid.toLocaleString()}</p>
+                  <p className="text-base sm:text-lg font-black">₹{totalPaid.toLocaleString()}</p>
                </div>
-               <div className="p-5 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-md sm:col-span-2 flex items-center justify-between">
-                  <div>
+               <div className="p-4 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-md col-span-2 lg:col-span-1 flex items-center justify-between">
+                  <div className="min-w-0">
                     <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Course Enrolled</p>
-                    <p className="text-sm font-black truncate max-w-[160px]">{fee.courses?.title}</p>
+                    <p className="text-xs sm:text-sm font-black truncate pr-2">{fee.courses?.title}</p>
                   </div>
-                  <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center shrink-0">
-                    <Wallet size={20} className="text-indigo-400" />
+                  <div className="w-8 h-8 bg-white/10 rounded-xl flex items-center justify-center shrink-0">
+                    <Wallet size={16} className="text-indigo-400" />
                   </div>
                </div>
             </div>

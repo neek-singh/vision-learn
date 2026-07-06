@@ -491,36 +491,39 @@ export default function DashboardClient({
       )}
 
       {/* 3. Interactive Navigation Tabs */}
-      <div className="flex border-b border-slate-100 p-0.5 gap-2 overflow-x-auto custom-scrollbar">
+      <div className="flex border-b border-slate-100 p-0.5 gap-3 sm:gap-4 overflow-x-auto custom-scrollbar">
         <button
           onClick={() => setActiveTab("overview")}
-          className={`px-5 py-3 text-xs font-black uppercase tracking-wider rounded-xl transition-all flex items-center gap-2 cursor-pointer ${
+          className={`px-4 sm:px-6 py-3.5 text-xs font-black uppercase tracking-wider rounded-xl transition-all flex items-center gap-2 sm:gap-2.5 cursor-pointer ${
             activeTab === "overview"
               ? `${style.bgLight} ${style.text} shadow-sm border border-slate-100`
               : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
           }`}
         >
-          <BookOpen size={14} /> Overview
+          <BookOpen size={16} className="shrink-0" />
+          <span className="hidden sm:inline">Overview</span>
         </button>
         <button
           onClick={() => setActiveTab("analytics")}
-          className={`px-5 py-3 text-xs font-black uppercase tracking-wider rounded-xl transition-all flex items-center gap-2 cursor-pointer ${
+          className={`px-4 sm:px-6 py-3.5 text-xs font-black uppercase tracking-wider rounded-xl transition-all flex items-center gap-2 sm:gap-2.5 cursor-pointer ${
             activeTab === "analytics"
               ? `${style.bgLight} ${style.text} shadow-sm border border-slate-100`
               : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
           }`}
         >
-          <TrendingUp size={14} /> Performance & Analytics
+          <TrendingUp size={16} className="shrink-0" />
+          <span className="hidden sm:inline">Performance & Analytics</span>
         </button>
         <button
           onClick={() => setActiveTab("planner")}
-          className={`px-5 py-3 text-xs font-black uppercase tracking-wider rounded-xl transition-all flex items-center gap-2 cursor-pointer ${
+          className={`px-4 sm:px-6 py-3.5 text-xs font-black uppercase tracking-wider rounded-xl transition-all flex items-center gap-2 sm:gap-2.5 cursor-pointer ${
             activeTab === "planner"
               ? `${style.bgLight} ${style.text} shadow-sm border border-slate-100`
               : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
           }`}
         >
-          <Calendar size={14} /> Planner & Tasks
+          <Calendar size={16} className="shrink-0" />
+          <span className="hidden sm:inline">Planner & Tasks</span>
         </button>
       </div>
 

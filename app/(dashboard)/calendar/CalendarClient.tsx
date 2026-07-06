@@ -13,20 +13,24 @@ import {
   BookOpen,
   PenTool,
   Sparkles,
-  CircleDot
+  CircleDot,
+  FolderCode
 } from "lucide-react";
 
 const EVENT_CONFIG: Record<string, { color: string; bg: string; border: string; dot: string; icon: React.ReactNode; label: string }> = {
-  class:      { color: "text-indigo-600", bg: "bg-indigo-50", border: "border-indigo-100", dot: "bg-indigo-500", icon: <Video size={16} />, label: "Class" },
+  class:      { color: "text-indigo-600", bg: "bg-indigo-50", border: "border-indigo-100", dot: "bg-indigo-500", icon: <BookOpen size={16} />, label: "Class" },
   event:      { color: "text-purple-600", bg: "bg-purple-50", border: "border-purple-100", dot: "bg-purple-500", icon: <Sparkles size={16} />, label: "Event" },
   test:       { color: "text-rose-600",   bg: "bg-rose-50",   border: "border-rose-100",   dot: "bg-rose-500",   icon: <FileText size={16} />, label: "Test" },
-  assignment: { color: "text-amber-600",  bg: "bg-amber-50",  border: "border-amber-100",  dot: "bg-amber-500",  icon: <PenTool size={16} />, label: "Note" },
+  quiz:       { color: "text-pink-600",   bg: "bg-pink-50",   border: "border-pink-100",   dot: "bg-pink-500",   icon: <FileText size={16} />, label: "Quiz" },
+  assignment: { color: "text-amber-600",  bg: "bg-amber-50",  border: "border-amber-100",  dot: "bg-amber-500",  icon: <PenTool size={16} />, label: "Assignment" },
+  project:    { color: "text-teal-600",   bg: "bg-teal-50",   border: "border-teal-100",   dot: "bg-teal-500",   icon: <FolderCode size={16} />, label: "Project" },
   holiday:    { color: "text-emerald-600",bg: "bg-emerald-50",border: "border-emerald-100",dot: "bg-emerald-500",icon: <Flag size={16} />,     label: "Holiday" },
   lecture:    { color: "text-blue-600",   bg: "bg-blue-50",   border: "border-blue-100",   dot: "bg-blue-500",   icon: <BookOpen size={16} />, label: "Lecture" },
 };
 
 function getEventConfig(type: string) {
-  return EVENT_CONFIG[type] || EVENT_CONFIG.event;
+  const t = (type || "").toLowerCase();
+  return EVENT_CONFIG[t] || EVENT_CONFIG.event;
 }
 
 export default function CalendarClient({ initialEvents }: { initialEvents: any[] }) {
@@ -90,11 +94,12 @@ export default function CalendarClient({ initialEvents }: { initialEvents: any[]
     return initialEvents.filter(e => e.event_date === selectedDate);
   }, [initialEvents, selectedDate]);
 
-  // Count events per type for legend
+  // Count events per type for legend (normalized keys)
   const eventTypeCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     initialEvents.forEach(e => {
-      counts[e.type] = (counts[e.type] || 0) + 1;
+      const type = (e.type || "event").toLowerCase();
+      counts[type] = (counts[type] || 0) + 1;
     });
     return counts;
   }, [initialEvents]);
@@ -125,11 +130,11 @@ export default function CalendarClient({ initialEvents }: { initialEvents: any[]
     <div className="space-y-6 animate-in fade-in duration-700">
 
       {/* Legend Bar */}
-      <div className="flex flex-wrap items-center gap-4 px-1">
+      <div className="flex flex-wrap items-center gap-3 px-1">
         {Object.entries(eventTypeCounts).map(([type, count]) => {
           const cfg = getEventConfig(type);
           return (
-            <div key={type} className={`flex items-center gap-2 ${cfg.bg} px-3 py-1.5 rounded-lg border ${cfg.border}`}>
+            <div key={type} className={`flex items-center gap-2 ${cfg.bg} px-3 py-1.5 rounded-lg border ${cfg.border} shadow-sm`}>
               <div className={`w-2 h-2 rounded-full ${cfg.dot}`} />
               <span className={`text-[10px] font-black uppercase tracking-widest ${cfg.color}`}>{cfg.label}</span>
               <span className="text-[10px] font-bold text-slate-400">{count}</span>
@@ -184,14 +189,14 @@ export default function CalendarClient({ initialEvents }: { initialEvents: any[]
                 <div 
                   key={i} 
                   onClick={() => day.dateStr && setSelectedDate(day.dateStr)}
-                  className={`min-h-[85px] p-2 border-r border-b border-slate-50 transition-all cursor-pointer group relative ${
+                  className={`min-h-[60px] md:min-h-[85px] p-1.5 md:p-2 border-r border-b border-slate-50 transition-all cursor-pointer group relative ${
                     !day.currentMonth ? 'bg-slate-50/40 text-slate-300' : 'bg-white hover:bg-indigo-50/30'
                   } ${isSelected ? 'bg-indigo-50/50 ring-2 ring-inset ring-indigo-500/60 z-10' : ''}`}
                 >
                   {day.day !== 0 && (
                     <>
                       <div className="flex justify-between items-start mb-1.5">
-                        <span className={`text-xs font-black w-7 h-7 flex items-center justify-center rounded-lg transition-all ${
+                        <span className={`text-xs font-black w-6 h-6 md:w-7 md:h-7 flex items-center justify-center rounded-lg transition-all ${
                           day.isToday 
                             ? 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-200' 
                             : isSelected && day.currentMonth
@@ -203,25 +208,43 @@ export default function CalendarClient({ initialEvents }: { initialEvents: any[]
                           {day.day}
                         </span>
                         {hasEvents && (
-                          <span className="text-[8px] font-black text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">
+                          <span className="text-[8px] font-black text-slate-400 bg-slate-100 px-1 md:px-1.5 py-0.5 rounded shrink-0">
                             {day.events.length}
                           </span>
                         )}
                       </div>
-                      {/* Event Dots */}
+
+                      {/* Event Dots/Pills */}
                       <div className="space-y-1">
-                        {day.events.slice(0, 3).map((event: any, ei: number) => {
-                          const cfg = getEventConfig(event.type);
-                          return (
-                            <div key={ei} className={`flex items-center gap-1 px-1.5 py-0.5 rounded ${cfg.bg} border ${cfg.border} overflow-hidden`}>
-                              <div className={`w-1.5 h-1.5 rounded-full ${cfg.dot} shrink-0`} />
-                              <span className={`text-[8px] font-bold ${cfg.color} truncate leading-tight`}>{event.title}</span>
-                            </div>
-                          );
-                        })}
-                        {day.events.length > 3 && (
-                          <div className="text-[8px] font-black text-slate-400 text-center">+{day.events.length - 3}</div>
-                        )}
+                        {/* Mobile view: small dots row (unique event types) */}
+                        <div className="flex flex-wrap gap-1 justify-start md:hidden mt-0.5">
+                          {Array.from(new Set(day.events.map(e => (e.type || "").toLowerCase()))).slice(0, 5).map((type: string, ei: number) => {
+                            const cfg = getEventConfig(type);
+                            return (
+                              <div 
+                                key={ei} 
+                                className={`w-1.5 h-1.5 rounded-full ${cfg.dot} shrink-0`} 
+                                title={cfg.label}
+                              />
+                            );
+                          })}
+                        </div>
+
+                        {/* Desktop view: text pills list */}
+                        <div className="hidden md:block space-y-1">
+                          {day.events.slice(0, 3).map((event: any, ei: number) => {
+                            const cfg = getEventConfig(event.type);
+                            return (
+                              <div key={ei} className={`flex items-center gap-1 px-1.5 py-0.5 rounded ${cfg.bg} border ${cfg.border} overflow-hidden`}>
+                                <div className={`w-1.5 h-1.5 rounded-full ${cfg.dot} shrink-0`} />
+                                <span className={`text-[8px] font-bold ${cfg.color} truncate leading-tight`}>{event.title}</span>
+                              </div>
+                            );
+                          })}
+                          {day.events.length > 3 && (
+                            <div className="text-[8px] font-black text-slate-400 text-center">+{day.events.length - 3}</div>
+                          )}
+                        </div>
                       </div>
                     </>
                   )}
