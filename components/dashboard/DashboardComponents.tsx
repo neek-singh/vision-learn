@@ -83,6 +83,8 @@ export function UpcomingEvents({ events }: { events: any[] }) {
             <div className={`w-10 h-10 rounded-xl flex flex-col items-center justify-center shrink-0 ${
               event.type === 'test' ? 'bg-rose-50 text-rose-600' : 
               event.type === 'assignment' ? 'bg-amber-50 text-amber-600' :
+              event.type === 'holiday' ? 'bg-rose-50 text-rose-600' :
+              event.type === 'event' ? 'bg-purple-50 text-purple-600' :
               'bg-indigo-50 text-indigo-600'
             }`}>
               <span className="text-[10px] font-black uppercase">{new Date(event.event_date).toLocaleDateString('en-US', { month: 'short' })}</span>
@@ -91,7 +93,11 @@ export function UpcomingEvents({ events }: { events: any[] }) {
             <div className="min-w-0 flex-1">
               <p className="text-sm font-bold text-slate-900 truncate group-hover:text-indigo-600 transition-colors">{event.title}</p>
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">
-                {event.type === 'test' ? 'Exam' : event.type === 'assignment' ? 'Note' : 'Class'} • {event.start_time || 'Full Day'}
+                {event.type === 'test' ? 'Exam' : 
+                 event.type === 'assignment' ? 'Note' : 
+                 event.type === 'holiday' ? 'Holiday' :
+                 event.type === 'event' ? 'Event' : 'Class'}
+                {event.type !== 'holiday' && event.type !== 'event' && ` • ${event.start_time || 'Full Day'}`}
               </p>
             </div>
             <ChevronRight size={16} className="text-slate-300 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all" />

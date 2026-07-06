@@ -202,8 +202,11 @@ export default async function DashboardPage() {
       return batchMatch;
     });
 
+    const courseIds = enrollments.map(e => e.course_id);
+    const filteredEvents = events.filter(e => !e.course_id || courseIds.includes(e.course_id));
+
     upcomingEvents = [
-      ...events.map(e => ({ ...e, event_date: e.event_date, type: e.type || 'event' })),
+      ...filteredEvents.map(e => ({ ...e, event_date: e.event_date, type: e.type || 'event' })),
       ...schedules.map(s => ({ ...s, event_date: s.date, type: s.type || 'class' }))
     ].sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime());
   }

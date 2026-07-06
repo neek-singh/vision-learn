@@ -172,8 +172,10 @@ export default function CalendarClient({ initialEvents }: { initialEvents: any[]
           
           {/* Weekday Header */}
           <div className="grid grid-cols-7 border-b border-slate-100">
-            {dayNames.map(day => (
-              <div key={day} className="py-2.5 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50/50">
+            {dayNames.map((day, i) => (
+              <div key={day} className={`py-2.5 text-center text-[10px] font-black uppercase tracking-widest bg-slate-50/50 ${
+                i === 0 ? "text-rose-500 dark:text-rose-400 font-bold" : "text-slate-400"
+              }`}>
                 {day}
               </div>
             ))}
@@ -184,13 +186,18 @@ export default function CalendarClient({ initialEvents }: { initialEvents: any[]
             {days.map((day, i) => {
               const isSelected = day.dateStr === selectedDate;
               const hasEvents = day.events.length > 0;
+              const isSunday = i % 7 === 0;
 
               return (
                 <div 
                   key={i} 
                   onClick={() => day.dateStr && setSelectedDate(day.dateStr)}
                   className={`min-h-[60px] md:min-h-[85px] p-1.5 md:p-2 border-r border-b border-slate-50 transition-all cursor-pointer group relative ${
-                    !day.currentMonth ? 'bg-slate-50/40 text-slate-300' : 'bg-white hover:bg-indigo-50/30'
+                    !day.currentMonth 
+                      ? 'bg-slate-50/40 text-slate-300' 
+                      : isSunday
+                        ? 'bg-rose-50/20 dark:bg-rose-950/10 hover:bg-rose-100/30 dark:hover:bg-rose-900/20'
+                        : 'bg-white hover:bg-indigo-50/30'
                   } ${isSelected ? 'bg-indigo-50/50 ring-2 ring-inset ring-indigo-500/60 z-10' : ''}`}
                 >
                   {day.day !== 0 && (
@@ -201,6 +208,8 @@ export default function CalendarClient({ initialEvents }: { initialEvents: any[]
                             ? 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-200' 
                             : isSelected && day.currentMonth
                             ? 'bg-indigo-100 text-indigo-700'
+                            : isSunday && day.currentMonth
+                            ? 'text-rose-500 dark:text-rose-455 font-bold'
                             : day.currentMonth
                             ? 'text-slate-700 group-hover:bg-slate-100'
                             : 'text-slate-300'
@@ -290,13 +299,13 @@ export default function CalendarClient({ initialEvents }: { initialEvents: any[]
                       </div>
                       
                       <div className="flex flex-wrap items-center gap-3 ml-12 text-slate-500">
-                        {event.start_time && (
+                        {event.start_time && event.type?.toLowerCase() !== 'holiday' && event.type?.toLowerCase() !== 'event' && (
                           <div className="flex items-center gap-1.5 text-[10px] font-bold bg-white px-2 py-1 rounded-md border border-slate-100">
                             <Clock size={11} className="text-slate-400" />
                             {event.start_time}
                           </div>
                         )}
-                        {event.location && (
+                        {event.location && event.type?.toLowerCase() !== 'holiday' && event.type?.toLowerCase() !== 'event' && (
                           <div className="flex items-center gap-1.5 text-[10px] font-bold bg-white px-2 py-1 rounded-md border border-slate-100">
                             <MapPin size={11} className="text-slate-400" />
                             {event.location}

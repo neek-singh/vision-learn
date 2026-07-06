@@ -65,8 +65,11 @@ async function CalendarContent({ userId }: { userId: string }) {
     return batchMatch;
   });
 
+  // Filter events: only show if course_id is null (public/holiday) or if it matches the student's courseIds
+  const filteredEvents = events.filter(e => !e.course_id || courseIds.includes(e.course_id));
+
   const allEvents = [
-    ...events.map(e => ({ ...e, type: e.type || 'event', event_date: e.event_date })),
+    ...filteredEvents.map(e => ({ ...e, type: e.type || 'event', event_date: e.event_date })),
     ...filteredSchedules.map(s => ({ ...s, event_date: s.date, type: s.type || 'class' }))
   ];
 
