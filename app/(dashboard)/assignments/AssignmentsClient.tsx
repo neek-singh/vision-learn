@@ -244,8 +244,20 @@ export default function AssignmentsClient({
                           <CheckCircle2 size={8} /> Submitted
                         </span>
                       )}
+                      {submission?.score && (
+                        <span className="flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-full text-[8px] font-black uppercase tracking-widest border border-indigo-100 shrink-0">
+                          Grade: {submission.score}
+                        </span>
+                      )}
                     </div>
                   </div>
+
+                  {submission?.feedback && (
+                    <div className="text-[10px] text-slate-500 font-bold bg-amber-50/50 border border-amber-100/50 rounded-xl p-3">
+                      <span className="text-[8px] font-black uppercase tracking-wider text-amber-800 block mb-0.5">Feedback:</span>
+                      "{submission.feedback}"
+                    </div>
+                  )}
 
                   <button 
                     onClick={() => handleOpenSubmission(task)}
@@ -307,9 +319,24 @@ export default function AssignmentsClient({
                                 </span>
                               )}
                               {submission && (
-                                <span className="flex items-center gap-1 px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-full text-[8px] font-black uppercase tracking-widest border border-emerald-100 w-fit mt-1">
-                                  <CheckCircle2 size={8} /> Submitted
-                                </span>
+                                <div className="flex flex-col gap-1 mt-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="flex items-center gap-1 px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-full text-[8px] font-black uppercase tracking-widest border border-emerald-100 w-fit">
+                                      <CheckCircle2 size={8} /> Submitted
+                                    </span>
+                                    {submission.score && (
+                                      <span className="flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-full text-[8px] font-black uppercase tracking-widest border border-indigo-100 w-fit">
+                                        Grade: {submission.score}
+                                      </span>
+                                    )}
+                                  </div>
+                                  {submission.feedback && (
+                                    <div className="text-[10px] text-slate-500 font-bold bg-amber-50/50 border border-amber-100/50 rounded-lg px-2.5 py-1.5 mt-1 max-w-xs">
+                                      <span className="text-[8px] font-black uppercase tracking-wider text-amber-800 block mb-0.5">Feedback:</span>
+                                      "{submission.feedback}"
+                                    </div>
+                                  )}
+                                </div>
                               )}
                             </div>
                           </div>
