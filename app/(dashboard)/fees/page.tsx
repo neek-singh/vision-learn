@@ -21,6 +21,7 @@ export default async function StudentFeesPage() {
     .from("fees")
     .select(`
       *,
+      students (name, student_id),
       courses (title),
       installments (*),
       payments (*)
