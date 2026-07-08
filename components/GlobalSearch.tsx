@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { Search, X, BookOpen, PlayCircle, FileText, PenTool, Bell, Command, Loader2, ArrowRight } from "lucide-react";
+import { Search, X, BookOpen, PlayCircle, FileText, PenTool, Bell, Command, Loader2, ArrowRight, Lock } from "lucide-react";
 import { createClient } from "@/lib/supabase-browser";
 import { useRouter } from "next/navigation";
 
@@ -78,17 +78,18 @@ export function GlobalSearch() {
       }
 
       // 3. Perform filtered search
-      const [courses, lessons, materials, tests, notifications] = await Promise.all([
+      const [courses, lessons, materials, tests, notifications, schedulesRes] = await Promise.all([
         supabase.from("courses").select("id, title, course_code").in("id", enrolledCourseIds).ilike("title", q).limit(3),
-        supabase.from("lms_lessons").select("id, title, type").ilike("title", q).limit(5), // RLS should handle lesson visibility
-        supabase.from("materials").select("id, title").ilike("title", q).limit(5), // RLS should handle material visibility
-        supabase.from("tests").select("id, title").ilike("title", q).limit(5),
+        supabase.from("lessons").select("id, title, type, lesson_type").in("course_id", enrolledCourseIds).ilike("title", q).limit(5),
+        supabase.from("materials").select("id, title").in("course_id", enrolledCourseIds).eq("is_published", true).ilike("title", q).limit(5),
+        supabase.from("tests").select("id, title").in("course_id", enrolledCourseIds).eq("is_published", true).ilike("title", q).limit(5),
         supabase.from("user_notifications").select(`
           id,
           notifications (title, message)
         `)
         .eq("user_id", student.id)
-        .order("created_at", { ascending: false })
+        .order("created_at", { ascending: false }),
+        supabase.from("schedules").select("title, date, start_time").in("course_id", enrolledCourseIds)
       ]);
 
       // Further filter notifications in memory if ilike is hard on joined tables
@@ -99,9 +100,36 @@ export function GlobalSearch() {
         )
         .slice(0, 3);
 
+      const schedulesList = schedulesRes.data || [];
+      const checkIsLessonLocked = (lessonTitle: string) => {
+        const normalize = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
+        const lTitle = normalize(lessonTitle);
+        
+        const schedule = schedulesList.find((st: any) => {
+          const sTitle = normalize(st.title);
+          return sTitle.includes(lTitle);
+        });
+        
+        if (!schedule) return true; // No schedule = locked
+        
+        try {
+          const now = new Date();
+          const schedDate = new Date(schedule.date);
+          const schedTime = schedule.start_time || "00:00";
+          const [sh, sm] = schedTime.split(':');
+          schedDate.setHours(parseInt(sh), parseInt(sm), 0);
+          return now < schedDate;
+        } catch (e) {
+          return true;
+        }
+      };
+
       setResults({
         courses: courses.data || [],
-        lessons: lessons.data || [],
+        lessons: (lessons.data || []).map((l: any) => ({
+          ...l,
+          isLocked: checkIsLessonLocked(l.title)
+        })),
         materials: materials.data || [],
         tests: tests.data || [],
         notifications: filteredNotifications.map((un: any) => ({
@@ -127,7 +155,23 @@ export function GlobalSearch() {
 
   const flatResults = [
     ...results.courses.map((r: any) => ({ ...r, type: 'course', icon: BookOpen, href: `/curriculum?course=${r.id}`, category: 'Courses' })),
-    ...results.lessons.map((r: any) => ({ ...r, type: 'lesson', icon: PlayCircle, href: `/curriculum?lessonId=${r.id}`, category: 'Lessons' })),
+    ...results.lessons.map((r: any) => {
+      const lType = (r.lesson_type || r.type || 'video').toLowerCase();
+      let icon = PlayCircle;
+      if (r.isLocked) icon = Lock;
+      else if (lType === 'notes' || lType === 'article') icon = BookOpen;
+      else if (lType === 'document') icon = FileText;
+      else if (lType === 'assignment' || lType === 'project' || lType === 'mcq') icon = PenTool;
+      
+      return { 
+        ...r, 
+        type: 'lesson', 
+        icon, 
+        href: `/curriculum?lessonId=${r.id}`, 
+        category: 'Lessons',
+        isLocked: r.isLocked 
+      };
+    }),
     ...results.materials.map((r: any) => ({ ...r, type: 'material', icon: FileText, href: `/materials`, category: 'Materials' })),
     ...results.tests.map((r: any) => ({ ...r, type: 'test', icon: PenTool, href: `/tests`, category: 'Tests' })),
     ...results.notifications.map((r: any) => ({ ...r, type: 'notification', icon: Bell, href: `/notifications`, category: 'Notifications' }))
@@ -242,9 +286,18 @@ export function GlobalSearch() {
                             <result.icon size={16} />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className={`text-sm font-bold truncate ${isSelected ? 'text-white' : 'text-slate-900'}`}>
-                              {result.title}
-                            </p>
+                            <div className="flex items-center gap-2">
+                              <p className={`text-sm font-bold truncate ${isSelected ? 'text-white' : 'text-slate-900'}`}>
+                                {result.title}
+                              </p>
+                              {result.isLocked && (
+                                <span className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-widest border shrink-0 ${
+                                  isSelected ? 'bg-white/20 text-white border-white/20' : 'bg-rose-50 text-rose-600 border-rose-100'
+                                }`}>
+                                  Locked
+                                </span>
+                              )}
+                            </div>
                             {result.course_code && (
                               <p className={`text-[10px] font-black uppercase tracking-widest ${isSelected ? 'text-indigo-100' : 'text-slate-400'}`}>
                                 {result.course_code}

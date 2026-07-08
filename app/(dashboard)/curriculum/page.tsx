@@ -83,31 +83,17 @@ async function CurriculumContent({ userId }: { userId: string }) {
   });
 
   return (
-    <>
-      <section>
-        <h1 className="text-2xl font-black text-slate-900 tracking-tight mb-1">My Classes</h1>
-        <p className="text-sm text-slate-500 font-medium flex items-center gap-2">
-          Learning Path 
-          {activeBatch && (
-            <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-md border border-indigo-100 text-[10px] font-black uppercase tracking-wider">
-              {activeBatch}
-            </span>
-          )}
-        </p>
-      </section>
-
-      <CurriculumClient 
-        initialModules={modulesData} 
-        initialProgress={initialProgress} 
-        studentId={userId} 
-        initialSchedules={scheduledItems}
-        initialTests={testsData}
-        initialMaterials={materialsData}
-        initialBatch={activeBatch}
-        initialCourseId={courseId}
-        availableBatches={batchesData}
-        initialChapters={chaptersData}
-      />
-    </>
+    <CurriculumClient 
+      initialModules={modulesData} 
+      initialProgress={initialProgress} 
+      studentId={userId} 
+      initialSchedules={scheduledItems}
+      initialTests={testsData}
+      initialMaterials={materialsData}
+      initialBatch={activeBatch}
+      initialCourseId={courseId}
+      availableBatches={batchesData}
+      initialChapters={chaptersData}
+    />
   );
 }

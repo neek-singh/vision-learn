@@ -429,7 +429,14 @@ export function CurriculumClient({
         
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
           <div className="space-y-1">
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">My Classes</h1>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-3xl font-black text-slate-900 tracking-tight">My Classes</h1>
+              {initialBatch && (
+                <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-md border border-indigo-100 text-[10px] font-black uppercase tracking-wider">
+                  {initialBatch}
+                </span>
+              )}
+            </div>
             <p className="text-slate-500 font-medium">Follow your structured learning path to mastery.</p>
             <div className="pt-2">
               <DownloadButton courseId={courseId || ""} courseTitle="My Course" />
@@ -810,14 +817,15 @@ function ModuleItem({
           </div>
           <div>
             <h3 className="text-lg font-black text-slate-900 leading-tight mb-1">{module.title}</h3>
-            <div className="flex items-center gap-4">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                <BookOpen size={12} /> {lessons.length} Classes
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-4 mt-0.5">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5 shrink-0">
+                <BookOpen size={12} className="text-slate-400" /> {lessons.length} Classes
               </span>
-              <div className="flex items-center gap-3">
-                <div className="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/50 p-[1px]">
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="hidden sm:inline text-slate-350 text-[10px] font-bold">•</span>
+                <div className="w-20 sm:w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/20 shrink-0">
                   <div 
-                    className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-1000 ease-out shadow-[0_0_8px_rgba(79,70,229,0.4)]" 
+                    className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-700 ease-out" 
                     style={{ width: `${progress}%` }} 
                   />
                 </div>
@@ -835,13 +843,13 @@ function ModuleItem({
 
       <div className={`overflow-hidden transition-all duration-500 ${isExpanded ? 'max-h-[5000px] opacity-100 pb-8' : 'max-h-0 opacity-0'}`}>
         <div className="mx-8 h-[1px] bg-slate-50 mb-6" />
-        <div className="px-6 space-y-6">
+        <div className="px-4 sm:px-6 space-y-3">
           {/* Categorized Chapters */}
           {moduleChapters.map((chapter: any, cIdx: number) => (
-            <div key={chapter.id} className="space-y-4">
+            <div key={chapter.id} className="space-y-2">
               <button 
                 onClick={() => toggleChapter(chapter.id)}
-                className="w-full flex items-center justify-between gap-4 p-4 rounded-2xl bg-slate-50/50 hover:bg-slate-50 transition-all border border-slate-100 group/chapter cursor-pointer"
+                className="w-full flex items-center justify-between gap-4 p-3 rounded-xl bg-slate-50/50 hover:bg-slate-50 transition-all border border-slate-100 group/chapter cursor-pointer"
               >
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 group-hover/chapter:text-indigo-600 transition-colors">
@@ -858,7 +866,7 @@ function ModuleItem({
               </button>
 
               {expandedChapters.includes(chapter.id) && (
-                <div className="pl-4 space-y-3">
+                <div className="pl-2 sm:pl-4 space-y-2">
                   {(() => {
                     let classCounter = 0;
                     const sortedLessons = [...chapter.lessons].sort((a: any, b: any) => a.order_index - b.order_index).map((l: any) => {
@@ -901,7 +909,7 @@ function ModuleItem({
                   <h4 className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] whitespace-nowrap">Uncategorized Classes</h4>
                   <div className="h-[1px] flex-1 bg-slate-100" />
                </div>
-               <div className="pl-4 space-y-3">
+               <div className="pl-2 sm:pl-4 space-y-2">
                   {(() => {
                     let classCounter = 0;
                     const sortedLessons = [...uncategorizedLessons].sort((a: any, b: any) => a.order_index - b.order_index).map((l: any) => {
@@ -1029,7 +1037,7 @@ function LessonItem({
   }
 
   return (
-    <div className={`flex flex-col sm:flex-row sm:items-center justify-between p-5 rounded-2xl border transition-all group ${
+    <div className={`flex flex-col sm:flex-row sm:items-center justify-between p-3.5 sm:p-4.5 rounded-xl border transition-all group ${
       isNextLocked
         ? 'bg-white border-indigo-100 shadow-md shadow-indigo-50/40 ring-1 ring-indigo-100'
         : isLocked ? 'opacity-40 bg-slate-50/50 border-transparent cursor-not-allowed' :
@@ -1043,7 +1051,7 @@ function LessonItem({
         </div>
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2 mb-0.5">
-            <h5 className={`font-bold text-sm truncate ${isCompleted ? 'text-slate-500 line-through' : 'text-slate-900'}`}>
+            <h5 className={`font-bold text-sm whitespace-normal break-words ${isCompleted ? 'text-slate-500 line-through' : 'text-slate-900'}`}>
               {lesson.classIndex ? `Class ${lesson.classIndex}: ${lesson.title}` :
                (lesson.lesson_type || lesson.type)?.toLowerCase() === 'mcq' ? `Quiz: ${lesson.title}` :
                (lesson.lesson_type || lesson.type)?.toLowerCase() === 'assignment' ? `Assignment: ${lesson.title}` :
@@ -1088,7 +1096,7 @@ function LessonItem({
         </div>
       </div>
 
-      <div className="flex items-center gap-3 mt-4 sm:mt-0 ml-14 sm:ml-0">
+      <div className="flex items-center gap-3 mt-2 sm:mt-0 ml-[60px] sm:ml-0">
         {isNextLocked ? (
           <div className="flex items-center gap-2 text-[10px] font-black text-amber-400 uppercase tracking-widest">
             <Lock size={12} /> Locked
