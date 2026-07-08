@@ -81,9 +81,10 @@ export default async function DashboardPage() {
   const remainingCount = Math.max(0, totalLessonsCount - completedCount);
 
   // 3. Find next available lesson (scheduled/unscheduled)
-  let nextLesson = null;
+  let nextLesson: any = null;
   let isLessonScheduledToday = false;
   let nextScheduledClass: { lesson: any; schedule: any } | null = null;
+  let isNextLessonLocked = false;
   if (mainEnrollment?.course_id) {
     const activeBatch = (student?.batch || mainEnrollment?.batch)?.trim().toLowerCase();
     const [modulesRes, schedulesRes] = await Promise.all([
@@ -179,6 +180,24 @@ export default async function DashboardPage() {
       const firstIncomplete = incompleteLessonsWithSchedules[0];
       if (firstIncomplete) {
         nextLesson = firstIncomplete.lesson;
+      }
+    }
+
+    // Determine lock status for nextLesson
+    if (nextLesson) {
+      const match = incompleteLessonsWithSchedules.find(item => item.lesson.id === nextLesson.id);
+      if (match) {
+        const { schedule } = match;
+        if (schedule) {
+          const schedDate = new Date(schedule.date);
+          const [sh, sm] = (schedule.start_time || "00:00").split(':');
+          schedDate.setHours(parseInt(sh), parseInt(sm), 0);
+          isNextLessonLocked = now < schedDate;
+        } else {
+          isNextLessonLocked = true; // No schedule = locked
+        }
+      } else {
+        isNextLessonLocked = true; // No schedule info = locked
       }
     }
   }
@@ -302,6 +321,7 @@ export default async function DashboardPage() {
       }}
       nextLesson={nextLesson}
       isLessonScheduledToday={isLessonScheduledToday}
+      isNextLessonLocked={isNextLessonLocked}
       nextScheduledClass={nextScheduledClass}
       upcomingEvents={upcomingEvents}
       recentActivities={recentActivities}

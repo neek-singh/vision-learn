@@ -25,7 +25,8 @@ import {
   X,
   HelpCircle,
   FolderCode,
-  Video
+  Video,
+  Lock
 } from "lucide-react";
 import { StatCard, QuickLinks, UpcomingEvents, RecentActivity, NoticeBoard, StreakWidget } from "@/components/dashboard/DashboardComponents";
 
@@ -60,6 +61,7 @@ interface DashboardClientProps {
   };
   nextLesson: any;
   isLessonScheduledToday?: boolean;
+  isNextLessonLocked?: boolean;
   nextScheduledClass?: { lesson: any; schedule: any } | null;
   upcomingEvents: any[];
   recentActivities: any[];
@@ -75,6 +77,7 @@ export default function DashboardClient({
   stats,
   nextLesson,
   isLessonScheduledToday = false,
+  isNextLessonLocked = false,
   nextScheduledClass = null,
   upcomingEvents,
   recentActivities,
@@ -653,52 +656,61 @@ export default function DashboardClient({
                  <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl pointer-events-none" />
                   <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
                     <div className="flex items-center gap-4">
-                       <div className="w-12 h-12 bg-white/15 rounded-xl flex items-center justify-center backdrop-blur-sm border border-white/20">
+                        <div className="w-12 h-12 bg-white/15 rounded-xl flex items-center justify-center backdrop-blur-sm border border-white/20">
+                          {isNextLessonLocked ? <Lock size={22} /> : (() => {
+                             const lType = (nextLesson.lesson_type || nextLesson.type || '').toLowerCase();
+                             return lType === 'mcq' ? <HelpCircle size={22} /> :
+                                    lType === 'assignment' ? <Award size={22} /> :
+                                    lType === 'project' ? <FolderCode size={22} /> :
+                                    lType === 'video' ? <PlayCircle size={22} /> :
+                                    lType === 'article' || lType === 'notes' ? <BookOpen size={22} /> :
+                                    lType === 'document' ? <FileText size={22} /> :
+                                    <PlayCircle size={22} />;
+                           })()}
+                        </div>
+                        <div className="space-y-1">
+                          <span className="px-2.5 py-0.5 bg-white/20 rounded-md text-[9px] font-black uppercase tracking-widest inline-flex items-center gap-1">
+                            {isNextLessonLocked ? <><Lock size={9} /> Locked</> : (() => {
+                               const lType = (nextLesson.lesson_type || nextLesson.type || '').toLowerCase();
+                               return lType === 'mcq' ? 'Next Quiz' :
+                                      lType === 'assignment' ? 'Next Assignment' :
+                                      lType === 'project' ? 'Next Project' :
+                                      'Up Next';
+                             })()}
+                          </span>
+                          <h2 className="text-lg font-black leading-tight">{nextLesson.title}</h2>
+                          <p className="text-indigo-100 text-xs font-medium">
+                            {isNextLessonLocked ? 'This class is scheduled for later and is currently locked.' : (() => {
+                               const lType = (nextLesson.lesson_type || nextLesson.type || '').toLowerCase();
+                               return lType === 'mcq' ? 'Click below to start your quiz!' :
+                                      lType === 'assignment' ? 'Click below to start your assignment!' :
+                                      lType === 'project' ? 'Click below to start your project!' :
+                                      'Click below to continue learning!';
+                             })()}
+                          </p>
+                        </div>
+                     </div>
+                     {isNextLessonLocked ? (
+                       <button 
+                         disabled
+                         className="bg-white/20 text-white/50 px-6 py-3 rounded-xl font-black text-sm flex items-center gap-2 cursor-not-allowed shrink-0 border border-white/10"
+                       >
+                         <Lock size={18} /> Locked
+                       </button>
+                     ) : (
+                       <Link 
+                         href={`/curriculum?lessonId=${nextLesson.id}`}
+                         className="bg-white text-slate-900 px-6 py-3 rounded-xl font-black text-sm flex items-center gap-2 hover:scale-105 transition-all shadow-md active:scale-95 shrink-0 hover:text-indigo-600"
+                       >
                          {(() => {
                             const lType = (nextLesson.lesson_type || nextLesson.type || '').toLowerCase();
-                            return lType === 'mcq' ? <HelpCircle size={22} /> :
-                                   lType === 'assignment' ? <Award size={22} /> :
-                                   lType === 'project' ? <FolderCode size={22} /> :
-                                   lType === 'video' ? <PlayCircle size={22} /> :
-                                   lType === 'article' || lType === 'notes' ? <BookOpen size={22} /> :
-                                   lType === 'document' ? <FileText size={22} /> :
-                                   <PlayCircle size={22} />;
+                            return lType === 'mcq' ? <><HelpCircle size={18} /> Start Quiz</> :
+                                   lType === 'assignment' ? <><Award size={18} /> Start Assignment</> :
+                                   lType === 'project' ? <><FolderCode size={18} /> Start Project</> :
+                                   <><PlayCircle size={18} /> Start Now</>;
                           })()}
-                       </div>
-                       <div className="space-y-1">
-                         <span className="px-2.5 py-0.5 bg-white/20 rounded-md text-[9px] font-black uppercase tracking-widest">
-                           {(() => {
-                              const lType = (nextLesson.lesson_type || nextLesson.type || '').toLowerCase();
-                              return lType === 'mcq' ? 'Next Quiz' :
-                                     lType === 'assignment' ? 'Next Assignment' :
-                                     lType === 'project' ? 'Next Project' :
-                                     'Up Next';
-                            })()}
-                         </span>
-                         <h2 className="text-lg font-black leading-tight">{nextLesson.title}</h2>
-                         <p className="text-indigo-100 text-xs font-medium">
-                           {(() => {
-                              const lType = (nextLesson.lesson_type || nextLesson.type || '').toLowerCase();
-                              return lType === 'mcq' ? 'Click below to start your quiz!' :
-                                     lType === 'assignment' ? 'Click below to start your assignment!' :
-                                     lType === 'project' ? 'Click below to start your project!' :
-                                     'Click below to continue learning!';
-                            })()}
-                         </p>
-                       </div>
-                    </div>
-                    <Link 
-                      href={`/curriculum?lessonId=${nextLesson.id}`}
-                      className="bg-white text-slate-900 px-6 py-3 rounded-xl font-black text-sm flex items-center gap-2 hover:scale-105 transition-all shadow-md active:scale-95 shrink-0 hover:text-indigo-600"
-                    >
-                      {(() => {
-                         const lType = (nextLesson.lesson_type || nextLesson.type || '').toLowerCase();
-                         return lType === 'mcq' ? <><HelpCircle size={18} /> Start Quiz</> :
-                                lType === 'assignment' ? <><Award size={18} /> Start Assignment</> :
-                                lType === 'project' ? <><FolderCode size={18} /> Start Project</> :
-                                <><PlayCircle size={18} /> Start Now</>;
-                       })()}
-                    </Link>
+                       </Link>
+                     )}
                  </div>
               </section>
  
