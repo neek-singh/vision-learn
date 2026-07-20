@@ -188,11 +188,32 @@ export function CurriculumClient({
     return Math.round((completedClasses.length / classLessons.length) * 100);
   }, [classLessons, completedClasses]);
 
+  const [liveActiveSeconds, setLiveActiveSeconds] = useState(0);
+  const [isLiveTracking, setIsLiveTracking] = useState(false);
+
+  useEffect(() => {
+    const key = `vision_active_seconds_${studentId || 'default'}`;
+    const saved = parseInt(localStorage.getItem(key) || '0', 10);
+    setLiveActiveSeconds(saved);
+
+    const handleTick = (e: any) => {
+      if (e.detail?.totalSeconds !== undefined) {
+        setLiveActiveSeconds(e.detail.totalSeconds);
+        setIsLiveTracking(true);
+      }
+    };
+
+    window.addEventListener("vision_active_time_tick", handleTick);
+    return () => window.removeEventListener("vision_active_time_tick", handleTick);
+  }, [studentId]);
+
   const totalHours = useMemo(() => {
-    const totalMins = completedClasses
+    const completedMins = completedClasses
       .reduce((sum, l) => sum + (Number(l.duration) || 0), 0);
-    return (totalMins / 60).toFixed(1);
-  }, [completedClasses]);
+    const activeMins = Math.floor(liveActiveSeconds / 60);
+    const combinedMins = completedMins + activeMins;
+    return (combinedMins / 60).toFixed(1);
+  }, [completedClasses, liveActiveSeconds]);
 
   const upcomingCount = useMemo(() => {
     return currentSchedules.filter((s: any) => {
@@ -503,12 +524,20 @@ export function CurriculumClient({
           </div>
         </div>
 
-        <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
-          <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600 shrink-0">
+        <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-all relative overflow-hidden">
+          <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600 shrink-0 relative">
             <Clock size={20} />
+            {isLiveTracking && (
+              <span className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white animate-pulse" title="Live tracking active study time" />
+            )}
           </div>
           <div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider leading-none mb-1">Hours Learnt</p>
+            <div className="flex items-center gap-1.5 mb-1">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider leading-none">Hours Learnt</p>
+              {isLiveTracking && (
+                <span className="text-[7px] font-black text-emerald-600 bg-emerald-50 px-1 py-0.5 rounded border border-emerald-100 uppercase tracking-widest animate-pulse">Live</span>
+              )}
+            </div>
             <p className="text-lg font-black text-slate-900">{totalHours}h</p>
           </div>
         </div>

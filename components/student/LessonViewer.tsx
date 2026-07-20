@@ -61,6 +61,37 @@ export default function LessonViewer({
     };
   }, []);
 
+  // Live Active Time Tracker: tracks active seconds while student is viewing the lesson
+  useEffect(() => {
+    if (!lesson?.id) return;
+
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        const todayStr = new Date().toISOString().split('T')[0];
+        const key = `vision_active_seconds_${studentId || 'default'}`;
+        const currentTotal = parseInt(localStorage.getItem(key) || '0', 10);
+        const newTotal = currentTotal + 1;
+        localStorage.setItem(key, String(newTotal));
+
+        const dailyKey = `vision_daily_active_${studentId || 'default'}`;
+        let dailyMap: Record<string, number> = {};
+        try {
+          dailyMap = JSON.parse(localStorage.getItem(dailyKey) || '{}');
+        } catch (e) {
+          dailyMap = {};
+        }
+        dailyMap[todayStr] = (dailyMap[todayStr] || 0) + 1;
+        localStorage.setItem(dailyKey, JSON.stringify(dailyMap));
+
+        window.dispatchEvent(new CustomEvent("vision_active_time_tick", {
+          detail: { totalSeconds: newTotal, todaySeconds: dailyMap[todayStr] }
+        }));
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [lesson?.id, studentId]);
+
   const handleScroll = () => {
     if (scrollRef.current) {
       const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
