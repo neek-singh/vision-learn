@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { X, Video, ExternalLink, FileText, BookOpen, Clock, Tv, CheckCircle2, HelpCircle, XCircle, Award, RotateCcw, Upload, Loader2, FileUp, Check } from "lucide-react";
+import { X, Video, ExternalLink, FileText, BookOpen, Clock, Tv, CheckCircle2, HelpCircle, XCircle, Award, RotateCcw, Upload, Loader2, FileUp, Check, ChevronLeft, ChevronRight, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
@@ -38,10 +38,12 @@ export default function LessonViewer({
   now,
   studentId
 }: LessonViewerProps) {
-  
+  const lessonType = (lesson?.lesson_type || lesson?.type || 'video').toLowerCase();
   const [theaterMode, setTheaterMode] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, number>>({});
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [isScreenShielded, setIsScreenShielded] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const [submission, setSubmission] = useState<any>(null);
@@ -92,6 +94,76 @@ export default function LessonViewer({
     return () => clearInterval(interval);
   }, [lesson?.id, studentId]);
 
+  // Anti-Screenshot & Copy Protection for Quiz / MCQ lessons (Silent)
+  useEffect(() => {
+    if (lessonType !== 'mcq' && lessonType !== 'quiz') return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // PrintScreen / PrtScn key or Snipping Tool shortcut
+      if (
+        e.key === 'PrintScreen' || 
+        e.code === 'PrintScreen' || 
+        ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'S' || e.key === 's' || e.key === '3' || e.key === '4' || e.key === '5'))
+      ) {
+        e.preventDefault();
+        try { navigator.clipboard.writeText(''); } catch (_) {}
+        onClose();
+      }
+
+      // Print shortcut (Ctrl + P)
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 'P')) {
+        e.preventDefault();
+        onClose();
+      }
+
+      // DevTools shortcuts (F12 or Ctrl + Shift + I)
+      if (e.key === 'F12' || ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'C' || e.key === 'c'))) {
+        e.preventDefault();
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === 'PrintScreen' || e.code === 'PrintScreen') {
+        try { navigator.clipboard.writeText(''); } catch (_) {}
+        onClose();
+      }
+    };
+
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+    };
+
+    const handleCopyCut = (e: ClipboardEvent) => {
+      e.preventDefault();
+    };
+
+    const handleBlur = () => {
+      setIsScreenShielded(true);
+    };
+
+    const handleFocus = () => {
+      setIsScreenShielded(false);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    window.addEventListener('contextmenu', handleContextMenu);
+    window.addEventListener('copy', handleCopyCut);
+    window.addEventListener('cut', handleCopyCut);
+    window.addEventListener('blur', handleBlur);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('contextmenu', handleContextMenu);
+      window.removeEventListener('copy', handleCopyCut);
+      window.removeEventListener('cut', handleCopyCut);
+      window.removeEventListener('blur', handleBlur);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [lessonType, onClose]);
+
   const handleScroll = () => {
     if (scrollRef.current) {
       const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
@@ -110,6 +182,7 @@ export default function LessonViewer({
     setSelectedAnswers({});
     setSubUrl("");
     setSubmission(null);
+    setCurrentQuestionIndex(0);
   }, [lesson?.id]);
 
   // Fetch existing submission for the lesson
@@ -227,7 +300,6 @@ export default function LessonViewer({
   };
 
   const questions = getQuestions();
-  const lessonType = (lesson.lesson_type || lesson.type || 'video').toLowerCase();
 
   // Add Copy buttons to code blocks
   useEffect(() => {
@@ -335,7 +407,29 @@ export default function LessonViewer({
                  </div>
                </div>
              ) : lessonType === 'mcq' ? (
-                <div className="space-y-8 mb-10 animate-in fade-in duration-300">
+                <div 
+                  className={`space-y-4 mb-6 animate-in fade-in duration-300 select-none relative min-h-[350px] ${isScreenShielded ? 'filter blur-2xl opacity-10 pointer-events-none' : ''}`}
+                  onContextMenu={(e) => e.preventDefault()}
+                  onCopy={(e) => e.preventDefault()}
+                  onCut={(e) => e.preventDefault()}
+                >
+                  {isScreenShielded && (
+                    <div 
+                      onClick={() => setIsScreenShielded(false)}
+                      className="absolute inset-0 z-50 bg-slate-950/95 backdrop-blur-3xl flex flex-col items-center justify-center p-8 text-center rounded-3xl animate-in fade-in duration-100 cursor-pointer pointer-events-auto"
+                    >
+                      <div className="w-16 h-16 bg-rose-500/20 text-rose-500 rounded-3xl flex items-center justify-center mb-4 border border-rose-500/30">
+                        <ShieldAlert size={32} />
+                      </div>
+                      <h3 className="text-xl font-black text-white mb-2">🔒 Quiz Screen Protected</h3>
+                      <p className="text-xs font-semibold text-slate-400 max-w-sm mb-5 leading-relaxed">
+                        Screen capture, Snipping Tool, and window switching are prohibited during quizzes. Click anywhere on this box to resume.
+                      </p>
+                      <span className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-md shadow-rose-900/50">
+                        Click to Resume Quiz
+                      </span>
+                    </div>
+                  )}
                   {submission ? (
                     <div className="p-8 bg-gradient-to-br from-indigo-950 to-slate-900 text-white rounded-3xl border border-slate-800/80 shadow-xl flex flex-col md:flex-row justify-between items-center gap-6 animate-in zoom-in-95 duration-500">
                       <div className="flex items-center gap-4">
@@ -371,26 +465,26 @@ export default function LessonViewer({
                   ) : (
                     <>
                       {/* Quiz Introduction Banner */}
-                      <div className="p-8 bg-gradient-to-br from-indigo-50 to-indigo-100/50 rounded-3xl border border-indigo-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 shadow-sm">
-                        <div className="flex items-center gap-4">
-                          <div className="p-3.5 bg-white text-indigo-600 rounded-2xl shadow-sm border border-indigo-50">
-                            <HelpCircle size={28} className="animate-pulse" />
+                      <div className="px-5 py-3.5 bg-gradient-to-br from-indigo-50 to-indigo-100/50 rounded-2xl border border-indigo-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 shadow-sm">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2.5 bg-white text-indigo-600 rounded-xl shadow-sm border border-indigo-50">
+                            <HelpCircle size={22} className="animate-pulse" />
                           </div>
                           <div>
-                            <h4 className="text-lg font-extrabold text-slate-900 tracking-tight">Practice Quiz</h4>
-                            <p className="text-xs font-semibold text-slate-550 mt-1">
-                              Test your understanding. Select the best answer for each question.
+                            <h4 className="text-base font-extrabold text-slate-900 tracking-tight">Practice Quiz</h4>
+                            <p className="text-[11px] font-semibold text-slate-550">
+                              Select the best answer for each question.
                             </p>
                           </div>
                         </div>
                         {questions.length > 0 && (
-                          <div className="px-5 py-2.5 bg-white border border-indigo-100 rounded-2xl text-xs font-black uppercase tracking-widest text-indigo-600 shadow-sm self-stretch sm:self-auto flex items-center justify-center">
-                            {Object.keys(selectedAnswers).length} of {questions.length} Answered
+                          <div className="px-4 py-2 bg-white border border-indigo-100 rounded-xl text-[11px] font-black uppercase tracking-widest text-indigo-600 shadow-sm self-stretch sm:self-auto flex items-center justify-center">
+                            {Object.keys(selectedAnswers).length} / {questions.length} Answered
                           </div>
                         )}
                       </div>
 
-                      {/* Questions List */}
+                      {/* Questions Container (One question at a time) */}
                       <div className="space-y-6">
                         {questions.length === 0 ? (
                           <div className="py-16 text-center border-2 border-dashed border-slate-200 rounded-3xl bg-slate-50/50">
@@ -399,14 +493,47 @@ export default function LessonViewer({
                           </div>
                         ) : (
                           <>
-                            {questions.map((q, idx) => {
+                            {/* Question Selector Pills */}
+                            <div className="flex items-center gap-2 overflow-x-auto py-2 px-1 scrollbar-none">
+                              {questions.map((item, idx) => {
+                                const isAns = selectedAnswers[item.id] !== undefined;
+                                const userAns = selectedAnswers[item.id];
+                                const isCorrect = userAns === item.correctIndex;
+                                const isCurrent = idx === currentQuestionIndex;
+
+                                return (
+                                  <button
+                                    key={item.id}
+                                    onClick={() => setCurrentQuestionIndex(idx)}
+                                    className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all shrink-0 cursor-pointer border ${
+                                      isCurrent
+                                        ? 'bg-indigo-600 text-white border-indigo-700 shadow-md shadow-indigo-200 scale-105'
+                                        : isAns
+                                        ? isCorrect
+                                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                          : 'bg-rose-50 text-rose-700 border-rose-200'
+                                        : 'bg-slate-50 text-slate-500 border-slate-200/80 hover:bg-slate-100'
+                                    }`}
+                                  >
+                                    Q{idx + 1}
+                                  </button>
+                                );
+                              })}
+                            </div>
+
+                            {/* Single Current Question Card */}
+                            {(() => {
+                              const safeIndex = Math.min(currentQuestionIndex, questions.length - 1);
+                              const q = questions[safeIndex];
+                              if (!q) return null;
+
                               const answerSelected = selectedAnswers[q.id] !== undefined;
                               const userAns = selectedAnswers[q.id];
 
                               return (
                                 <div 
                                   key={q.id}
-                                  className={`p-6 md:p-8 bg-white border rounded-3xl flex flex-col gap-6 shadow-sm transition-all duration-300 ${
+                                  className={`p-5 md:p-6 bg-white border rounded-2xl flex flex-col gap-4 shadow-sm transition-all duration-300 ${
                                     answerSelected 
                                       ? userAns === q.correctIndex
                                         ? 'border-emerald-200 shadow-emerald-500/5 bg-emerald-50/10'
@@ -416,7 +543,7 @@ export default function LessonViewer({
                                 >
                                   <div className="flex justify-between items-start gap-4">
                                     <p className="text-base font-extrabold text-slate-900 leading-snug">
-                                      <span className="text-indigo-600 font-black mr-2">Q{idx + 1}.</span> 
+                                      <span className="text-indigo-600 font-black mr-2">Q{safeIndex + 1}.</span> 
                                       {q.question}
                                     </p>
                                     {answerSelected && (
@@ -430,7 +557,7 @@ export default function LessonViewer({
                                     )}
                                   </div>
 
-                                  <div className="grid grid-cols-1 gap-3">
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                                     {q.options.map((opt, optIdx) => {
                                       const letter = ['A', 'B', 'C', 'D'][optIdx];
                                       const isCorrect = optIdx === q.correctIndex;
@@ -456,17 +583,17 @@ export default function LessonViewer({
                                           key={optIdx}
                                           disabled={answerSelected}
                                           onClick={() => setSelectedAnswers(prev => ({ ...prev, [q.id]: optIdx }))}
-                                          className={`px-5 py-4 border rounded-2xl text-sm font-semibold flex items-center justify-between transition-all gap-4 text-left ${optStyle} ${!answerSelected ? 'cursor-pointer hover:-translate-y-0.5 active:translate-y-0 shadow-sm' : ''}`}
+                                          className={`px-4 py-3 border rounded-xl text-xs font-semibold flex items-center justify-between transition-all gap-3 text-left ${optStyle} ${!answerSelected ? 'cursor-pointer hover:-translate-y-0.5 active:translate-y-0 shadow-sm' : ''}`}
                                         >
-                                          <div className="flex items-center gap-4">
-                                            <span className={`w-7 h-7 shrink-0 rounded-full flex items-center justify-center text-[11px] font-black ${
+                                          <div className="flex items-center gap-3">
+                                            <span className={`w-6 h-6 shrink-0 rounded-full flex items-center justify-center text-[10px] font-black ${
                                               answerSelected && (isCorrect || isSelected)
                                                 ? 'bg-white/20 text-white'
                                                 : 'bg-white text-slate-650 border border-slate-200 shadow-sm'
                                             }`}>
                                               {letter}
                                             </span>
-                                            <span>{opt}</span>
+                                            <span className="leading-tight">{opt}</span>
                                           </div>
                                           {Icon}
                                         </button>
@@ -491,12 +618,49 @@ export default function LessonViewer({
                                       )}
                                     </div>
                                   )}
+
+                                  {/* Single Question Navigation Footer */}
+                                  <div className="flex items-center justify-between gap-4 pt-4 border-t border-slate-100 mt-2">
+                                    <button
+                                      disabled={safeIndex === 0}
+                                      onClick={() => setCurrentQuestionIndex(prev => Math.max(0, prev - 1))}
+                                      className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed text-slate-700 font-extrabold text-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                                    >
+                                      <ChevronLeft size={16} /> Previous
+                                    </button>
+
+                                    <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">
+                                      {safeIndex + 1} / {questions.length}
+                                    </span>
+
+                                    {safeIndex < questions.length - 1 ? (
+                                      <button
+                                        onClick={() => setCurrentQuestionIndex(prev => Math.min(questions.length - 1, prev + 1))}
+                                        className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-indigo-100 cursor-pointer active:scale-95"
+                                      >
+                                        Next <ChevronRight size={16} />
+                                      </button>
+                                    ) : !submission ? (
+                                      <button
+                                        onClick={submitQuizResult}
+                                        disabled={submitting}
+                                        className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer shadow-md shadow-emerald-100 disabled:opacity-50 active:scale-95"
+                                      >
+                                        {submitting ? <Loader2 className="animate-spin" size={14} /> : <Upload size={14} />}
+                                        Submit Quiz
+                                      </button>
+                                    ) : (
+                                      <span className="px-3.5 py-2 rounded-xl text-xs font-black text-emerald-700 bg-emerald-50 border border-emerald-200">
+                                        Submitted ✓
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                               );
-                            })}
+                            })()}
 
-                            {/* Score Summary Block */}
-                            {Object.keys(selectedAnswers).length === questions.length && (
+                            {/* Score Summary Block (Appears when all questions answered or submitted) */}
+                            {(Object.keys(selectedAnswers).length === questions.length || submission) && (
                               <div className="p-8 bg-gradient-to-br from-indigo-950 to-slate-900 text-white rounded-3xl border border-slate-800/80 shadow-xl flex flex-col md:flex-row justify-between items-center gap-6 animate-in zoom-in-95 duration-500">
                                 <div className="flex items-center gap-4">
                                   <div className="w-14 h-14 bg-indigo-500/20 text-indigo-300 rounded-2xl flex items-center justify-center shadow-inner">
@@ -735,7 +899,7 @@ export default function LessonViewer({
                   </div>
                 )}
 
-                {!isCompleted && (
+                {!isCompleted && lessonType !== 'mcq' && lessonType !== 'quiz' && (
                   <div className="flex flex-col sm:flex-row items-center gap-4 pt-6 border-t border-slate-100">
                     <button 
                       onClick={() => {

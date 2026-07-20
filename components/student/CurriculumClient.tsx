@@ -70,9 +70,7 @@ export function CurriculumClient({
   // Use cached data
   const { modules: cachedModules, progress: cachedProgress } = useCachedCurriculum(courseId || "", studentId);
 
-  const [expandedModules, setExpandedModules] = useState<string[]>(
-    initialModules.length > 0 ? [initialModules[0].id] : []
-  );
+  const [expandedModules, setExpandedModules] = useState<string[]>([]);
   
   // Use local state for immediate feedback, synced with cachedProgress
   const [userProgress, setUserProgress] = useState<string[]>(initialProgress);
