@@ -19,6 +19,7 @@ import { verifyToken } from "@/lib/auth-custom";
 import { createPublicSupabaseClient } from "@/lib/supabase-server";
 import { ProfilePageSkeleton } from "@/components/dashboard/DashboardSkeletons";
 import { ThemePicker } from "@/components/student/ThemePicker";
+import { ProfilePhotoViewer } from "@/components/student/ProfilePhotoViewer";
 
 export default async function ProfilePage() {
   const cookieStore = await cookies();
@@ -60,13 +61,13 @@ async function ProfileContent({ userId }: { userId: string }) {
       <section className="flex flex-col md:flex-row items-center gap-6 bg-white p-6 md:p-8 rounded-3xl border border-slate-100 shadow-sm relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full -mr-32 -mt-32 opacity-50" />
         
-        <div className="w-28 h-28 rounded-3xl bg-indigo-600 border-4 border-white shadow-2xl overflow-hidden flex items-center justify-center text-white text-4xl font-black relative z-10 shrink-0">
-          {student.photo_url ? (
-            <img src={student.photo_url} alt={student.name} className="w-full h-full object-cover" />
-          ) : (
-            student.name?.charAt(0) || "S"
-          )}
-        </div>
+        {student.photo_url ? (
+          <ProfilePhotoViewer photoUrl={student.photo_url} name={student.name || "Student"} />
+        ) : (
+          <div className="w-28 h-28 rounded-3xl bg-indigo-600 border-4 border-white shadow-2xl overflow-hidden flex items-center justify-center text-white text-4xl font-black relative z-10 shrink-0">
+            {student.name?.charAt(0) || "S"}
+          </div>
+        )}
         
         <div className="relative z-10 text-center md:text-left space-y-1.5">
           <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.3em] mb-1">Student Profile</p>

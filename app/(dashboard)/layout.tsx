@@ -268,8 +268,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
 
           <div className="flex items-center gap-3">
-            <SyncStatus />
-            <div className="h-6 w-[1px] bg-slate-100 mx-1 hidden min-[400px]:block" />
             <Link 
               href="/notifications"
               aria-label={`View notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}

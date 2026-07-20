@@ -21,7 +21,9 @@ import {
   Sparkles,
   HelpCircle,
   FolderCode,
-  Video
+  Video,
+  ListOrdered,
+  LayoutList
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import dynamic from "next/dynamic";
@@ -89,6 +91,9 @@ export function CurriculumClient({
   const [currentSchedules, setCurrentSchedules] = useState<any[]>(initialSchedules);
   const [activeBatch] = useState<string | null>(initialBatch);
   const [now, setNow] = useState(new Date());
+
+  // Tab state: 'syllabus' | 'series'
+  const [activeTab, setActiveTab] = useState<'syllabus' | 'series'>('series');
 
   // Search and filter states
   const [searchTerm, setSearchTerm] = useState("");
@@ -632,98 +637,142 @@ export function CurriculumClient({
         </div>
       )}
 
-      {/* Search and Filters Bar */}
-      <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm space-y-4">
-        <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
-          <div className="relative w-full md:max-w-md">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-              <Search size={18} />
-            </div>
-            <input 
-              type="text"
-              placeholder="Search classes..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm font-semibold text-slate-700"
-            />
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-            {/* Filter Status Selector */}
-            <div className="flex rounded-xl bg-slate-50 p-1 border border-slate-100 text-xs font-bold text-slate-500">
-              <button 
-                onClick={() => setFilterStatus('all')}
-                className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${filterStatus === 'all' ? 'bg-white text-indigo-600 shadow-sm font-black' : 'hover:text-slate-900'}`}
-              >
-                All
-              </button>
-              <button 
-                onClick={() => setFilterStatus('completed')}
-                className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${filterStatus === 'completed' ? 'bg-white text-emerald-600 shadow-sm font-black' : 'hover:text-slate-900'}`}
-              >
-                Completed
-              </button>
-              <button 
-                onClick={() => setFilterStatus('in_progress')}
-                className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${filterStatus === 'in_progress' ? 'bg-white text-indigo-600 shadow-sm font-black' : 'hover:text-slate-900'}`}
-              >
-                In Progress
-              </button>
-              <button 
-                onClick={() => setFilterStatus('locked')}
-                className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${filterStatus === 'locked' ? 'bg-white text-rose-600 shadow-sm font-black' : 'hover:text-slate-900'}`}
-              >
-                Locked
-              </button>
-            </div>
-
-            {/* Filter Type Selector */}
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-              className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-xs font-bold text-slate-600 cursor-pointer"
-            >
-              <option value="all">All Formats</option>
-              <option value="video">Videos</option>
-              <option value="article">Articles</option>
-              <option value="document">Documents</option>
-              <option value="offline">Offline / Assignments</option>
-            </select>
-          </div>
-        </div>
+      {/* Tab Switcher */}
+      <div className="bg-white rounded-2xl p-1.5 border border-slate-100 shadow-sm flex gap-1">
+        <button
+          onClick={() => setActiveTab('series')}
+          className={`flex-1 flex items-center justify-center gap-2.5 py-3 px-4 rounded-xl font-black text-xs uppercase tracking-wider transition-all duration-200 cursor-pointer ${
+            activeTab === 'series'
+              ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200'
+              : 'text-slate-400 hover:text-slate-700 hover:bg-slate-50'
+          }`}
+        >
+          <ListOrdered size={15} />
+          Series
+        </button>
+        <button
+          onClick={() => setActiveTab('syllabus')}
+          className={`flex-1 flex items-center justify-center gap-2.5 py-3 px-4 rounded-xl font-black text-xs uppercase tracking-wider transition-all duration-200 cursor-pointer ${
+            activeTab === 'syllabus'
+              ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200'
+              : 'text-slate-400 hover:text-slate-700 hover:bg-slate-50'
+          }`}
+        >
+          <LayoutList size={15} />
+          Syllabus
+        </button>
       </div>
 
-      {/* Modules List */}
-      <div className="space-y-4">
-        {filteredModules.length === 0 ? (
-          <div className="bg-white p-20 rounded-[3rem] border border-slate-100 text-center">
-            <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center text-slate-200 mx-auto mb-6">
-               <BookOpen size={40} />
+      {activeTab === 'syllabus' ? (
+        <>
+          {/* Search and Filters Bar */}
+          <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm space-y-4">
+            <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
+              <div className="relative w-full md:max-w-md">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                  <Search size={18} />
+                </div>
+                <input 
+                  type="text"
+                  placeholder="Search classes..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm font-semibold text-slate-700"
+                />
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                {/* Filter Status Selector */}
+                <div className="flex rounded-xl bg-slate-50 p-1 border border-slate-100 text-xs font-bold text-slate-500">
+                  <button 
+                    onClick={() => setFilterStatus('all')}
+                    className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${filterStatus === 'all' ? 'bg-white text-indigo-600 shadow-sm font-black' : 'hover:text-slate-900'}`}
+                  >
+                    All
+                  </button>
+                  <button 
+                    onClick={() => setFilterStatus('completed')}
+                    className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${filterStatus === 'completed' ? 'bg-white text-emerald-600 shadow-sm font-black' : 'hover:text-slate-900'}`}
+                  >
+                    Completed
+                  </button>
+                  <button 
+                    onClick={() => setFilterStatus('in_progress')}
+                    className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${filterStatus === 'in_progress' ? 'bg-white text-indigo-600 shadow-sm font-black' : 'hover:text-slate-900'}`}
+                  >
+                    In Progress
+                  </button>
+                  <button 
+                    onClick={() => setFilterStatus('locked')}
+                    className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${filterStatus === 'locked' ? 'bg-white text-rose-600 shadow-sm font-black' : 'hover:text-slate-900'}`}
+                  >
+                    Locked
+                  </button>
+                </div>
+
+                {/* Filter Type Selector */}
+                <select
+                  value={filterType}
+                  onChange={(e) => setFilterType(e.target.value)}
+                  className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-xs font-bold text-slate-600 cursor-pointer"
+                >
+                  <option value="all">All Formats</option>
+                  <option value="video">Videos</option>
+                  <option value="article">Articles</option>
+                  <option value="document">Documents</option>
+                  <option value="offline">Offline / Assignments</option>
+                </select>
+              </div>
             </div>
-            <h3 className="text-xl font-black text-slate-900 mb-2">No Classes Found</h3>
-            <p className="text-slate-500 font-medium max-w-sm mx-auto">Try adjusting your search terms or filters to find what you are looking for.</p>
           </div>
-        ) : filteredModules.sort((a: any, b: any) => a.order_index - b.order_index).map((module: any, mIdx: number) => (
-          <ModuleItem 
-            key={module.id}
-            module={module}
-            mIdx={mIdx}
-            isExpanded={expandedModules.includes(module.id)}
-            toggleModule={toggleModule}
-            progress={calculateModuleProgress(module.lessons)}
-            userProgress={userProgress}
-            currentSchedules={currentSchedules}
-            now={now}
-            formatTime={formatTime}
-            isUpdating={isUpdating}
-            toggleLessonCompletion={toggleLessonCompletion}
-            openLesson={openLesson}
-            availableBatches={availableBatches}
-            chapters={chapters}
-            nextLockedLessonId={nextLockedLessonId}
-          />
-        ))}
-      </div>
+
+          {/* Modules List */}
+          <div className="space-y-4">
+            {filteredModules.length === 0 ? (
+              <div className="bg-white p-20 rounded-[3rem] border border-slate-100 text-center">
+                <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center text-slate-200 mx-auto mb-6">
+                   <BookOpen size={40} />
+                </div>
+                <h3 className="text-xl font-black text-slate-900 mb-2">No Classes Found</h3>
+                <p className="text-slate-500 font-medium max-w-sm mx-auto">Try adjusting your search terms or filters to find what you are looking for.</p>
+              </div>
+            ) : filteredModules.sort((a: any, b: any) => a.order_index - b.order_index).map((module: any, mIdx: number) => (
+              <ModuleItem 
+                key={module.id}
+                module={module}
+                mIdx={mIdx}
+                isExpanded={expandedModules.includes(module.id)}
+                toggleModule={toggleModule}
+                progress={calculateModuleProgress(module.lessons)}
+                userProgress={userProgress}
+                currentSchedules={currentSchedules}
+                now={now}
+                formatTime={formatTime}
+                isUpdating={isUpdating}
+                toggleLessonCompletion={toggleLessonCompletion}
+                openLesson={openLesson}
+                availableBatches={availableBatches}
+                chapters={chapters}
+                nextLockedLessonId={nextLockedLessonId}
+              />
+            ))}
+          </div>
+        </>
+      ) : (
+        /* Series View */
+        <SeriesView
+          allLessons={allLessons}
+          userProgress={userProgress}
+          currentSchedules={currentSchedules}
+          now={now}
+          formatTime={formatTime}
+          isUpdating={isUpdating}
+          toggleLessonCompletion={toggleLessonCompletion}
+          openLesson={openLesson}
+          nextLockedLessonId={nextLockedLessonId}
+          displayModules={displayModules}
+        />
+      )}
 
       {/* Lesson Viewer Modal */}
       {activeLesson && (
@@ -752,6 +801,235 @@ export function CurriculumClient({
           studentId={studentId}
         />
       )}
+    </div>
+  );
+}
+
+function SeriesView({
+  allLessons,
+  userProgress,
+  currentSchedules,
+  now,
+  formatTime,
+  isUpdating,
+  toggleLessonCompletion,
+  openLesson,
+  nextLockedLessonId,
+  displayModules
+}: any) {
+  const normalize = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
+
+  const enrichedLessons = useMemo(() => {
+    return allLessons.map((lesson: any) => {
+      const schedule = currentSchedules.find((st: any) =>
+        normalize(st.title).includes(normalize(lesson.title))
+      );
+      let schedDate: Date | null = null;
+      let isTimeReached = false;
+      if (schedule) {
+        schedDate = new Date(schedule.date);
+        const [sh, sm] = (schedule.start_time || '00:00').split(':');
+        schedDate.setHours(parseInt(sh), parseInt(sm), 0);
+        isTimeReached = now >= schedDate;
+      }
+      const isLocked = !schedule || !isTimeReached;
+      const isCompleted = userProgress.includes(lesson.id);
+      const mod = displayModules.find((m: any) => (m.lessons || []).some((l: any) => l.id === lesson.id));
+      return { lesson, schedule, schedDate, isLocked, isCompleted, moduleName: mod?.title || '' };
+    });
+  }, [allLessons, currentSchedules, now, userProgress, displayModules]);
+
+  const sortedLessons = useMemo(() => {
+    return enrichedLessons
+      .filter((e: any) => e.schedule)
+      .sort((a: any, b: any) => {
+        if (a.schedDate && b.schedDate) return a.schedDate.getTime() - b.schedDate.getTime();
+        return 0;
+      });
+  }, [enrichedLessons]);
+
+  const completedCount = sortedLessons.filter((e: any) => e.isCompleted).length;
+  const progressPct = sortedLessons.length > 0 ? Math.round((completedCount / sortedLessons.length) * 100) : 0;
+
+  if (sortedLessons.length === 0) {
+    return (
+      <div className="bg-white p-20 rounded-[3rem] border border-slate-100 text-center">
+        <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center text-slate-200 mx-auto mb-6">
+          <ListOrdered size={40} />
+        </div>
+        <h3 className="text-xl font-black text-slate-900 mb-2">No Series Found</h3>
+        <p className="text-slate-500 font-medium">No classes have been scheduled yet.</p>
+      </div>
+    );
+  }
+
+  let lastDateStr = '';
+  let sessionCounter = 0;
+
+  return (
+    <div className="space-y-4">
+      {/* Compact progress bar */}
+      <div className="bg-white rounded-2xl px-4 py-3 border border-slate-100 shadow-sm flex items-center gap-4">
+        <div className="flex-1">
+          <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-orange-400 to-amber-500 rounded-full transition-all duration-700"
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+        </div>
+        <p className="text-[10px] font-black text-orange-500 shrink-0">{completedCount}/{sortedLessons.length} done · {progressPct}%</p>
+      </div>
+
+      {/* Timeline */}
+      <div className="relative pl-9">
+        {/* Vertical line */}
+        <div className="absolute left-3 top-1 bottom-6 w-[2px] bg-gradient-to-b from-orange-300 via-amber-100 to-transparent rounded-full" />
+
+        <div className="space-y-2">
+          {sortedLessons.map((entry: any) => {
+            const { lesson, schedule, schedDate, isLocked, isCompleted, moduleName } = entry;
+            const lessonType = (lesson.lesson_type || lesson.type || 'video').toLowerCase();
+            const isNextLocked = lesson.id === nextLockedLessonId;
+            const isInProgress = !isCompleted && !isLocked;
+            const isToday = schedDate ? schedDate.toDateString() === now.toDateString() : false;
+            const isFuture = schedDate ? schedDate > now : false;
+
+            sessionCounter++;
+
+            let TypeIcon: any = PlayCircle;
+            let gradientClass = 'from-blue-500 to-blue-600';
+            let accentColor = 'text-blue-600';
+            let bgLight = 'bg-blue-50';
+            let borderLight = 'border-blue-100';
+
+            if (lessonType === 'notes' || lessonType === 'article') {
+              TypeIcon = BookOpen; gradientClass = 'from-emerald-500 to-teal-600'; accentColor = 'text-emerald-600'; bgLight = 'bg-emerald-50'; borderLight = 'border-emerald-100';
+            } else if (lessonType === 'document') {
+              TypeIcon = FileText; gradientClass = 'from-rose-500 to-pink-600'; accentColor = 'text-rose-600'; bgLight = 'bg-rose-50'; borderLight = 'border-rose-100';
+            } else if (lessonType === 'mcq') {
+              TypeIcon = HelpCircle; gradientClass = 'from-purple-500 to-violet-600'; accentColor = 'text-purple-600'; bgLight = 'bg-purple-50'; borderLight = 'border-purple-100';
+            } else if (lessonType === 'assignment') {
+              TypeIcon = Award; gradientClass = 'from-amber-500 to-orange-500'; accentColor = 'text-amber-600'; bgLight = 'bg-amber-50'; borderLight = 'border-amber-100';
+            } else if (lessonType === 'project') {
+              TypeIcon = FolderCode; gradientClass = 'from-indigo-500 to-purple-600'; accentColor = 'text-indigo-600'; bgLight = 'bg-indigo-50'; borderLight = 'border-indigo-100';
+            }
+
+            let dotBg = `bg-gradient-to-br ${gradientClass}`;
+            if (isCompleted) dotBg = 'bg-gradient-to-br from-orange-400 to-amber-500';
+            if (isLocked && !isNextLocked) dotBg = 'bg-slate-200';
+            if (isNextLocked) dotBg = 'bg-gradient-to-br from-amber-400 to-orange-400';
+
+            // Date separator (compact inline pill)
+            const dateStr = schedDate?.toDateString() || '';
+            let dateSeparator: React.ReactNode = null;
+            if (dateStr !== lastDateStr) {
+              lastDateStr = dateStr;
+              const dateLabel = schedDate?.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) || '';
+              dateSeparator = (
+                <div className="mb-1.5 mt-4 first:mt-0">
+                  <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${
+                    isToday ? 'bg-orange-500 text-white border-orange-600' :
+                    isFuture ? 'bg-amber-50 text-slate-900 border-amber-200' :
+                    'bg-slate-50 text-slate-900 border-slate-200'
+                  }`}>
+                    {isToday ? '● Today' : dateLabel}
+                  </span>
+                </div>
+              );
+            }
+
+            return (
+              <div key={lesson.id}>
+                {dateSeparator}
+                <div className="relative flex items-center gap-3 mb-1">
+                  {/* Timeline dot */}
+                  <div className={`absolute -left-9 w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${dotBg} shadow-sm ${isToday && !isCompleted && !isLocked ? 'ring-2 ring-indigo-200 ring-offset-1' : ''}`}>
+                    {isCompleted
+                      ? <Check size={11} strokeWidth={3} className="text-white" />
+                      : isLocked && !isNextLocked
+                      ? <Lock size={9} className="text-slate-400" />
+                      : <TypeIcon size={10} className="text-white" />
+                    }
+                  </div>
+
+                  {/* Card */}
+                  <div className={`flex-1 flex items-center justify-between px-3.5 py-2.5 rounded-xl border transition-all duration-200 ${
+                      isToday && isInProgress
+                      ? 'border-orange-200 bg-orange-50/40 shadow-sm'
+                      : isNextLocked
+                      ? 'border-amber-100 bg-amber-50/30'
+                      : isLocked
+                      ? 'opacity-40 border-transparent bg-slate-50'
+                      : isCompleted
+                      ? 'border-orange-200 bg-orange-50/40'
+                      : 'bg-white border-slate-100 hover:border-slate-200 hover:shadow-sm'
+                  }`}>
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      {/* Session # */}
+                      <span className="text-[9px] font-black text-slate-400 tabular-nums shrink-0 w-5 text-right">
+                        {sessionCounter}
+                      </span>
+
+                      {/* Info */}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <h5 className={`font-bold text-sm leading-tight truncate max-w-[200px] sm:max-w-none ${isCompleted ? 'text-orange-700 font-black' : isLocked && !isNextLocked ? 'text-slate-400' : 'text-slate-900 font-black'}`}>
+                            {lesson.title}
+                          </h5>
+                          {isCompleted && <span className="text-[7px] font-black text-orange-600 bg-orange-50 px-1 py-0.5 rounded border border-orange-100 uppercase tracking-widest shrink-0">✓</span>}
+                          {isNextLocked && <span className="text-[7px] font-black text-amber-600 bg-amber-50 px-1 py-0.5 rounded border border-amber-100 uppercase tracking-widest shrink-0">Next</span>}
+                          {isToday && isInProgress && <span className="text-[7px] font-black text-indigo-600 bg-indigo-50 px-1 py-0.5 rounded border border-indigo-100 uppercase tracking-widest shrink-0 animate-pulse">Today</span>}
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                          <span className={`text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full ${bgLight} ${accentColor} border ${borderLight}`}>
+                            {lessonType === 'notes' ? 'Notes' : lessonType === 'mcq' ? 'Quiz' : lessonType === 'assignment' ? 'Assignment' : lessonType === 'project' ? 'Project' : lessonType === 'document' ? 'Doc' : 'Video'}
+                          </span>
+                          {lesson.duration && <span className="text-[8px] font-bold text-slate-500">{lesson.duration}m</span>}
+                          {schedule?.start_time && (
+                            <span className="text-[8px] font-black text-orange-600 bg-orange-50 border border-orange-100 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                              <Clock size={7} />{formatTime(schedule.start_time)}
+                            </span>
+                          )}
+                          {moduleName && <span className="text-[8px] font-semibold text-slate-400 truncate max-w-[100px] hidden sm:inline">{moduleName}</span>}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Action */}
+                    <div className="shrink-0 ml-2">
+                      {isLocked && !isNextLocked ? (
+                        <Lock size={12} className="text-slate-300" />
+                      ) : isNextLocked ? (
+                        <Lock size={12} className="text-amber-300" />
+                      ) : (
+                        <button
+                          onClick={() => openLesson(lesson)}
+                          className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all active:scale-95 cursor-pointer ${
+                            isCompleted ? 'bg-slate-800 text-white hover:bg-black' :
+                            isInProgress ? `bg-gradient-to-r ${gradientClass} text-white shadow-sm` :
+                            'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                          }`}
+                        >
+                          {isCompleted ? 'Review' : 'Start'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* End cap */}
+        <div className="-ml-9 mt-3 flex items-center gap-2">
+          <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+            <CheckCircle2 size={12} className="text-slate-300" />
+          </div>
+          <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">End of Series</p>
+        </div>
+      </div>
     </div>
   );
 }
