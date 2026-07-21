@@ -44,6 +44,7 @@ export default function LessonViewer({
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, number>>({});
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [isScreenShielded, setIsScreenShielded] = useState(false);
+  const [showExitWarning, setShowExitWarning] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const [submission, setSubmission] = useState<any>(null);
@@ -53,7 +54,29 @@ export default function LessonViewer({
 
   useEffect(() => {
     setSelectedAnswers({});
+    setShowExitWarning(false);
   }, [lesson?.id]);
+
+  const handleAttemptClose = () => {
+    if (lessonType === 'mcq' && !submission && Object.keys(selectedAnswers).length > 0) {
+      setShowExitWarning(true);
+    } else {
+      onClose();
+    }
+  };
+
+  // Browser refresh / tab close warning before submitting quiz
+  useEffect(() => {
+    if (lessonType !== 'mcq' || submission || Object.keys(selectedAnswers).length === 0) return;
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [lessonType, submission, selectedAnswers]);
 
   // Prevent background scrolling on mount and restore on unmount
   useEffect(() => {
@@ -332,6 +355,36 @@ export default function LessonViewer({
 
   return (
     <div className={`fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[100] flex items-center justify-center animate-in fade-in duration-300 ${isFullScreen ? 'p-0' : 'p-4'}`} role="dialog" aria-modal="true">
+      {/* Unsubmitted Quiz Exit Warning Modal */}
+      {showExitWarning && (
+        <div className="fixed inset-0 z-[150] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-slate-100 text-center animate-in zoom-in-95 duration-200">
+            <div className="w-16 h-16 bg-amber-50 text-amber-500 rounded-3xl flex items-center justify-center mx-auto mb-4 border border-amber-100">
+              <HelpCircle size={32} />
+            </div>
+            <h3 className="text-xl font-black text-slate-900 tracking-tight mb-2">
+              Leave Quiz Without Submitting?
+            </h3>
+            <p className="text-xs font-semibold text-slate-500 leading-relaxed mb-6">
+              You have answered <span className="font-extrabold text-slate-800">{Object.keys(selectedAnswers).length}</span> question(s). Your score will not be saved if you exit now.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center gap-3">
+              <button
+                onClick={() => setShowExitWarning(false)}
+                className="w-full py-3 px-5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs transition-all shadow-md shadow-indigo-100 cursor-pointer active:scale-95"
+              >
+                Continue Quiz
+              </button>
+              <button
+                onClick={onClose}
+                className="w-full py-3 px-5 rounded-2xl bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-600 font-extrabold text-xs transition-all cursor-pointer border border-slate-200"
+              >
+                Exit Without Saving
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className={`bg-white shadow-2xl animate-in zoom-in-95 duration-300 flex flex-col relative transition-all duration-500 ease-in-out overflow-hidden ${
         isFullScreen 
           ? 'w-full h-full rounded-none' 
@@ -351,7 +404,7 @@ export default function LessonViewer({
           </div>
           <div className="flex items-center gap-2">
             <button 
-              onClick={onClose} 
+              onClick={handleAttemptClose} 
               aria-label="Close lesson viewer"
               className="p-2 hover:bg-slate-50 rounded-full transition-all text-slate-400 hover:text-slate-900 cursor-pointer"
             >
