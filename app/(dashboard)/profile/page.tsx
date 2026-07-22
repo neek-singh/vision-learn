@@ -45,11 +45,31 @@ async function ProfileContent({ userId }: { userId: string }) {
   // Fetch Student Profile and Enrollments in parallel
   const [studentRes, enrollmentRes] = await Promise.all([
     supabase.from("students").select("*").eq("id", userId).single(),
-    supabase.from("enrollments").select("batch").eq("student_id", userId).limit(1)
+    supabase.from("enrollments").select("batch, course_id").eq("student_id", userId).limit(1)
   ]);
 
   const student = studentRes.data;
   const mainBatch = enrollmentRes.data?.[0]?.batch || "Not Assigned";
+  const courseId = enrollmentRes.data?.[0]?.course_id;
+
+  let batchTiming = null;
+  if (student && courseId && mainBatch !== "Not Assigned") {
+    const { data: batchesData } = await supabase
+      .from("batches")
+      .select("title, timing")
+      .eq("course_id", courseId);
+
+    if (batchesData) {
+      const activeBatch = mainBatch.trim().toLowerCase();
+      const match = batchesData.find((b: any) => {
+        const title = b.title?.trim().toLowerCase();
+        return title && (title.includes(activeBatch) || activeBatch.includes(title));
+      });
+      if (match) {
+        batchTiming = match.timing;
+      }
+    }
+  }
 
   if (!student) {
     return <div className="p-10 bg-white rounded-3xl border border-slate-100 text-center font-bold text-slate-500">Student profile not found.</div>;
@@ -123,7 +143,7 @@ async function ProfileContent({ userId }: { userId: string }) {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <ProfileInfo icon={<BookOpen size={16}/>} label="Primary Course" value={student.course} />
             <ProfileInfo icon={<IdCard size={16}/>} label="Official Student ID" value={student.student_id} />
-            <ProfileInfo icon={<Users size={16}/>} label="Assigned Batch" value={mainBatch} />
+            <ProfileInfo icon={<Users size={16}/>} label="Assigned Batch" value={batchTiming ? `${mainBatch} (${batchTiming})` : mainBatch} />
             <ProfileInfo icon={<Calendar size={16}/>} label="Admission Date" value={student.admission_date ? new Date(student.admission_date).toLocaleDateString() : "—"} />
           </div>
 

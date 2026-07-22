@@ -475,6 +475,11 @@ export default function DashboardClient({
                   <Users size={10} /> {student.batch}
                 </span>
               )}
+              {student?.batchTiming && (
+                <span className="bg-white/15 text-white font-black text-[9px] tracking-wider uppercase px-2 py-0.5 rounded backdrop-blur-md border border-white/10 flex items-center gap-1">
+                  <Clock size={10} /> {student.batchTiming}
+                </span>
+              )}
             </div>
             
             <h1 className="text-3xl font-black tracking-tight leading-none">

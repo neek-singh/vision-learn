@@ -85,15 +85,28 @@ export default async function DashboardPage() {
   let isLessonScheduledToday = false;
   let nextScheduledClass: { lesson: any; schedule: any } | null = null;
   let isNextLessonLocked = false;
+  let batchTiming: string | null = null;
   if (mainEnrollment?.course_id) {
     const activeBatch = (student?.batch || mainEnrollment?.batch)?.trim().toLowerCase();
-    const [modulesRes, schedulesRes] = await Promise.all([
+    const [modulesRes, schedulesRes, batchesRes] = await Promise.all([
       supabase.from("lms_modules").select(`id, title, order_index, lessons (id, title, order_index, type)`).eq("course_id", mainEnrollment.course_id).order("order_index"),
-      supabase.from("schedules").select("title, batch, type, date, start_time").eq("course_id", mainEnrollment.course_id)
+      supabase.from("schedules").select("title, batch, type, date, start_time").eq("course_id", mainEnrollment.course_id),
+      supabase.from("batches").select("title, timing").eq("course_id", mainEnrollment.course_id)
     ]);
 
     const modules = modulesRes.data || [];
     const schedules = schedulesRes.data || [];
+    const batches = batchesRes.data || [];
+
+    if (activeBatch) {
+      const match = batches.find((b: any) => {
+        const title = b.title?.trim().toLowerCase();
+        return title && (title.includes(activeBatch) || activeBatch.includes(title));
+      });
+      if (match) {
+        batchTiming = match.timing;
+      }
+    }
     const now = new Date();
 
     // Get local today string in YYYY-MM-DD format
@@ -302,7 +315,7 @@ export default async function DashboardPage() {
 
   return (
     <DashboardClient
-      student={student}
+      student={student ? { ...student, batchTiming } : null}
       mainCourse={mainCourse}
       otherCourses={otherCourses}
       stats={{

@@ -90,6 +90,17 @@ export function CurriculumClient({
   const [activeBatch] = useState<string | null>(initialBatch);
   const [now, setNow] = useState(new Date());
 
+  // Resolve batch timing
+  const batchTiming = useMemo(() => {
+    if (!initialBatch || !availableBatches) return null;
+    const activeBatchLower = initialBatch.trim().toLowerCase();
+    const match = availableBatches.find((b: any) => {
+      const title = b.title?.trim().toLowerCase();
+      return title && (title.includes(activeBatchLower) || activeBatchLower.includes(title));
+    });
+    return match?.timing || null;
+  }, [initialBatch, availableBatches]);
+
   // Tab state: 'syllabus' | 'series'
   const [activeTab, setActiveTab] = useState<'syllabus' | 'series'>('series');
 
@@ -458,6 +469,11 @@ export function CurriculumClient({
               {initialBatch && (
                 <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-md border border-indigo-100 text-[10px] font-black uppercase tracking-wider">
                   {initialBatch}
+                </span>
+              )}
+              {initialBatch && batchTiming && (
+                <span className="px-2 py-0.5 bg-slate-50 text-slate-600 rounded-md border border-slate-100 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                  <Clock size={10} /> {batchTiming}
                 </span>
               )}
             </div>
