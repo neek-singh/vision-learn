@@ -179,3 +179,29 @@ body {
   display: block !important;
 }
 
+/* Scoped zoom rules for Theory / Lesson Notes content */
+article[style*="--notes-font-size"] .rich-content,
+article[style*="--notes-font-size"] .rich-content p,
+article[style*="--notes-font-size"] .rich-content li,
+article[style*="--notes-font-size"] .rich-content span,
+article[style*="--notes-font-size"] .rich-content ol,
+article[style*="--notes-font-size"] .rich-content ul,
+article[style*="--notes-font-size"] p,
+article[style*="--notes-font-size"] li,
+article[style*="--notes-font-size"] ul,
+article[style*="--notes-font-size"] ol {
+  font-size: var(--notes-font-size) !important;
+}
+
+article[style*="--notes-font-size"] h1 {
+  font-size: calc(var(--notes-font-size) * 1.6) !important;
+}
+
+article[style*="--notes-font-size"] h2 {
+  font-size: calc(var(--notes-font-size) * 1.35) !important;
+}
+
+article[style*="--notes-font-size"] h3 {
+  font-size: calc(var(--notes-font-size) * 1.15) !important;
+}
+

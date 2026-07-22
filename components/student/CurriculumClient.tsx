@@ -466,31 +466,8 @@ export function CurriculumClient({
           <div className="space-y-1">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-3xl font-black text-slate-900 tracking-tight">My Classes</h1>
-              {initialBatch && (
-                <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-md border border-indigo-100 text-[10px] font-black uppercase tracking-wider">
-                  {initialBatch}
-                </span>
-              )}
-              {initialBatch && batchTiming && (
-                <span className="px-2 py-0.5 bg-slate-50 text-slate-600 rounded-md border border-slate-100 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
-                  <Clock size={10} /> {batchTiming}
-                </span>
-              )}
             </div>
             <p className="text-slate-500 font-medium">Follow your structured learning path to mastery.</p>
-            <div className="pt-2">
-              <DownloadButton courseId={courseId || ""} courseTitle="My Course" />
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-6">
-            <div className="text-right hidden sm:block">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Your Progress</p>
-              <p className="text-2xl font-black text-indigo-600">{totalProgress}% <span className="text-slate-300 text-sm">/ 100%</span></p>
-            </div>
-            <div className="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 border border-indigo-100/50">
-               <Zap size={24} fill="currentColor" />
-            </div>
           </div>
         </div>
 

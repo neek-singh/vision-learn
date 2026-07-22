@@ -45,6 +45,61 @@ export default function LessonViewer({
 
   const handleZoomIn = () => setZoomLevel(prev => Math.min(prev + 2, 28));
   const handleZoomOut = () => setZoomLevel(prev => Math.max(prev - 2, 12));
+
+  // Pinch-to-zoom logic via non-passive native touch event listeners
+  const articleRef = useRef<HTMLElement | null>(null);
+  const zoomLevelRef = useRef(zoomLevel);
+
+  useEffect(() => {
+    zoomLevelRef.current = zoomLevel;
+  }, [zoomLevel]);
+
+  useEffect(() => {
+    const article = articleRef.current;
+    if (!article) return;
+
+    let startDist = 0;
+    let baseZoom = zoomLevelRef.current;
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        startDist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        baseZoom = zoomLevelRef.current;
+      }
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 2 && startDist > 0) {
+        if (e.cancelable) e.preventDefault();
+        const dist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        const ratio = dist / startDist;
+        const newZoom = Math.min(28, Math.max(12, Math.round(baseZoom * ratio)));
+        setZoomLevel(newZoom);
+      }
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2) {
+        startDist = 0;
+      }
+    };
+
+    article.addEventListener('touchstart', onTouchStart, { passive: true });
+    article.addEventListener('touchmove', onTouchMove, { passive: false });
+    article.addEventListener('touchend', onTouchEnd, { passive: true });
+
+    return () => {
+      article.removeEventListener('touchstart', onTouchStart);
+      article.removeEventListener('touchmove', onTouchMove);
+      article.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [lesson?.id, lesson?.notes_content]);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, number>>({});
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [isScreenShielded, setIsScreenShielded] = useState(false);
@@ -771,14 +826,14 @@ export default function LessonViewer({
                      )}
                   </div>
                   <article 
+                    ref={articleRef}
                     className="prose prose-slate max-w-none text-slate-600 leading-relaxed text-base"
-                    style={{ fontSize: `${zoomLevel}px` }}
+                    style={{ '--notes-font-size': `${zoomLevel}px` } as React.CSSProperties}
                   >
                      {lesson.notes_content ? (
                        <div 
                          dangerouslySetInnerHTML={{ __html: lesson.notes_content }} 
                          className="rich-content"
-                         style={{ fontSize: `${zoomLevel}px` }}
                        />
                      ) : (lesson.lesson_type || lesson.type)?.toLowerCase().includes('offline') ? (
                        <div>
@@ -995,22 +1050,22 @@ export default function LessonViewer({
 
         {/* Mobile-only floating Zoom Controls for theory/notes */}
         {lessonType !== 'video' && lessonType !== 'mcq' && lessonType !== 'quiz' && (
-          <div className="absolute bottom-6 right-6 z-50 flex items-center gap-1.5 bg-slate-900/95 backdrop-blur-md p-1.5 rounded-2xl border border-slate-700/50 shadow-2xl sm:hidden animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="absolute bottom-6 right-6 z-50 flex items-center gap-1.5 bg-slate-950/40 backdrop-blur-md p-1.5 rounded-2xl border border-white/10 shadow-2xl sm:hidden animate-in fade-in slide-in-from-bottom-4 duration-300">
             <button 
               onClick={handleZoomOut}
               disabled={zoomLevel <= 12}
-              className="p-2 hover:bg-slate-800 active:bg-slate-700 disabled:opacity-40 rounded-xl text-white transition-all cursor-pointer"
+              className="p-2 hover:bg-white/10 active:bg-white/5 disabled:opacity-40 rounded-xl text-white transition-all cursor-pointer"
               title="Zoom Out"
             >
               <ZoomOut size={16} />
             </button>
-            <span className="text-[10px] font-black text-slate-300 px-1 select-none min-w-[32px] text-center">
+            <span className="text-[10px] font-black text-slate-200 px-1 select-none min-w-[32px] text-center">
               {Math.round((zoomLevel / 16) * 100)}%
             </span>
             <button 
               onClick={handleZoomIn}
               disabled={zoomLevel >= 28}
-              className="p-2 hover:bg-slate-800 active:bg-slate-700 disabled:opacity-40 rounded-xl text-white transition-all cursor-pointer"
+              className="p-2 hover:bg-white/10 active:bg-white/5 disabled:opacity-40 rounded-xl text-white transition-all cursor-pointer"
               title="Zoom In"
             >
               <ZoomIn size={16} />

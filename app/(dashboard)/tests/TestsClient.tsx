@@ -11,7 +11,8 @@ import {
   ArrowRight,
   Trophy,
   AlertCircle,
-  Loader2
+  Loader2,
+  Check
 } from "lucide-react";
 
 export default function TestsClient({ 
@@ -89,14 +90,27 @@ export default function TestsClient({
         normalize(s.title).includes(normalize(lesson.title)) ||
         normalize(lesson.title).includes(normalize(s.title))
       )
-    ).map(lesson => ({ ...lesson, source: "lesson" as const }));
+    ).map(lesson => {
+      const matchedSchedule = liveQuizSchedules.find(s =>
+        normalize(s.title).includes(normalize(lesson.title)) ||
+        normalize(lesson.title).includes(normalize(s.title))
+      );
+      return { 
+        ...lesson, 
+        source: "lesson" as const,
+        created_at: matchedSchedule?.date || lesson.created_at
+      };
+    });
   }, [quizLessons, liveQuizSchedules]);
 
-  // Merge: traditional tests + scheduled curriculum quizzes
-  const allAvailableTests = useMemo(() => [
-    ...currentlyAvailableTests.map(t => ({ ...t, source: "test" as const })),
-    ...scheduledQuizLessons
-  ], [currentlyAvailableTests, scheduledQuizLessons]);
+  // Merge and sort ascending by date: traditional tests + scheduled curriculum quizzes
+  const allAvailableTests = useMemo(() => {
+    const list = [
+      ...currentlyAvailableTests.map(t => ({ ...t, source: "test" as const })),
+      ...scheduledQuizLessons
+    ];
+    return list.sort((a: any, b: any) => new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime());
+  }, [currentlyAvailableTests, scheduledQuizLessons]);
 
   const coursesList = useMemo(() => 
     Array.from(new Set(allAvailableTests.map((t: any) => t.courses?.title || "My Course"))).filter(Boolean),
@@ -305,32 +319,6 @@ export default function TestsClient({
 
   return (
     <div className="space-y-8">
-      {/* Course Filter */}
-      <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
-        <button 
-          onClick={() => setSelectedCourse("all")}
-          aria-label="Filter by all courses"
-          aria-selected={selectedCourse === "all"}
-          className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap border active:scale-95 ${
-            selectedCourse === "all" ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-500 border-slate-100 hover:border-slate-200"
-          }`}
-        >
-          All Courses
-        </button>
-        {coursesList.map((courseName: any) => (
-          <button 
-            key={courseName}
-            onClick={() => setSelectedCourse(courseName)}
-            aria-label={`Filter by ${courseName}`}
-            aria-selected={selectedCourse === courseName}
-            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap border active:scale-95 ${
-              selectedCourse === courseName ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-500 border-slate-100 hover:border-slate-200"
-            }`}
-          >
-            {courseName}
-          </button>
-        ))}
-      </div>
 
       {filteredTests.length === 0 ? (
         <div className="p-16 text-center bg-white rounded-3xl border border-slate-100 shadow-sm">
@@ -341,124 +329,145 @@ export default function TestsClient({
           <p className="text-sm text-slate-500 max-w-sm mx-auto">Online tests and quizzes will appear here once they are scheduled.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredTests.map((test: any) => (
-            <TestCard 
-              key={test.id} 
-              test={test} 
-              result={test.source === "lesson"
+        <div className="relative pl-9 space-y-2">
+          {/* Vertical connecting line */}
+          <div className="absolute left-3 top-1 bottom-6 w-[2px] bg-orange-300 rounded-full" />
+
+          {(() => {
+            let lastDateStr = "";
+            let testCounter = 0;
+
+            return filteredTests.map((test: any) => {
+              const isLesson = test.source === "lesson";
+              const result = isLesson
                 ? quizSubmissions.find((s: any) => s.lesson_id === test.id)
-                : results.find((r: any) => r.test_id === test.id)}
-              onStart={test.source === "lesson" ? () => {} : handleStartTest}
-            />
-          ))}
+                : results.find((r: any) => r.test_id === test.id);
+
+              const testDate = new Date(test.created_at || 0);
+              const dateStr = testDate.toDateString();
+              
+              let dateSeparator: React.ReactNode = null;
+              if (dateStr !== lastDateStr) {
+                lastDateStr = dateStr;
+                const dateLabel = testDate.toLocaleDateString('en-US', { 
+                  weekday: 'short', 
+                  day: 'numeric', 
+                  month: 'short', 
+                  year: 'numeric' 
+                });
+                dateSeparator = (
+                  <div className="mb-1.5 mt-4 first:mt-0">
+                    <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border bg-slate-50 text-slate-900 border-slate-200">
+                      {dateLabel}
+                    </span>
+                  </div>
+                );
+              }
+
+              testCounter++;
+
+              const timeLabel = testDate.toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+              });
+
+              // Display Score calculation
+              let displayScore = "—";
+              if (result) {
+                if (typeof result.score === 'string') {
+                  displayScore = result.score.replace(/\/-$/, '');
+                } else if (result.score !== undefined && result.score !== null) {
+                  displayScore = `${result.score}/${result.total_questions || '?'}`;
+                } else {
+                  displayScore = "Completed";
+                }
+              }
+
+              return (
+                <div key={test.id}>
+                  {dateSeparator}
+                  <div className="relative flex items-center gap-3 mb-1">
+                    {/* Timeline dot */}
+                    <div className={`absolute -left-9 w-6 h-6 rounded-full flex items-center justify-center shrink-0 shadow-sm transition-all duration-300 ${
+                      result 
+                        ? 'bg-gradient-to-br from-orange-400 to-amber-500 text-white' 
+                        : 'bg-white border border-slate-200 text-slate-400'
+                    }`}>
+                      {result ? (
+                        <Check size={11} strokeWidth={3} className="text-white" />
+                      ) : (
+                        <FileText size={10} />
+                      )}
+                    </div>
+
+                    {/* Timeline Card */}
+                    <div className="flex-1 flex items-center justify-between p-4 bg-white rounded-2xl border border-orange-100/80 shadow-sm transition-all duration-300 hover:shadow-md">
+                      <div className="flex items-center gap-3">
+                        {/* Index Counter */}
+                        <span className="text-slate-400 font-bold text-xs select-none min-w-[12px]">
+                          {testCounter}
+                        </span>
+                        
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-1.5">
+                            <h3 className="text-sm font-black text-slate-800 leading-tight">
+                              {test.title}
+                            </h3>
+                            {result && (
+                              <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-orange-50 text-orange-500 border border-orange-100">
+                                <Check size={8} strokeWidth={4} />
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md border ${
+                              isLesson
+                                ? 'bg-purple-50 text-purple-600 border-purple-100'
+                                : 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                            }`}>
+                              {isLesson ? 'Quiz' : 'Test'}
+                            </span>
+                            
+                            <span className="text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md border bg-orange-50 text-orange-600 border-orange-100 flex items-center gap-1">
+                              <Clock size={9} /> {timeLabel}
+                            </span>
+
+                            {result && (
+                              <span className="text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md border bg-emerald-50 text-emerald-600 border-emerald-100">
+                                Score: {displayScore}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="shrink-0">
+                        {isLesson ? (
+                          <a
+                            href={`/curriculum?lessonId=${test.id}`}
+                            className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 active:scale-95 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
+                          >
+                            {result ? 'Review' : 'Start'}
+                          </a>
+                        ) : (
+                          <button 
+                            onClick={() => handleStartTest(test)}
+                            className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 active:scale-95 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
+                          >
+                            {result ? 'Review' : 'Start'}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            });
+          })()}
         </div>
       )}
     </div>
   );
 }
-
-// Memoized Test Card for better performance
-const TestCard = memo(({ test, result, onStart }: { test: any, result: any, onStart: (t: any) => void }) => {
-  const isLesson = test.source === "lesson";
-
-  // Cleanly format the score, preventing double slash issues like "5/5/--"
-  const displayScore = useMemo(() => {
-    if (!result) return null;
-    const rawScore = result.score || (result.content_url?.match(/Score (.+)/)?.[1]);
-    if (!rawScore) return "—";
-    if (typeof rawScore === 'string' && rawScore.includes('/')) {
-      return rawScore;
-    }
-    return `${rawScore}/${result.total_questions || "—"}`;
-  }, [result]);
-
-  return (
-  <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-lg transition-all duration-500 group">
-    <div className="flex justify-between items-start mb-4">
-      <div className={`w-10 h-10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform ${isLesson ? "bg-purple-50 text-purple-600" : "bg-indigo-50 text-indigo-600"}`}>
-        <FileText size={20} />
-      </div>
-      {result ? (
-        <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-emerald-100">
-          <CheckCircle2 size={12} />
-          Completed
-        </span>
-      ) : isLesson ? (
-        <span className="flex items-center gap-1.5 px-3 py-1 bg-purple-50 text-purple-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-purple-100">
-          Quiz
-        </span>
-      ) : null}
-    </div>
-
-    <div className="space-y-0.5 mb-6">
-      <div className="flex items-center gap-2 mb-2">
-        {!isLesson && (
-          <span className={`px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-widest border ${
-            test.type === 'monthly' ? 'bg-purple-50 text-purple-700 border-purple-100' : 
-            test.type === 'weekly' ? 'bg-blue-50 text-blue-700 border-blue-100' : 
-            'bg-emerald-50 text-emerald-700 border-emerald-100'
-          }`}>
-            {test.type || 'daily'}
-          </span>
-        )}
-        {isLesson && (
-          <span className="px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-widest border bg-purple-50 text-purple-700 border-purple-100">
-            Curriculum Quiz
-          </span>
-        )}
-      </div>
-      <h3 className="text-lg font-black text-slate-900 line-clamp-1">{test.title}</h3>
-      <div className="flex items-center justify-between mt-1">
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">{test.courses?.title || "My Course"}</p>
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-          {new Date(test.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-        </p>
-      </div>
-    </div>
-
-    <div className="flex items-center gap-4 mb-6">
-      {!isLesson && (
-        <div className="flex items-center gap-2 text-slate-500">
-          <Clock size={12} className="text-amber-400" />
-          <span className="text-[10px] font-bold">{test.duration_minutes}m</span>
-        </div>
-      )}
-      {result && (
-        <div className="flex items-center gap-2 text-emerald-600">
-          <Trophy size={12} className="shrink-0" />
-          <span className="text-[10px] font-black">
-            Score: {displayScore}
-          </span>
-        </div>
-      )}
-    </div>
-
-    {isLesson ? (
-      <a
-        href={`/curriculum?lessonId=${test.id}`}
-        className="w-full py-3 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 shadow-md active:scale-95 bg-purple-600 hover:bg-purple-700 text-white shadow-purple-100"
-      >
-        {result ? <><CheckCircle2 size={14} /> Open Quiz</> : <><Play size={14} fill="currentColor" /> Start Quiz</>}
-      </a>
-    ) : (
-      <button 
-        onClick={() => onStart(test)}
-        aria-label={result ? `Retake test: ${test.title}` : `Start test: ${test.title}`}
-        className={`w-full py-3 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 shadow-md active:scale-95 ${
-          result
-            ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-100"
-            : "bg-slate-900 hover:bg-indigo-600 text-white shadow-slate-100"
-        }`}
-      >
-        {result ? (
-          <><CheckCircle2 size={14} /> Retake Test</>
-        ) : (
-          <><Play size={14} fill="currentColor" /> Start Test</>
-        )}
-      </button>
-    )}
-  </div>
-  );
-});
-TestCard.displayName = "TestCard";
