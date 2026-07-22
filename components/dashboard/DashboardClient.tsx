@@ -466,18 +466,15 @@ export default function DashboardClient({
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
-            <div className="flex items-center gap-2.5">
-              <span className="bg-white/20 text-white font-black text-[9px] tracking-widest uppercase px-2 py-0.5 rounded backdrop-blur-md border border-white/10 flex items-center gap-1">
-                <Sparkles size={10} /> student hub
-              </span>
+            <div className="flex flex-wrap items-center gap-2.5">
               {student?.batch && (
-                <span className="bg-white/15 text-white font-black text-[9px] tracking-wider uppercase px-2 py-0.5 rounded backdrop-blur-md border border-white/10 flex items-center gap-1">
-                  <Users size={10} /> {student.batch}
+                <span className="bg-white/15 text-white font-black text-[11px] tracking-wider uppercase px-3 py-1 rounded-lg backdrop-blur-md border border-white/10 flex items-center gap-1.5">
+                  <Users size={12} /> {student.batch}
                 </span>
               )}
               {student?.batchTiming && (
-                <span className="bg-white/15 text-white font-black text-[9px] tracking-wider uppercase px-2 py-0.5 rounded backdrop-blur-md border border-white/10 flex items-center gap-1">
-                  <Clock size={10} /> {student.batchTiming}
+                <span className="bg-white/15 text-white font-black text-[11px] tracking-wider uppercase px-3 py-1 rounded-lg backdrop-blur-md border border-white/10 flex items-center gap-1.5">
+                  <Clock size={12} /> {student.batchTiming}
                 </span>
               )}
             </div>
