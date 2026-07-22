@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { X, Video, ExternalLink, FileText, BookOpen, Clock, Tv, CheckCircle2, HelpCircle, XCircle, Award, RotateCcw, Upload, Loader2, FileUp, Check, ChevronLeft, ChevronRight, ShieldAlert } from "lucide-react";
+import { X, Video, ExternalLink, FileText, BookOpen, Clock, Tv, CheckCircle2, HelpCircle, XCircle, Award, RotateCcw, Upload, Loader2, FileUp, Check, ChevronLeft, ChevronRight, ShieldAlert, ZoomIn, ZoomOut } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
@@ -41,6 +41,10 @@ export default function LessonViewer({
   const lessonType = (lesson?.lesson_type || lesson?.type || 'video').toLowerCase();
   const [theaterMode, setTheaterMode] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [zoomLevel, setZoomLevel] = useState(16); // Default 16px (100%)
+
+  const handleZoomIn = () => setZoomLevel(prev => Math.min(prev + 2, 28));
+  const handleZoomOut = () => setZoomLevel(prev => Math.max(prev - 2, 12));
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, number>>({});
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [isScreenShielded, setIsScreenShielded] = useState(false);
@@ -766,11 +770,15 @@ export default function LessonViewer({
                        </a>
                      )}
                   </div>
-                  <article className="prose prose-slate max-w-none text-slate-600 leading-relaxed text-base">
+                  <article 
+                    className="prose prose-slate max-w-none text-slate-600 leading-relaxed text-base"
+                    style={{ fontSize: `${zoomLevel}px` }}
+                  >
                      {lesson.notes_content ? (
                        <div 
                          dangerouslySetInnerHTML={{ __html: lesson.notes_content }} 
                          className="rich-content"
+                         style={{ fontSize: `${zoomLevel}px` }}
                        />
                      ) : (lesson.lesson_type || lesson.type)?.toLowerCase().includes('offline') ? (
                        <div>
@@ -984,6 +992,31 @@ export default function LessonViewer({
              </div>
           </div>
         </div>
+
+        {/* Mobile-only floating Zoom Controls for theory/notes */}
+        {lessonType !== 'video' && lessonType !== 'mcq' && lessonType !== 'quiz' && (
+          <div className="absolute bottom-6 right-6 z-50 flex items-center gap-1.5 bg-slate-900/95 backdrop-blur-md p-1.5 rounded-2xl border border-slate-700/50 shadow-2xl sm:hidden animate-in fade-in slide-in-from-bottom-4 duration-300">
+            <button 
+              onClick={handleZoomOut}
+              disabled={zoomLevel <= 12}
+              className="p-2 hover:bg-slate-800 active:bg-slate-700 disabled:opacity-40 rounded-xl text-white transition-all cursor-pointer"
+              title="Zoom Out"
+            >
+              <ZoomOut size={16} />
+            </button>
+            <span className="text-[10px] font-black text-slate-300 px-1 select-none min-w-[32px] text-center">
+              {Math.round((zoomLevel / 16) * 100)}%
+            </span>
+            <button 
+              onClick={handleZoomIn}
+              disabled={zoomLevel >= 28}
+              className="p-2 hover:bg-slate-800 active:bg-slate-700 disabled:opacity-40 rounded-xl text-white transition-all cursor-pointer"
+              title="Zoom In"
+            >
+              <ZoomIn size={16} />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
