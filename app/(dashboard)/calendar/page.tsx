@@ -59,9 +59,7 @@ async function CalendarContent({ userId }: { userId: string }) {
   
   const filteredSchedules = rawSchedules.filter(s => {
     const sBatch = s.batch?.trim().toLowerCase();
-    const batchMatch = !sBatch || sBatch === "all batches" || !normalizedActiveBatch || 
-                       sBatch === normalizedActiveBatch || sBatch.includes(normalizedActiveBatch) || 
-                       normalizedActiveBatch.includes(sBatch);
+    const batchMatch = !sBatch || sBatch === "all batches" || sBatch === "all" || !normalizedActiveBatch || sBatch === normalizedActiveBatch;
     return batchMatch;
   });
 

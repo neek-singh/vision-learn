@@ -133,9 +133,8 @@ export default async function DashboardPage() {
           if (!sTitle) return false;
 
           const sBatch = s.batch?.trim().toLowerCase();
-          const batchMatch = !sBatch || sBatch === "all batches" || !activeBatch || 
-                             sBatch === activeBatch || sBatch.includes(activeBatch) || 
-                             activeBatch.includes(sBatch);
+          const cleanActive = activeBatch?.trim().toLowerCase();
+          const batchMatch = !sBatch || sBatch === "all batches" || sBatch === "all" || !cleanActive || sBatch === cleanActive;
           if (!batchMatch) return false;
 
           const normSTitle = normalize(sTitle);
@@ -228,9 +227,7 @@ export default async function DashboardPage() {
     const events = eventsRes.data || [];
     const schedules = (schedulesRes.data || []).filter(s => {
       const sBatch = s.batch?.trim().toLowerCase();
-      const batchMatch = !sBatch || sBatch === "all batches" || !normalizedBatch || 
-                         sBatch === normalizedBatch || sBatch.includes(normalizedBatch) || 
-                         normalizedBatch.includes(sBatch);
+      const batchMatch = !sBatch || sBatch === "all batches" || sBatch === "all" || !normalizedBatch || sBatch === normalizedBatch;
       return batchMatch;
     });
 

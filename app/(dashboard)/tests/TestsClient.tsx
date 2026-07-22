@@ -51,12 +51,13 @@ export default function TestsClient({
 
   const normalize = (txt: string) => txt.toLowerCase().replace(/[^a-z0-9]/g, "").trim();
 
-  // 1. Filter live schedules for this batch
+  // 1. Filter live schedules for this batch (strictly)
   const liveSchedules = useMemo(() => {
     const nowTime = now.getTime();
     return schedules.filter(s => {
       const sBatch = s.batch?.trim().toLowerCase();
-      const batchMatch = !sBatch || sBatch === "all batches" || sBatch.includes(activeBatch) || activeBatch.includes(sBatch);
+      const cleanActive = activeBatch?.trim().toLowerCase();
+      const batchMatch = !sBatch || sBatch === "all batches" || sBatch === "all" || !cleanActive || sBatch === cleanActive;
       if (!batchMatch) return false;
       const timeStr = s.start_time?.includes(':') ? s.start_time : '00:00:00';
       const sDate = new Date(`${s.date}T${timeStr}`).getTime();
@@ -66,7 +67,7 @@ export default function TestsClient({
 
   const scheduledTitles = useMemo(() => liveSchedules.map(s => s.title.toLowerCase()), [liveSchedules]);
 
-  // 2. Apply Schedule Filter to initialTests
+  // 2. Apply Schedule Filter to initialTests (strictly)
   const currentlyAvailableTests = useMemo(() => {
     return initialTests.filter((t) => {
       const isScheduled = scheduledTitles.some((st: string) => {
@@ -75,9 +76,10 @@ export default function TestsClient({
         return cleanST.includes(cleanTT) || cleanTT.includes(cleanST);
       });
       if (!isScheduled) return false;
-      if (!t.batch || t.batch === "All Batches") return true;
+      if (!t.batch || t.batch === "All Batches" || t.batch.trim().toLowerCase() === "all") return true;
       const tBatch = t.batch.trim().toLowerCase();
-      return tBatch.includes(activeBatch) || activeBatch.includes(tBatch);
+      const cleanActive = activeBatch?.trim().toLowerCase();
+      return tBatch === cleanActive;
     });
   }, [initialTests, scheduledTitles, activeBatch]);
 

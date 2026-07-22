@@ -38,8 +38,8 @@ export default async function AssignmentsPage() {
   // Filter schedules: batch matches + time has passed (scheduled or live)
   const liveSchedules = (schedulesRaw || []).filter(s => {
     const sBatch = s.batch?.trim().toLowerCase();
-    const batchMatch = !sBatch || sBatch === "all batches" || !activeBatch ||
-                       sBatch === activeBatch || sBatch.includes(activeBatch) || activeBatch.includes(sBatch);
+    const cleanActive = activeBatch?.trim().toLowerCase();
+    const batchMatch = !sBatch || sBatch === "all batches" || sBatch === "all" || !cleanActive || sBatch === cleanActive;
     if (!batchMatch) return false;
     const timeStr = s.start_time || "00:00:00";
     const sDate = new Date(`${s.date}T${timeStr}`);

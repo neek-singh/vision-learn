@@ -40,7 +40,8 @@ export default function MaterialsClient({
     const nowTime = now.getTime();
     const scheduledMaterials = schedules.filter(s => {
       const sBatch = s.batch?.trim().toLowerCase();
-      const batchMatch = !sBatch || sBatch === "all batches" || sBatch.includes(activeBatch) || activeBatch.includes(sBatch);
+      const cleanActive = activeBatch?.trim().toLowerCase();
+      const batchMatch = !sBatch || sBatch === "all batches" || sBatch === "all" || !cleanActive || sBatch === cleanActive;
       if (!batchMatch) return false;
 
       const timeStr = s.start_time?.includes(':') ? s.start_time : '00:00:00';
