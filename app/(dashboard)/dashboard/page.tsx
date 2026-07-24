@@ -88,10 +88,11 @@ export default async function DashboardPage() {
   let batchTiming: string | null = null;
   if (mainEnrollment?.course_id) {
     const activeBatch = (student?.batch || mainEnrollment?.batch)?.trim().toLowerCase();
+    let activeBatchId: string | null = null;
     const [modulesRes, schedulesRes, batchesRes] = await Promise.all([
-      supabase.from("lms_modules").select(`id, title, order_index, lessons (id, title, order_index, type)`).eq("course_id", mainEnrollment.course_id).order("order_index"),
+      supabase.from("lms_modules").select(`id, title, order_index, batches, lessons (id, title, order_index, type, batches)`).eq("course_id", mainEnrollment.course_id).order("order_index"),
       supabase.from("schedules").select("title, batch, type, date, start_time").eq("course_id", mainEnrollment.course_id),
-      supabase.from("batches").select("title, timing").eq("course_id", mainEnrollment.course_id)
+      supabase.from("batches").select("id, title, timing").eq("course_id", mainEnrollment.course_id)
     ]);
 
     const modules = modulesRes.data || [];
@@ -105,6 +106,7 @@ export default async function DashboardPage() {
       });
       if (match) {
         batchTiming = match.timing;
+        activeBatchId = match.id;
       }
     }
     const now = new Date();
@@ -117,7 +119,22 @@ export default async function DashboardPage() {
 
     const normalize = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
 
-    const allModulesWithLessons = modules.sort((a: any, b: any) => a.order_index - b.order_index);
+    const filteredModules = modules.map((module: any) => {
+      const isModuleAssigned = !module.batches || module.batches.length === 0 || (activeBatchId && module.batches.includes(activeBatchId));
+      if (!isModuleAssigned) return null;
+
+      const visibleLessons = (module.lessons || []).filter((l: any) => {
+        const isLessonAssigned = !l.batches || l.batches.length === 0 || (activeBatchId && l.batches.includes(activeBatchId));
+        return isLessonAssigned;
+      });
+
+      return {
+        ...module,
+        lessons: visibleLessons
+      };
+    }).filter(Boolean);
+
+    const allModulesWithLessons = filteredModules.sort((a: any, b: any) => a.order_index - b.order_index);
     const incompleteLessonsWithSchedules: { lesson: any; schedule: any }[] = [];
 
     for (const module of allModulesWithLessons) {

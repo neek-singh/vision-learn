@@ -116,6 +116,43 @@ export function CurriculumClient({
   // Use cached modules if available, otherwise fallback to initial
   const displayModules = cachedModules && cachedModules.length > 0 ? cachedModules : initialModules;
 
+  const activeBatchId = useMemo(() => {
+    if (!activeBatch || !availableBatches) return null;
+    const activeBatchLower = activeBatch.trim().toLowerCase();
+    const match = availableBatches.find((b: any) => {
+      const title = b.title?.trim().toLowerCase();
+      return title && (title.includes(activeBatchLower) || activeBatchLower.includes(title));
+    });
+    return match?.id || null;
+  }, [activeBatch, availableBatches]);
+
+  const batchModules = useMemo(() => {
+    return displayModules.map((module: any) => {
+      // 1. Check if the module is visible to this batch
+      const isModuleAssigned = !module.batches || module.batches.length === 0 || (activeBatchId && module.batches.includes(activeBatchId));
+      if (!isModuleAssigned) return null;
+
+      // 2. Filter chapters within the module
+      const moduleChapters = chapters.filter((c: any) => c.module_id === module.id);
+      const visibleChapters = moduleChapters.filter((ch: any) => {
+        const isChapterAssigned = !ch.batches || ch.batches.length === 0 || (activeBatchId && ch.batches.includes(activeBatchId));
+        return isChapterAssigned;
+      });
+
+      // 3. Filter lessons within the module
+      const visibleLessons = (module.lessons || []).filter((l: any) => {
+        const isLessonAssigned = !l.batches || l.batches.length === 0 || (activeBatchId && l.batches.includes(activeBatchId));
+        return isLessonAssigned;
+      });
+
+      return {
+        ...module,
+        lms_chapters: visibleChapters,
+        lessons: visibleLessons
+      };
+    }).filter(Boolean);
+  }, [displayModules, chapters, activeBatchId]);
+
   // Update clock every minute for precise unlocking
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 60000);
@@ -175,10 +212,10 @@ export function CurriculumClient({
   };
 
   const allLessons = useMemo(() => {
-    return [...displayModules]
+    return [...batchModules]
       .sort((a, b) => a.order_index - b.order_index)
       .flatMap(m => (m.lessons || []).sort((a: any, b: any) => a.order_index - b.order_index));
-  }, [displayModules]);
+  }, [batchModules]);
 
   const classLessons = useMemo(() => {
     return allLessons.filter(l => {
@@ -326,7 +363,7 @@ export function CurriculumClient({
 
   // Filter displayModules down to matching search/filter constraints
   const filteredModules = useMemo(() => {
-    return displayModules.map((module: any) => {
+    return batchModules.map((module: any) => {
       const lessons = (module.lessons || []).sort((a: any, b: any) => a.order_index - b.order_index);
       
       const filteredLessons = lessons.filter((lesson: any) => {
@@ -379,7 +416,7 @@ export function CurriculumClient({
         lessons: filteredLessons
       };
     }).filter((module: any) => module.lessons.length > 0);
-  }, [displayModules, searchTerm, filterType, filterStatus, userProgress, currentSchedules, now]);
+  }, [batchModules, searchTerm, filterType, filterStatus, userProgress, currentSchedules, now]);
 
   // Auto-open lesson if lessonId is in URL
   useEffect(() => {
@@ -1076,12 +1113,12 @@ function ModuleItem({
   );
 
   const moduleChapters = useMemo(() => {
-    const relevantChapters = chapters.filter((c: any) => c.module_id === module.id).sort((a: any, b: any) => a.order_index - b.order_index);
+    const relevantChapters = [...(module.lms_chapters || [])].sort((a: any, b: any) => a.order_index - b.order_index);
     return relevantChapters.map((chapter: any) => ({
       ...chapter,
       lessons: lessons.filter((l: any) => l.chapter_id === chapter.id)
     }));
-  }, [chapters, lessons, module.id]);
+  }, [module.lms_chapters, lessons]);
 
   const uncategorizedLessons = useMemo(() => 
     lessons.filter((l: any) => !l.chapter_id),
