@@ -25,20 +25,30 @@ export default async function AssignmentsPage() {
   const student = studentRes.data;
   const enrollments = enrollmentRes.data || [];
   const courseIds = enrollments.map(e => e.course_id).filter(Boolean);
-  const activeBatch = (student?.batch || enrollments[0]?.batch || "").trim().toLowerCase();
+  const activeBatch = (student?.batch || enrollments[0]?.batch || "").trim();
 
-  // 2. Fetch schedules for these courses (assignment type OR any type with scheduled date)
-  const { data: schedulesRaw } = await supabase
-    .from("schedules")
-    .select("*")
-    .in("course_id", courseIds);
+  // 2. Fetch schedules and batches for these courses in parallel
+  const [schedulesRes, batchesRes] = await Promise.all([
+    supabase.from("schedules").select("*").in("course_id", courseIds),
+    supabase.from("batches").select("id, title").in("course_id", courseIds)
+  ]);
+
+  const schedulesRaw = schedulesRes.data || [];
+  const batches = batchesRes.data || [];
+
+  const activeBatchLower = activeBatch.toLowerCase();
+  const activeBatchMatch = batches.find((b: any) => {
+    const title = b.title?.trim().toLowerCase();
+    return title && (title.includes(activeBatchLower) || activeBatchLower.includes(title));
+  });
+  const activeBatchId = activeBatchMatch?.id || null;
 
   const now = new Date();
 
   // Filter schedules: batch matches + time has passed (scheduled or live)
   const liveSchedules = (schedulesRaw || []).filter(s => {
     const sBatch = s.batch?.trim().toLowerCase();
-    const cleanActive = activeBatch?.trim().toLowerCase();
+    const cleanActive = activeBatchLower;
     const batchMatch = !sBatch || sBatch === "all batches" || sBatch === "all" || !cleanActive || sBatch === cleanActive;
     if (!batchMatch) return false;
     const timeStr = s.start_time || "00:00:00";
@@ -55,7 +65,7 @@ export default async function AssignmentsPage() {
   // 3. Fetch curriculum lessons that are assignment or project type
   const { data: taskLessons } = await supabase
     .from("lessons")
-    .select("id, title, course_id, notes_content, assignment_file, lesson_type, type, created_at")
+    .select("id, title, course_id, notes_content, assignment_file, lesson_type, type, batches, created_at")
     .in("course_id", courseIds)
     .or("lesson_type.eq.assignment,type.eq.assignment,lesson_type.eq.project,type.eq.project");
 
@@ -63,10 +73,17 @@ export default async function AssignmentsPage() {
 
   // Match curriculum lessons to live schedules
   const scheduledLessons = (taskLessons || []).filter(lesson => {
-    return liveTaskSchedules.some(s =>
-      normalize(s.title).includes(normalize(lesson.title)) ||
-      normalize(lesson.title).includes(normalize(s.title))
-    );
+    // Filter by batches array (if populated)
+    if (lesson.batches && lesson.batches.length > 0) {
+      if (!activeBatchId || !lesson.batches.includes(activeBatchId)) return false;
+    }
+
+    return liveTaskSchedules.some(s => {
+      const sTitle = s.title || '';
+      const parts = sTitle.split(':');
+      const lessonPart = parts[parts.length - 1].trim();
+      return normalize(lessonPart) === normalize(lesson.title);
+    });
   });
 
   // 4. Fetch traditional Assignments table entries (published)
@@ -78,7 +95,13 @@ export default async function AssignmentsPage() {
     .order("due_date", { ascending: true });
 
   const filteredTraditionalAssignments = (assignments || []).filter(a => {
-    if (!a.batch || a.batch === "All Batches") return true;
+    // Filter by batches array (if populated)
+    if (a.batches && a.batches.length > 0) {
+      return activeBatchId && a.batches.includes(activeBatchId);
+    }
+
+    // Legacy batch name check (fallback)
+    if (!a.batch || a.batch === "All Batches" || a.batch.trim().toLowerCase() === "all") return true;
     const enrollmentForCourse = enrollments.find(e => e.course_id === a.course_id);
     return enrollmentForCourse && enrollmentForCourse.batch === a.batch;
   });
@@ -91,10 +114,12 @@ export default async function AssignmentsPage() {
 
   // 6. Find the matching schedule for each lesson to get due date
   const scheduledLessonsWithSchedule = scheduledLessons.map(lesson => {
-    const matchedSchedule = liveTaskSchedules.find(s =>
-      normalize(s.title).includes(normalize(lesson.title)) ||
-      normalize(lesson.title).includes(normalize(s.title))
-    );
+    const matchedSchedule = liveTaskSchedules.find(s => {
+      const sTitle = s.title || '';
+      const parts = sTitle.split(':');
+      const lessonPart = parts[parts.length - 1].trim();
+      return normalize(lessonPart) === normalize(lesson.title);
+    });
     const enrollment = enrollments.find(e => e.course_id === lesson.course_id);
     return {
       ...lesson,

@@ -80,12 +80,21 @@ async function CurriculumContent({ userId }: { userId: string }) {
     return batchMatch;
   });
 
+  // Resolve activeBatchId from batchesData
+  const activeBatchLower = activeBatch?.trim().toLowerCase();
+  const activeBatchMatch = batchesData.find((b: any) => {
+    const title = b.title?.trim().toLowerCase();
+    return title && (title.includes(activeBatchLower) || activeBatchLower.includes(title));
+  });
+  const activeBatchId = activeBatchMatch?.id || null;
+
   return (
     <CurriculumClient 
       initialModules={modulesData} 
       initialProgress={initialProgress} 
       studentId={userId} 
       initialSchedules={scheduledItems}
+      initialAllSchedules={rawSchedules}
       initialTests={testsData}
       initialMaterials={materialsData}
       initialBatch={activeBatch}

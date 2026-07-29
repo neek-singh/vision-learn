@@ -68,6 +68,7 @@ interface DashboardClientProps {
   notifications: any[];
   streak: number;
   progressHistory: { date: string; count: number }[];
+  activityHistory?: { date: string; active_seconds: number }[];
 }
 
 export default function DashboardClient({
@@ -83,7 +84,8 @@ export default function DashboardClient({
   recentActivities,
   notifications,
   streak,
-  progressHistory
+  progressHistory,
+  activityHistory = []
 }: DashboardClientProps) {
   // 1. Accent Theme Settings
   const [accent, setAccent] = useState<"indigo" | "emerald" | "violet" | "orange">("indigo");
@@ -262,6 +264,13 @@ export default function DashboardClient({
   const handleDeleteTask = (id: string) => {
     const updated = tasks.filter(t => t.id !== id);
     saveTasks(updated);
+  };
+
+  // Helper to format minutes as H:MM
+  const formatHMM = (mins: number) => {
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return `${h}:${String(m).padStart(2, '0')}`;
   };
 
   // Render SVG chart elements
@@ -447,6 +456,86 @@ export default function DashboardClient({
               );
             })}
           </svg>
+        </div>
+      </div>
+    );
+  };
+
+  // Render Daily Study Time Bar Chart (matches the requested user design)
+  const renderDailyStudyTimeChart = () => {
+    let dailyMinsMap: Record<string, number> = {};
+    
+    // 1. Populate from database activity records
+    if (activityHistory && activityHistory.length > 0) {
+      activityHistory.forEach(record => {
+        if (record.date) {
+          const isoDateStr = record.date.split('T')[0];
+          dailyMinsMap[isoDateStr] = Math.round((record.active_seconds || 0) / 60);
+        }
+      });
+    }
+
+    // 2. Merge/override with today's unsynced local storage active minutes
+    try {
+      const saved = localStorage.getItem(`vision_daily_active_${student?.id || 'default'}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        Object.keys(parsed).forEach((k) => {
+          const localMins = Math.round(parsed[k] / 60);
+          dailyMinsMap[k] = Math.max(dailyMinsMap[k] || 0, localMins);
+        });
+      }
+    } catch (e) {}
+
+    // Build past 7 days list
+    const minutesHistory = progressHistory.map(h => {
+      const dateObj = new Date(h.date);
+      const isoDateStr = dateObj.toISOString().split('T')[0];
+      const count = dailyMinsMap[isoDateStr] || 0;
+      return { date: h.date, count };
+    });
+
+    const maxMins = Math.max(...minutesHistory.map(d => d.count), 60);
+    const todayMins = minutesHistory[minutesHistory.length - 1]?.count || 0;
+
+    return (
+      <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden group">
+        <div className="flex items-center justify-between mb-8">
+          <h3 className="text-base font-black text-slate-900 tracking-tight">Time</h3>
+          <span className="text-sky-500 font-black text-base tabular-nums flex items-center gap-1">
+            {formatHMM(todayMins)} <span className="text-sky-400 font-bold text-xs uppercase tracking-wider">today</span>
+          </span>
+        </div>
+
+        <div className="flex justify-between items-end gap-2 sm:gap-4 px-1 select-none">
+          {minutesHistory.map((day, idx) => {
+            const dateObj = new Date(day.date);
+            const dayLabel = dateObj.toLocaleDateString('en-US', { weekday: 'short' }); // "Mon", "Tue"
+            const formattedTime = formatHMM(day.count);
+            const heightPercent = day.count > 0 ? Math.min(100, Math.round((day.count / maxMins) * 100)) : 0;
+
+            return (
+              <div key={idx} className="flex-1 flex flex-col items-center">
+                {/* Time Label */}
+                <span className="text-[9px] sm:text-[11px] font-black text-slate-500 mb-2 tabular-nums">
+                  {formattedTime}
+                </span>
+
+                {/* Vertical Bar Capsule */}
+                <div className="w-full max-w-[36px] h-32 sm:h-40 bg-transparent flex flex-col justify-end relative">
+                  <div 
+                    className="w-full bg-sky-400 transition-all duration-1000 ease-out shadow-sm"
+                    style={{ height: `${heightPercent}%` }}
+                  />
+                </div>
+
+                {/* Day Label */}
+                <span className="text-[10px] sm:text-xs font-black text-slate-400 mt-3 uppercase tracking-widest">
+                  {dayLabel}
+                </span>
+              </div>
+            );
+          })}
         </div>
       </div>
     );
@@ -836,6 +925,9 @@ export default function DashboardClient({
           
           {/* Main Performance Chart Widget */}
           {renderAnalyticsChart()}
+
+          {/* Daily Study Time Chart Widget */}
+          {renderDailyStudyTimeChart()}
 
           {/* Interactive Goal Setter & Spark progress */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

@@ -19,6 +19,7 @@ export default function TestsClient({
   initialTests, 
   schedules,
   activeBatch,
+  activeBatchId,
   studentId, 
   initialResults,
   quizLessons = [],
@@ -27,6 +28,7 @@ export default function TestsClient({
   initialTests: any[], 
   schedules: any[],
   activeBatch: string,
+  activeBatchId: string | null,
   studentId: string, 
   initialResults: any[],
   quizLessons?: any[],
@@ -76,34 +78,51 @@ export default function TestsClient({
         return cleanST.includes(cleanTT) || cleanTT.includes(cleanST);
       });
       if (!isScheduled) return false;
+
+      // Filter by batches array (if populated)
+      if (t.batches && t.batches.length > 0) {
+        return activeBatchId && t.batches.includes(activeBatchId);
+      }
+
+      // Legacy string match
       if (!t.batch || t.batch === "All Batches" || t.batch.trim().toLowerCase() === "all") return true;
       const tBatch = t.batch.trim().toLowerCase();
       const cleanActive = activeBatch?.trim().toLowerCase();
       return tBatch === cleanActive;
     });
-  }, [initialTests, scheduledTitles, activeBatch]);
+  }, [initialTests, scheduledTitles, activeBatch, activeBatchId]);
 
   // 3. Live quiz-type schedules → match with curriculum lesson quizzes
   const liveQuizSchedules = useMemo(() => liveSchedules.filter(s => (s.type || "").toLowerCase() === "quiz"), [liveSchedules]);
 
   const scheduledQuizLessons = useMemo(() => {
-    return quizLessons.filter(lesson =>
-      liveQuizSchedules.some(s =>
-        normalize(s.title).includes(normalize(lesson.title)) ||
-        normalize(lesson.title).includes(normalize(s.title))
-      )
-    ).map(lesson => {
-      const matchedSchedule = liveQuizSchedules.find(s =>
-        normalize(s.title).includes(normalize(lesson.title)) ||
-        normalize(lesson.title).includes(normalize(s.title))
-      );
+    return quizLessons.filter(lesson => {
+      // Filter by batches array (if populated)
+      if (lesson.batches && lesson.batches.length > 0) {
+        if (!activeBatchId || !lesson.batches.includes(activeBatchId)) return false;
+      }
+
+      // Filter by schedules
+      return liveQuizSchedules.some(s => {
+        const sTitle = s.title || '';
+        const parts = sTitle.split(':');
+        const lessonPart = parts[parts.length - 1].trim();
+        return normalize(lessonPart) === normalize(lesson.title);
+      });
+    }).map(lesson => {
+      const matchedSchedule = liveQuizSchedules.find(s => {
+        const sTitle = s.title || '';
+        const parts = sTitle.split(':');
+        const lessonPart = parts[parts.length - 1].trim();
+        return normalize(lessonPart) === normalize(lesson.title);
+      });
       return { 
         ...lesson, 
         source: "lesson" as const,
         created_at: matchedSchedule?.date || lesson.created_at
       };
     });
-  }, [quizLessons, liveQuizSchedules]);
+  }, [quizLessons, liveQuizSchedules, activeBatchId]);
 
   // Merge and sort ascending by date: traditional tests + scheduled curriculum quizzes
   const allAvailableTests = useMemo(() => {
@@ -351,6 +370,7 @@ export default function TestsClient({
               let dateSeparator: React.ReactNode = null;
               if (dateStr !== lastDateStr) {
                 lastDateStr = dateStr;
+                const isToday = testDate.toDateString() === new Date().toDateString();
                 const dateLabel = testDate.toLocaleDateString('en-US', { 
                   weekday: 'short', 
                   day: 'numeric', 
@@ -359,8 +379,12 @@ export default function TestsClient({
                 });
                 dateSeparator = (
                   <div className="mb-1.5 mt-4 first:mt-0">
-                    <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border bg-slate-50 text-slate-900 border-slate-200">
-                      {dateLabel}
+                    <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${
+                      isToday 
+                        ? 'bg-orange-500 text-white border-orange-600' 
+                        : 'bg-slate-50 text-slate-900 border-slate-200'
+                    }`}>
+                      {isToday ? '● Today' : dateLabel}
                     </span>
                   </div>
                 );

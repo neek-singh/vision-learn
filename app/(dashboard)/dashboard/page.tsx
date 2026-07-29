@@ -42,43 +42,20 @@ export default async function DashboardPage() {
   const mainCourse = mainEnrollment?.courses;
   const otherCourses = enrollments.slice(1);
 
-  // 2. Fetch all lessons for the active course
+  // 2. Fetch all lessons and other data inside active course
   let allLessons: any[] = [];
-  if (mainEnrollment?.course_id) {
-    const { data: lessons } = await supabase
-      .from("lessons")
-      .select("id, type, lesson_type")
-      .eq("course_id", mainEnrollment.course_id);
-    if (lessons) {
-      allLessons = lessons;
-    }
-  }
-
-  const getFormatType = (l: any) => {
-    return (l.lesson_type || l.type || 'video').toLowerCase();
-  };
-
-  const classLessons = allLessons.filter(l => {
-    const t = getFormatType(l);
-    return t === 'video' || t === 'notes' || t === 'article' || t === 'document';
-  });
-  const quizLessons = allLessons.filter(l => getFormatType(l) === 'mcq');
-  const assignmentLessons = allLessons.filter(l => getFormatType(l) === 'assignment');
-  const projectLessons = allLessons.filter(l => getFormatType(l) === 'project');
-
-  const completedIds = progressRecords.map(p => p.lesson_id);
-
-  const completedClasses = classLessons.filter(l => completedIds.includes(l.id));
-  const completedQuizzes = quizLessons.filter(l => completedIds.includes(l.id));
-  const completedAssignments = assignmentLessons.filter(l => completedIds.includes(l.id));
-  const completedProjects = projectLessons.filter(l => completedIds.includes(l.id));
-
-  const completedCount = completedClasses.length;
-  const totalLessonsCount = classLessons.length;
-  const progressPercentage = totalLessonsCount > 0
-    ? Math.round((completedCount / totalLessonsCount) * 100)
-    : 0;
-  const remainingCount = Math.max(0, totalLessonsCount - completedCount);
+  let classLessons: any[] = [];
+  let quizLessons: any[] = [];
+  let assignmentLessons: any[] = [];
+  let projectLessons: any[] = [];
+  let completedClasses: any[] = [];
+  let completedQuizzes: any[] = [];
+  let completedAssignments: any[] = [];
+  let completedProjects: any[] = [];
+  let completedCount = 0;
+  let totalLessonsCount = 0;
+  let progressPercentage = 0;
+  let remainingCount = 0;
 
   // 3. Find next available lesson (scheduled/unscheduled)
   let nextLesson: any = null;
@@ -86,18 +63,21 @@ export default async function DashboardPage() {
   let nextScheduledClass: { lesson: any; schedule: any } | null = null;
   let isNextLessonLocked = false;
   let batchTiming: string | null = null;
+
   if (mainEnrollment?.course_id) {
     const activeBatch = (student?.batch || mainEnrollment?.batch)?.trim().toLowerCase();
     let activeBatchId: string | null = null;
-    const [modulesRes, schedulesRes, batchesRes] = await Promise.all([
+    const [modulesRes, schedulesRes, batchesRes, lessonsRes] = await Promise.all([
       supabase.from("lms_modules").select(`id, title, order_index, batches, lessons (id, title, order_index, type, batches)`).eq("course_id", mainEnrollment.course_id).order("order_index"),
       supabase.from("schedules").select("title, batch, type, date, start_time").eq("course_id", mainEnrollment.course_id),
-      supabase.from("batches").select("id, title, timing").eq("course_id", mainEnrollment.course_id)
+      supabase.from("batches").select("id, title, timing").eq("course_id", mainEnrollment.course_id),
+      supabase.from("lessons").select("id, title, type, lesson_type").eq("course_id", mainEnrollment.course_id)
     ]);
 
     const modules = modulesRes.data || [];
     const schedules = schedulesRes.data || [];
     const batches = batchesRes.data || [];
+    const rawLessons = lessonsRes.data || [];
 
     if (activeBatch) {
       const match = batches.find((b: any) => {
@@ -109,6 +89,61 @@ export default async function DashboardPage() {
         activeBatchId = match.id;
       }
     }
+
+    const normalize = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
+    const isScheduleTypeMatch = (s: any, l: any) => {
+      const sType = (s.type || 'class').toLowerCase();
+      const lType = (l.lesson_type || l.type || 'video').toLowerCase();
+      if (lType === 'mcq') return sType === 'quiz';
+      if (lType === 'assignment') return sType === 'assignment';
+      if (lType === 'project') return sType === 'project';
+      return sType === 'class' || sType === 'lecture' || sType === 'event';
+    };
+    const normalizedActiveBatch = activeBatch?.trim().toLowerCase();
+
+    // Filter course lessons by student's batch schedules
+    allLessons = rawLessons.filter((l: any) => {
+      const lTitle = normalize(l.title || '');
+      const lessonSchedules = schedules.filter((s: any) => {
+        const sTitle = s.title || '';
+        const parts = sTitle.split(':');
+        const lessonPart = parts[parts.length - 1].trim();
+        return normalize(lessonPart) === lTitle && isScheduleTypeMatch(s, l);
+      });
+
+      const hasScheduleForMyBatch = lessonSchedules.some((s: any) => {
+        const sBatch = s.batch?.trim().toLowerCase();
+        return !sBatch || sBatch === "all batches" || sBatch === "all" || !normalizedActiveBatch || sBatch === normalizedActiveBatch;
+      });
+      return hasScheduleForMyBatch;
+    });
+
+    const getFormatType = (l: any) => {
+      return (l.lesson_type || l.type || 'video').toLowerCase();
+    };
+
+    classLessons = allLessons.filter(l => {
+      const t = getFormatType(l);
+      return t === 'video' || t === 'notes' || t === 'article' || t === 'document';
+    });
+    quizLessons = allLessons.filter(l => getFormatType(l) === 'mcq');
+    assignmentLessons = allLessons.filter(l => getFormatType(l) === 'assignment');
+    projectLessons = allLessons.filter(l => getFormatType(l) === 'project');
+
+    const completedIds = progressRecords.map(p => p.lesson_id);
+
+    completedClasses = classLessons.filter(l => completedIds.includes(l.id));
+    completedQuizzes = quizLessons.filter(l => completedIds.includes(l.id));
+    completedAssignments = assignmentLessons.filter(l => completedIds.includes(l.id));
+    completedProjects = projectLessons.filter(l => completedIds.includes(l.id));
+
+    completedCount = completedClasses.length;
+    totalLessonsCount = classLessons.length;
+    progressPercentage = totalLessonsCount > 0
+      ? Math.round((completedCount / totalLessonsCount) * 100)
+      : 0;
+    remainingCount = Math.max(0, totalLessonsCount - completedCount);
+
     const now = new Date();
 
     // Get local today string in YYYY-MM-DD format
@@ -117,15 +152,26 @@ export default async function DashboardPage() {
     const day = String(now.getDate()).padStart(2, '0');
     const todayStr = `${year}-${month}-${day}`;
 
-    const normalize = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
-
     const filteredModules = modules.map((module: any) => {
       const isModuleAssigned = !module.batches || module.batches.length === 0 || (activeBatchId && module.batches.includes(activeBatchId));
       if (!isModuleAssigned) return null;
 
       const visibleLessons = (module.lessons || []).filter((l: any) => {
-        const isLessonAssigned = !l.batches || l.batches.length === 0 || (activeBatchId && l.batches.includes(activeBatchId));
-        return isLessonAssigned;
+        const isLessonAssignedByBatch = !l.batches || l.batches.length === 0 || (activeBatchId && l.batches.includes(activeBatchId));
+        if (!isLessonAssignedByBatch) return false;
+
+        const lTitle = normalize(l.title || '');
+        const lessonSchedules = schedules.filter((s: any) => {
+          const sTitle = s.title || '';
+          const parts = sTitle.split(':');
+          const lessonPart = parts[parts.length - 1].trim();
+          return normalize(lessonPart) === lTitle && isScheduleTypeMatch(s, l);
+        });
+
+        return lessonSchedules.some((s: any) => {
+          const sBatch = s.batch?.trim().toLowerCase();
+          return !sBatch || sBatch === "all batches" || sBatch === "all" || !normalizedActiveBatch || sBatch === normalizedActiveBatch;
+        });
       });
 
       return {
@@ -154,8 +200,9 @@ export default async function DashboardPage() {
           const batchMatch = !sBatch || sBatch === "all batches" || sBatch === "all" || !cleanActive || sBatch === cleanActive;
           if (!batchMatch) return false;
 
-          const normSTitle = normalize(sTitle);
-          return normSTitle.includes(lTitle) && normSTitle.includes(mTitle);
+          const parts = sTitle.split(':');
+          const lessonPart = parts[parts.length - 1].trim();
+          return normalize(lessonPart) === lTitle && isScheduleTypeMatch(s, lesson);
         });
 
         incompleteLessonsWithSchedules.push({ lesson, schedule });
@@ -327,6 +374,12 @@ export default async function DashboardPage() {
     };
   });
 
+  // Fetch daily activity records from Supabase
+  const { data: activityRecords } = await supabase
+    .from("student_daily_activity")
+    .select("date, active_seconds")
+    .eq("student_id", userId);
+
   return (
     <DashboardClient
       student={student ? { ...student, batchTiming } : null}
@@ -355,6 +408,7 @@ export default async function DashboardPage() {
       notifications={notifications}
       streak={streak}
       progressHistory={progressHistory}
+      activityHistory={activityRecords || []}
     />
   );
 }

@@ -24,13 +24,23 @@ export default async function TestsPage() {
   const student = studentRes.data;
   const enrollments = enrollmentRes.data || [];
   const courseIds = enrollments.map(e => e.course_id).filter(Boolean);
-  const activeBatch = (student?.batch || enrollments[0]?.batch || "").trim().toLowerCase();
+  const activeBatch = (student?.batch || enrollments[0]?.batch || "").trim();
 
-  // 2. Fetch ALL Schedules for these courses (to filter on client)
-  const { data: schedules } = await supabase
-    .from("schedules")
-    .select("*")
-    .in("course_id", courseIds);
+  // 2. Fetch Schedules and Batches for these courses in parallel
+  const [schedulesRes, batchesRes] = await Promise.all([
+    supabase.from("schedules").select("*").in("course_id", courseIds),
+    supabase.from("batches").select("id, title").in("course_id", courseIds)
+  ]);
+
+  const schedules = schedulesRes.data || [];
+  const batches = batchesRes.data || [];
+
+  const activeBatchLower = activeBatch.toLowerCase();
+  const activeBatchMatch = batches.find((b: any) => {
+    const title = b.title?.trim().toLowerCase();
+    return title && (title.includes(activeBatchLower) || activeBatchLower.includes(title));
+  });
+  const activeBatchId = activeBatchMatch?.id || null;
 
   // 3. Fetch Tests (from tests table)
   const { data: tests } = await supabase
@@ -46,7 +56,7 @@ export default async function TestsPage() {
   // 4. Fetch curriculum quiz lessons (mcq type)
   const { data: quizLessons } = await supabase
     .from("lessons")
-    .select("id, title, course_id, notes_content, lesson_type, type, created_at")
+    .select("id, title, course_id, notes_content, lesson_type, type, batches, created_at")
     .in("course_id", courseIds)
     .or("lesson_type.eq.mcq,type.eq.mcq");
 
@@ -73,6 +83,7 @@ export default async function TestsPage() {
         initialTests={tests || []} 
         schedules={schedules || []}
         activeBatch={activeBatch}
+        activeBatchId={activeBatchId}
         studentId={payload.id} 
         initialResults={results || []} 
         quizLessons={quizLessons || []}

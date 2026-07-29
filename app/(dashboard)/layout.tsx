@@ -145,6 +145,113 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     };
   }, [supabase, router]);
 
+  // Global Active Time Tracker & Supabase Sync
+  useEffect(() => {
+    if (!student?.id) return;
+
+    const studentId = student.id;
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    // Local accumulation
+    let accumulatedSeconds = 0;
+
+    const syncToDatabase = async (secondsToAdd: number) => {
+      if (secondsToAdd <= 0) return;
+      try {
+        // 1. Fetch current active_seconds for today
+        const { data, error: selectError } = await supabase
+          .from('student_daily_activity')
+          .select('active_seconds')
+          .eq('student_id', studentId)
+          .eq('date', todayStr)
+          .maybeSingle();
+
+        if (selectError) throw selectError;
+
+        const currentActive = data?.active_seconds || 0;
+        const newActive = currentActive + secondsToAdd;
+
+        // 2. Upsert updated value
+        const { error: upsertError } = await supabase
+          .from('student_daily_activity')
+          .upsert({
+            student_id: studentId,
+            date: todayStr,
+            active_seconds: newActive,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'student_id,date' });
+
+        if (upsertError) throw upsertError;
+      } catch (err) {
+        console.error("[Active Tracker] Sync failed:", err);
+      }
+    };
+
+    const interval = setInterval(async () => {
+      if (document.visibilityState === 'visible') {
+        accumulatedSeconds += 1;
+        
+        // Also update local storage so it reflects instantly on dashboard
+        const key = `vision_active_seconds_${studentId}`;
+        const currentTotal = parseInt(localStorage.getItem(key) || '0', 10);
+        const newTotal = currentTotal + 1;
+        localStorage.setItem(key, String(newTotal));
+
+        const dailyKey = `vision_daily_active_${studentId}`;
+        let dailyMap: Record<string, number> = {};
+        try {
+          dailyMap = JSON.parse(localStorage.getItem(dailyKey) || '{}');
+        } catch (e) {
+          dailyMap = {};
+        }
+        dailyMap[todayStr] = (dailyMap[todayStr] || 0) + 1;
+        localStorage.setItem(dailyKey, JSON.stringify(dailyMap));
+
+        // Dispatch tick event for curriculum minutes learnt card
+        window.dispatchEvent(new CustomEvent("vision_active_time_tick", {
+          detail: { totalSeconds: newTotal, todaySeconds: dailyMap[todayStr] }
+        }));
+
+        // Periodically sync every 10 seconds
+        if (accumulatedSeconds >= 10) {
+          const secondsToSync = accumulatedSeconds;
+          accumulatedSeconds = 0;
+          await syncToDatabase(secondsToSync);
+        }
+      }
+    }, 1000);
+
+    // Sync pending on visibility change or unload
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'hidden' && accumulatedSeconds > 0) {
+        const secondsToSync = accumulatedSeconds;
+        accumulatedSeconds = 0;
+        await syncToDatabase(secondsToSync);
+      }
+    };
+
+    const handleBeforeUnload = async () => {
+      if (accumulatedSeconds > 0) {
+        const secondsToSync = accumulatedSeconds;
+        accumulatedSeconds = 0;
+        await syncToDatabase(secondsToSync);
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      // Final flush
+      if (accumulatedSeconds > 0) {
+        syncToDatabase(accumulatedSeconds);
+      }
+    };
+  }, [student, supabase]);
+
   return (
     <div className="min-h-screen bg-slate-50 flex">
       {/* Sidebar - Desktop */}

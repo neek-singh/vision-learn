@@ -41,11 +41,23 @@ const LessonViewer = dynamic(() => import("./LessonViewer"), {
   </div>
 });
 
+const normalize = (str: string) => (str || "").toLowerCase().replace(/[^a-z0-9]/g, "").trim();
+
+const isScheduleTypeMatch = (s: any, l: any) => {
+  const sType = (s.type || 'class').toLowerCase();
+  const lType = (l.lesson_type || l.type || 'video').toLowerCase();
+  if (lType === 'mcq') return sType === 'quiz';
+  if (lType === 'assignment') return sType === 'assignment';
+  if (lType === 'project') return sType === 'project';
+  return sType === 'class' || sType === 'lecture' || sType === 'event';
+};
+
 export function CurriculumClient({ 
   initialModules, 
   initialProgress, 
   studentId,
   initialSchedules = [],
+  initialAllSchedules = [],
   initialTests = [],
   initialMaterials = [],
   initialBatch = null,
@@ -57,6 +69,7 @@ export function CurriculumClient({
   initialProgress: string[], 
   studentId: string,
   initialSchedules?: any[],
+  initialAllSchedules?: any[],
   initialTests?: any[],
   initialMaterials?: any[],
   initialBatch?: string | null,
@@ -87,6 +100,7 @@ export function CurriculumClient({
   const [lastClosedLessonId, setLastClosedLessonId] = useState<string | null>(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [currentSchedules, setCurrentSchedules] = useState<any[]>(initialSchedules);
+  const [allSchedules, setAllSchedules] = useState<any[]>(initialAllSchedules || []);
   const [activeBatch] = useState<string | null>(initialBatch);
   const [now, setNow] = useState(new Date());
 
@@ -127,6 +141,9 @@ export function CurriculumClient({
   }, [activeBatch, availableBatches]);
 
   const batchModules = useMemo(() => {
+    const normalizedActiveBatch = activeBatch?.trim().toLowerCase();
+    const normalize = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
+
     return displayModules.map((module: any) => {
       // 1. Check if the module is visible to this batch
       const isModuleAssigned = !module.batches || module.batches.length === 0 || (activeBatchId && module.batches.includes(activeBatchId));
@@ -141,8 +158,22 @@ export function CurriculumClient({
 
       // 3. Filter lessons within the module
       const visibleLessons = (module.lessons || []).filter((l: any) => {
-        const isLessonAssigned = !l.batches || l.batches.length === 0 || (activeBatchId && l.batches.includes(activeBatchId));
-        return isLessonAssigned;
+        const isLessonAssignedByBatch = !l.batches || l.batches.length === 0 || (activeBatchId && l.batches.includes(activeBatchId));
+        if (!isLessonAssignedByBatch) return false;
+
+        const lTitle = normalize(l.title || '');
+        const lessonSchedules = allSchedules.filter((s: any) => {
+          const sTitle = s.title || '';
+          const parts = sTitle.split(':');
+          const lessonPart = parts[parts.length - 1].trim();
+          return normalize(lessonPart) === lTitle && isScheduleTypeMatch(s, l);
+        });
+
+        const hasScheduleForMyBatch = lessonSchedules.some((s: any) => {
+          const sBatch = s.batch?.trim().toLowerCase();
+          return !sBatch || sBatch === "all batches" || sBatch === "all" || !normalizedActiveBatch || sBatch === normalizedActiveBatch;
+        });
+        return hasScheduleForMyBatch;
       });
 
       return {
@@ -151,7 +182,7 @@ export function CurriculumClient({
         lessons: visibleLessons
       };
     }).filter(Boolean);
-  }, [displayModules, chapters, activeBatchId]);
+  }, [displayModules, chapters, activeBatchId, allSchedules, activeBatch]);
 
   // Update clock every minute for precise unlocking
   useEffect(() => {
@@ -168,6 +199,7 @@ export function CurriculumClient({
         .eq("course_id", courseId);
 
       if (rawSchedules) {
+        setAllSchedules(rawSchedules);
         const normalizedActiveBatch = activeBatch?.trim().toLowerCase();
         const filtered = rawSchedules
           .filter(s => {
@@ -252,12 +284,12 @@ export function CurriculumClient({
     return () => window.removeEventListener("vision_active_time_tick", handleTick);
   }, [studentId]);
 
-  const totalHours = useMemo(() => {
+  const totalMinutes = useMemo(() => {
     const completedMins = completedClasses
       .reduce((sum, l) => sum + (Number(l.duration) || 0), 0);
     const activeMins = Math.floor(liveActiveSeconds / 60);
     const combinedMins = completedMins + activeMins;
-    return (combinedMins / 60).toFixed(1);
+    return combinedMins;
   }, [completedClasses, liveActiveSeconds]);
 
   const upcomingCount = useMemo(() => {
@@ -281,10 +313,10 @@ export function CurriculumClient({
 
     const lessonsWithSchedules = incompleteLessons.map(lesson => {
       const schedule = currentSchedules.find((st: any) => {
-        const normalize = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
-        const sTitle = normalize(st.title);
-        const lTitle = normalize(lesson.title);
-        return sTitle.includes(lTitle);
+        const sTitle = st.title || '';
+        const parts = sTitle.split(':');
+        const lessonPart = parts[parts.length - 1].trim();
+        return normalize(lessonPart) === normalize(lesson.title) && isScheduleTypeMatch(st, lesson);
       });
 
       let isScheduled = false;
@@ -326,9 +358,10 @@ export function CurriculumClient({
       if (userProgress.includes(lesson.id)) continue; // skip completed
       // Only consider lessons that have an explicit schedule
       const schedule = currentSchedules.find((st: any) => {
-        const sTitle = normalize(st.title);
-        const lTitle = normalize(lesson.title);
-        return sTitle.includes(lTitle);
+        const sTitle = st.title || '';
+        const parts = sTitle.split(':');
+        const lessonPart = parts[parts.length - 1].trim();
+        return normalize(lessonPart) === normalize(lesson.title) && isScheduleTypeMatch(st, lesson);
       });
       if (!schedule) continue; // self-paced = skip, not a "Coming Next" candidate
       // Check if the schedule is in the future (still locked)
@@ -347,7 +380,10 @@ export function CurriculumClient({
     const lesson = allLessons.find(l => l.id === nextLockedLessonId);
     if (!lesson) return null;
     const schedule = currentSchedules.find((st: any) => {
-      return normalize(st.title).includes(normalize(lesson.title));
+      const sTitle = st.title || '';
+      const parts = sTitle.split(':');
+      const lessonPart = parts[parts.length - 1].trim();
+      return normalize(lessonPart) === normalize(lesson.title) && isScheduleTypeMatch(st, lesson);
     });
     return schedule ? { lesson, schedule } : null;
   }, [nextLockedLessonId, allLessons, currentSchedules]);
@@ -356,9 +392,12 @@ export function CurriculumClient({
   const nextUpLessonHasSchedule = useMemo(() => {
     if (!nextUpLesson) return false;
     const normalize = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
-    return currentSchedules.some((st: any) =>
-      normalize(st.title).includes(normalize(nextUpLesson.title))
-    );
+    return currentSchedules.some((st: any) => {
+      const sTitle = st.title || '';
+      const parts = sTitle.split(':');
+      const lessonPart = parts[parts.length - 1].trim();
+      return normalize(lessonPart) === normalize(nextUpLesson.title) && isScheduleTypeMatch(st, nextUpLesson);
+    });
   }, [nextUpLesson, currentSchedules]);
 
   // Filter displayModules down to matching search/filter constraints
@@ -386,10 +425,10 @@ export function CurriculumClient({
         // Status filter
         const isCompleted = userProgress.includes(lesson.id);
         const schedule = currentSchedules.find((st: any) => {
-          const normalize = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
-          const sTitle = normalize(st.title);
-          const lTitle = normalize(lesson.title);
-          return sTitle.includes(lTitle);
+          const sTitle = st.title || '';
+          const parts = sTitle.split(':');
+          const lessonPart = parts[parts.length - 1].trim();
+          return normalize(lessonPart) === normalize(lesson.title) && isScheduleTypeMatch(st, lesson);
         });
         
         let isScheduled = false;
@@ -425,10 +464,10 @@ export function CurriculumClient({
       if (lessonToOpen) {
         // Check if locked before auto-opening
         const schedule = currentSchedules.find((st: any) => {
-          const normalize = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
-          const sTitle = normalize(st.title);
-          const lTitle = normalize(lessonToOpen.title);
-          return sTitle.includes(lTitle);
+          const sTitle = st.title || '';
+          const parts = sTitle.split(':');
+          const lessonPart = parts[parts.length - 1].trim();
+          return normalize(lessonPart) === normalize(lessonToOpen.title) && isScheduleTypeMatch(st, lessonToOpen);
         });
         
         let isScheduled = false;
@@ -560,12 +599,12 @@ export function CurriculumClient({
           </div>
           <div>
             <div className="flex items-center gap-1.5 mb-1">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider leading-none">Hours Learnt</p>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider leading-none">Minutes Learnt</p>
               {isLiveTracking && (
                 <span className="text-[7px] font-black text-emerald-600 bg-emerald-50 px-1 py-0.5 rounded border border-emerald-100 uppercase tracking-widest animate-pulse">Live</span>
               )}
             </div>
-            <p className="text-lg font-black text-slate-900">{totalHours}h</p>
+            <p className="text-lg font-black text-slate-900">{totalMinutes}m</p>
           </div>
         </div>
 
@@ -580,118 +619,7 @@ export function CurriculumClient({
         </div>
       </div>
 
-      {/* Next Up Lesson Section */}
-      {nextLockedLesson ? (
-        // Priority 1: Next SCHEDULED (locked/future) class
-        <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-[2.5rem] p-6 text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl shadow-indigo-100 border border-indigo-900/30 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-700" />
-          <div className="flex items-center gap-5 relative z-10">
-            <div className="w-14 h-14 bg-amber-500/20 rounded-2xl flex items-center justify-center backdrop-blur-md border border-amber-400/20 shrink-0 text-amber-300">
-              <Lock size={24} />
-            </div>
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-[9px] font-black bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-md border border-amber-400/20 uppercase tracking-widest">
-                  {(() => {
-                    const lType = (nextLockedLesson.lesson.lesson_type || nextLockedLesson.lesson.type || '').toLowerCase();
-                    return lType === 'mcq' ? 'Next Scheduled Quiz' :
-                           lType === 'assignment' ? 'Next Scheduled Assignment' :
-                           lType === 'project' ? 'Next Scheduled Project' :
-                           'Next Scheduled Class';
-                  })()}
-                </span>
-                <span className="text-[9px] font-bold text-white/50 flex items-center gap-1">
-                  <Calendar size={9} />
-                  {new Date(nextLockedLesson.schedule.date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}
-                  {nextLockedLesson.schedule.start_time && ` · ${formatTime(nextLockedLesson.schedule.start_time)}`}
-                </span>
-              </div>
-              <h4 className="text-base font-black tracking-tight line-clamp-1">{nextLockedLesson.lesson.title}</h4>
-              <p className="text-xs text-white/60 line-clamp-1 mt-0.5">
-                {(() => {
-                  const lType = (nextLockedLesson.lesson.lesson_type || nextLockedLesson.lesson.type || '').toLowerCase();
-                  return lType === 'mcq' ? 'This quiz will unlock on the scheduled date.' :
-                         lType === 'assignment' ? 'This assignment will unlock on the scheduled date.' :
-                         lType === 'project' ? 'This project will unlock on the scheduled date.' :
-                         'This class will unlock on the scheduled date.';
-                })()}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 px-6 py-3 bg-white/10 border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-wider text-amber-300 shrink-0">
-            <Lock size={12} /> Locked
-          </div>
-        </div>
-      ) : nextUpLesson && nextUpLessonHasSchedule ? (
-        // Priority 2: Unlocked scheduled class
-        <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-[2.5rem] p-6 text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl shadow-indigo-100 border border-indigo-900/30 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-700" />
-          <div className="flex items-center gap-5 relative z-10">
-            <div className="w-14 h-14 bg-indigo-500/20 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/10 shrink-0 text-indigo-300">
-              {(() => {
-                const lType = (nextUpLesson.lesson_type || nextUpLesson.type || '').toLowerCase();
-                return lType === 'video' ? <PlayCircle className="animate-pulse" size={24} /> :
-                       lType === 'article' || lType === 'notes' ? <BookOpen className="animate-pulse" size={24} /> :
-                       lType === 'document' ? <FileText className="animate-pulse" size={24} /> :
-                       lType === 'mcq' ? <HelpCircle className="animate-pulse" size={24} /> :
-                       lType === 'assignment' ? <Award className="animate-pulse" size={24} /> :
-                       lType === 'project' ? <FolderCode className="animate-pulse" size={24} /> :
-                       <Sparkles className="animate-pulse" size={24} />;
-              })()}
-            </div>
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-[9px] font-black bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-md border border-indigo-400/20 uppercase tracking-widest">
-                  {(() => {
-                    const lType = (nextUpLesson.lesson_type || nextUpLesson.type || '').toLowerCase();
-                    return lType === 'mcq' ? 'Next Up Quiz' :
-                           lType === 'assignment' ? 'Next Up Assignment' :
-                           lType === 'project' ? 'Next Up Project' :
-                           'Next Up Class';
-                  })()}
-                </span>
-                <span className="text-[9px] font-bold text-white/50">• {nextUpLesson.duration ? `${nextUpLesson.duration} Mins` : 'Self-paced'}</span>
-              </div>
-              <h4 className="text-base font-black tracking-tight line-clamp-1">{nextUpLesson.title}</h4>
-              <p className="text-xs text-white/60 line-clamp-1 mt-0.5">
-                {(() => {
-                  const lType = (nextUpLesson.lesson_type || nextUpLesson.type || '').toLowerCase();
-                  return lType === 'mcq' ? 'Start this quiz to test your understanding.' :
-                         lType === 'assignment' ? 'Start this assignment to practice your skills.' :
-                         lType === 'project' ? 'Start this project to apply your knowledge.' :
-                         'Start this lesson to continue your learning journey.';
-                })()}
-              </p>
-            </div>
-          </div>
-          <button 
-            onClick={() => openLesson(nextUpLesson)}
-            className="px-8 py-3 bg-white text-indigo-950 hover:bg-indigo-50 rounded-xl font-black text-xs transition-all active:scale-95 shadow-lg shadow-black/20 relative z-10 shrink-0 uppercase tracking-wider flex items-center gap-2 hover:gap-3"
-          >
-            {(() => {
-              const lType = (nextUpLesson.lesson_type || nextUpLesson.type || '').toLowerCase();
-              return lType === 'mcq' ? 'Start Quiz' :
-                     lType === 'assignment' ? 'Start Assignment' :
-                     lType === 'project' ? 'Start Project' :
-                     'Start Learning';
-            })()} <Play size={12} fill="currentColor" />
-          </button>
-        </div>
-      ) : (
-        // Priority 3: No scheduled class at all
-        <div className="bg-white border border-slate-100 rounded-[2.5rem] p-6 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
-          <div className="flex items-center gap-5">
-            <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 shrink-0">
-              <Calendar size={24} />
-            </div>
-            <div>
-              <span className="text-[9px] font-black bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md uppercase tracking-widest">Schedule</span>
-              <h4 className="text-base font-black text-slate-900 mt-1">No any class available</h4>
-              <p className="text-xs text-slate-400 font-medium mt-0.5">Enjoy your day or review previously completed classes!</p>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {/* Tab Switcher */}
       <div className="bg-white rounded-2xl p-1.5 border border-slate-100 shadow-sm flex gap-1">
@@ -877,9 +805,12 @@ function SeriesView({
 
   const enrichedLessons = useMemo(() => {
     return allLessons.map((lesson: any) => {
-      const schedule = currentSchedules.find((st: any) =>
-        normalize(st.title).includes(normalize(lesson.title))
-      );
+      const schedule = currentSchedules.find((st: any) => {
+        const sTitle = st.title || '';
+        const parts = sTitle.split(':');
+        const lessonPart = parts[parts.length - 1].trim();
+        return normalize(lessonPart) === normalize(lesson.title) && isScheduleTypeMatch(st, lesson);
+      });
       let schedDate: Date | null = null;
       let isTimeReached = false;
       if (schedule) {
@@ -1016,7 +947,7 @@ function SeriesView({
                       : isNextLocked
                       ? 'border-amber-100 bg-amber-50/30'
                       : isLocked
-                      ? 'opacity-40 border-transparent bg-slate-50'
+                      ? 'border-slate-100 bg-slate-50/50'
                       : isCompleted
                       ? 'border-orange-200 bg-orange-50/40'
                       : 'bg-white border-slate-100 hover:border-slate-200 hover:shadow-sm'
@@ -1299,10 +1230,10 @@ function LessonItem({
   const isCompleted = userProgress.includes(lesson.id);
   
   const schedule = currentSchedules.find((st: any) => {
-    const normalize = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
-    const sTitle = normalize(st.title);
-    const lTitle = normalize(lesson.title);
-    return sTitle.includes(lTitle);
+    const sTitle = st.title || '';
+    const parts = sTitle.split(':');
+    const lessonPart = parts[parts.length - 1].trim();
+    return normalize(lessonPart) === normalize(lesson.title) && isScheduleTypeMatch(st, lesson);
   });
   
   let isScheduled = false;
@@ -1374,7 +1305,7 @@ function LessonItem({
     <div className={`flex flex-col sm:flex-row sm:items-center justify-between p-3.5 sm:p-4.5 rounded-xl border transition-all group ${
       isNextLocked
         ? 'bg-white border-indigo-100 shadow-md shadow-indigo-50/40 ring-1 ring-indigo-100'
-        : isLocked ? 'opacity-40 bg-slate-50/50 border-transparent cursor-not-allowed' :
+        : isLocked ? 'bg-slate-50/50 border-slate-100/60 cursor-not-allowed' :
           isCompleted ? 'bg-emerald-50/30 border-emerald-100/50 hover:border-emerald-200' :
           isInProgress ? 'bg-white border-indigo-100 shadow-lg shadow-indigo-50/30 ring-1 ring-indigo-50' :
           'bg-white border-slate-50 hover:border-slate-200'
