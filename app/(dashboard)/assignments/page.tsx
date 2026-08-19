@@ -89,21 +89,29 @@ export default async function AssignmentsPage() {
   // 4. Fetch traditional Assignments table entries (published)
   const { data: assignments } = await supabase
     .from("assignments")
-    .select("*, courses(title)")
-    .in("course_id", courseIds)
+    .select("*, courses:courses!assignments_course_id_fkey(title), assignment_courses!inner(course_id)")
+    .in("assignment_courses.course_id", courseIds)
     .eq("is_published", true)
     .order("due_date", { ascending: true });
 
   const filteredTraditionalAssignments = (assignments || []).filter(a => {
-    // Filter by batches array (if populated)
+    // If it has a batches array, filter by student's batch
     if (a.batches && a.batches.length > 0) {
-      return activeBatchId && a.batches.includes(activeBatchId);
+      const activeBatchLower = activeBatch ? activeBatch.toLowerCase() : "";
+      return a.batches.some((b: string) => {
+        const bLower = b.trim().toLowerCase();
+        return bLower === activeBatchLower || bLower === "all" || bLower === "all batches";
+      });
     }
 
-    // Legacy batch name check (fallback)
-    if (!a.batch || a.batch === "All Batches" || a.batch.trim().toLowerCase() === "all") return true;
-    const enrollmentForCourse = enrollments.find(e => e.course_id === a.course_id);
-    return enrollmentForCourse && enrollmentForCourse.batch === a.batch;
+    // If it has NO batches array, check if it's scheduled via legacy batch name
+    if (a.batch && a.batch !== "All Batches" && a.batch.trim().toLowerCase() !== "all") {
+      const enrollmentForCourse = enrollments.find(e => e.course_id === a.course_id);
+      return enrollmentForCourse && enrollmentForCourse.batch === a.batch;
+    }
+
+    // If both batches array and legacy batch are empty/null, it is unscheduled and should be hidden!
+    return false;
   });
 
   // 5. Fetch Submissions
@@ -139,8 +147,8 @@ export default async function AssignmentsPage() {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <section>
-        <h1 className="text-2xl font-black text-slate-900 tracking-tight mb-1">Assignments</h1>
-        <p className="text-sm text-slate-500 font-medium">Keep track of your tasks and submission deadlines.</p>
+        <h1 className="text-2xl font-black text-slate-900 tracking-tight mb-1">Projects</h1>
+        <p className="text-sm text-slate-500 font-medium">Keep track of your projects and submission deadlines.</p>
       </section>
 
       {allAssignments.length === 0 ? (
@@ -148,7 +156,7 @@ export default async function AssignmentsPage() {
           <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-200 mx-auto mb-4">
             <BookOpen size={32} />
           </div>
-          <p className="text-slate-400 font-bold">No assignments available yet. Check back when assignments are scheduled.</p>
+          <p className="text-slate-400 font-bold">No projects available yet. Check back when projects are scheduled.</p>
         </div>
       ) : (
         <AssignmentsClient

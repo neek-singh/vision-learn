@@ -29,7 +29,7 @@ const sidebarLinks = [
   { name: "My Courses", href: "/courses", icon: BookOpen },
   { name: "Tests", href: "/tests", icon: FileText },
   { name: "Notes & Materials", href: "/materials", icon: FileText },
-  { name: "Assignments", href: "/assignments", icon: PenTool },
+  { name: "Projects", href: "/assignments", icon: PenTool },
   { name: "Calendar", href: "/calendar", icon: Calendar },
   { name: "Attendance", href: "/attendance", icon: CheckCircle2 },
   { name: "Notifications", href: "/notifications", icon: Bell },

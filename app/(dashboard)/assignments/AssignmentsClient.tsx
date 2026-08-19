@@ -13,9 +13,35 @@ import {
   Loader2,
   Clock,
   Zap,
-  FolderCode
+  FolderCode,
+  ExternalLink
 } from "lucide-react";
 import { createClient as createPublicSupabaseClient } from "@/lib/supabase-browser";
+
+const getCategoryColor = (category: string) => {
+  switch (category?.toLowerCase()) {
+    case "word":
+      return "bg-blue-50 text-blue-650 border-blue-100 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-900/30";
+    case "excel":
+      return "bg-emerald-50 text-emerald-650 border-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30";
+    case "powerpoint":
+      return "bg-orange-50 text-orange-650 border-orange-100 dark:bg-orange-950/20 dark:text-orange-400 dark:border-orange-900/30";
+    case "onenote":
+      return "bg-purple-50 text-purple-650 border-purple-100 dark:bg-purple-950/20 dark:text-purple-400 dark:border-purple-900/30";
+    case "notion":
+      return "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-350 dark:border-slate-700";
+    case "chatgpt":
+    case "gemini":
+    case "claude":
+      return "bg-teal-50 text-teal-650 border-teal-100 dark:bg-teal-950/20 dark:text-teal-400 dark:border-teal-900/30";
+    case "web":
+      return "bg-indigo-50 text-indigo-650 border-indigo-100 dark:bg-indigo-950/20 dark:text-indigo-400 dark:border-indigo-900/30";
+    case "canva":
+      return "bg-pink-50 text-pink-650 border-pink-100 dark:bg-pink-950/20 dark:text-pink-400 dark:border-pink-900/30";
+    default:
+      return "bg-slate-50 text-slate-650 border-slate-100 dark:bg-slate-800/20 dark:text-slate-400 dark:border-slate-800/30";
+  }
+};
 
 export default function AssignmentsClient({ 
   initialAssignments, 
@@ -44,7 +70,7 @@ export default function AssignmentsClient({
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-4 bg-white rounded-3xl border border-slate-100 shadow-sm">
         <Loader2 className="animate-spin text-indigo-600" size={32} />
-        <p className="text-slate-500 font-black text-xs uppercase tracking-widest">Loading Assignments...</p>
+        <p className="text-slate-500 font-black text-xs uppercase tracking-widest">Loading Projects...</p>
       </div>
     );
   }
@@ -139,34 +165,11 @@ export default function AssignmentsClient({
 
   const coursesList = Array.from(new Set(initialAssignments.map(a => getCourseName(a)))).filter(Boolean);
 
-  const filteredAssignments = selectedCourse === "all"
-    ? initialAssignments
-    : initialAssignments.filter(a => getCourseName(a) === selectedCourse);
+  const filteredAssignments = initialAssignments;
 
   return (
     <div className="space-y-8">
-      {/* Course Filter */}
-      <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
-        <button 
-          onClick={() => setSelectedCourse("all")}
-          className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap border ${
-            selectedCourse === "all" ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-500 border-slate-100 hover:border-slate-200"
-          }`}
-        >
-          All Courses
-        </button>
-        {coursesList.map((courseName: any) => (
-          <button 
-            key={courseName}
-            onClick={() => setSelectedCourse(courseName)}
-            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap border ${
-              selectedCourse === courseName ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-500 border-slate-100 hover:border-slate-200"
-            }`}
-          >
-            {courseName}
-          </button>
-        ))}
-      </div>
+
 
       {!filteredAssignments || filteredAssignments.length === 0 ? (
         <div className="p-20 text-center bg-white rounded-[2.5rem] border border-slate-100 shadow-sm">
@@ -186,30 +189,51 @@ export default function AssignmentsClient({
               const isProject = (task.lesson_type || task.type || "").toLowerCase() === "project";
               return (
                 <div key={task.id} className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col gap-4">
+                  {/* Top Header Section */}
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-3">
+                    <div className="flex items-start gap-3 min-w-0 flex-1">
+                      {/* Left Circular Icon Badge */}
                       <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
                         isProject ? "bg-indigo-50 text-indigo-600" : "bg-amber-50 text-amber-600"
                       }`}>
                         {isProject ? <FolderCode size={16} /> : <PenTool size={16} />}
                       </div>
-                      <div>
-                        <h4 className="font-black text-slate-900 text-sm leading-snug">{task.title}</h4>
-                        <div className="flex items-center gap-2 mt-1">
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{getCourseName(task)}</p>
-                          <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${
-                            isProject ? "bg-indigo-50 text-indigo-700" : "bg-amber-50 text-amber-700"
-                          }`}>
-                            {isProject ? "Project" : "Assignment"}
-                          </span>
+                      
+                      {/* Center Title & Category tag only */}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h4 className="font-black text-slate-900 text-sm leading-snug break-words">
+                            {task.title}
+                          </h4>
+                          {task.category && (
+                            <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border shrink-0 ${getCategoryColor(task.category)}`}>
+                              {task.category}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
-                    <span className="text-[9px] font-bold text-slate-400 uppercase shrink-0">
-                      {new Date(task.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    </span>
+
+                    {/* Top Right Present/Received Date & Open guidelines link */}
+                    <div className="flex flex-col items-end gap-2 shrink-0">
+                      <span className="text-[9px] font-bold text-slate-400 uppercase shrink-0 pt-1">
+                        {new Date(task.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </span>
+                      {task.description && (
+                        <a 
+                          href={task.description}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-xs text-indigo-650 hover:text-indigo-850 font-black uppercase tracking-wider bg-indigo-50/50 hover:bg-indigo-50 border border-indigo-100/40 px-4 py-2 rounded-2xl transition-all"
+                        >
+                          <ExternalLink size={13} className="shrink-0" />
+                          Open
+                        </a>
+                      )}
+                    </div>
                   </div>
                   
+                  {/* Middle Deadline Section */}
                   <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-50">
                     <div className="flex flex-col gap-1">
                       <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Deadline</span>
@@ -223,13 +247,11 @@ export default function AssignmentsClient({
                             {dueDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         </div>
-                      ) : task.source === "lesson" && task.schedule ? (
-                        <div className="flex items-center gap-1.5 text-slate-600">
-                          <Calendar size={12} className="text-amber-500 shrink-0" />
-                          <span className="text-xs font-bold">{task.schedule.date}</span>
-                        </div>
                       ) : (
-                        <span className="text-xs text-slate-300 font-bold">No deadline</span>
+                        <div className="flex items-center gap-1.5 text-slate-355">
+                          <Calendar size={12} className="shrink-0" />
+                          <span className="text-xs font-bold">No deadline</span>
+                        </div>
                       )}
                     </div>
 
@@ -244,32 +266,28 @@ export default function AssignmentsClient({
                           <CheckCircle2 size={8} /> Submitted
                         </span>
                       )}
-                      {submission?.score && (
-                        <span className="flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-full text-[8px] font-black uppercase tracking-widest border border-indigo-100 shrink-0">
-                          Grade: {submission.score}
-                        </span>
-                      )}
                     </div>
                   </div>
 
                   {submission?.feedback && (
                     <div className="text-[10px] text-slate-500 font-bold bg-amber-50/50 border border-amber-100/50 rounded-xl p-3">
                       <span className="text-[8px] font-black uppercase tracking-wider text-amber-800 block mb-0.5">Feedback:</span>
-                      "{submission.feedback}"
+                      "${submission.feedback}"
                     </div>
                   )}
 
+                  {/* Bottom solid Submit button */}
                   <button 
                     onClick={() => handleOpenSubmission(task)}
                     disabled={!!submission}
-                    className={`w-full py-3 text-xs font-black rounded-xl transition-all shadow-md active:scale-[0.98] flex items-center justify-center gap-2 ${
+                    className={`w-full py-3.5 text-xs font-black rounded-xl transition-all shadow-md active:scale-[0.98] flex items-center justify-center gap-2 ${
                       submission
                         ? "bg-slate-50 text-slate-400 cursor-not-allowed shadow-none border border-slate-100"
                         : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-100"
                     }`}
                   >
                     <FileUp size={14} />
-                    {submission ? "Submitted" : (isProject ? "Submit Project" : "Submit Assignment")}
+                    {submission ? "Submitted" : "Submit"}
                   </button>
                 </div>
               );
@@ -283,7 +301,6 @@ export default function AssignmentsClient({
                 <thead>
                   <tr className="bg-slate-50 text-slate-400 text-[9px] uppercase font-black tracking-[0.2em] border-b border-slate-100">
                     <th className="px-6 py-4">Task Title</th>
-                    <th className="px-6 py-4">Course</th>
                     <th className="px-6 py-4">Date</th>
                     <th className="px-6 py-4">Due / Schedule</th>
                     <th className="px-6 py-4 text-right">Action</th>
@@ -312,7 +329,23 @@ export default function AssignmentsClient({
                                 }`}>
                                   {isProject ? "Project" : "Assignment"}
                                 </span>
+                                {task.category && (
+                                  <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border ${getCategoryColor(task.category)}`}>
+                                    {task.category}
+                                  </span>
+                                )}
                               </div>
+                              {task.description && (
+                                <a 
+                                  href={task.description}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-[10px] text-indigo-650 hover:text-indigo-850 font-black uppercase tracking-wider bg-indigo-50/50 hover:bg-indigo-50 border border-indigo-100/40 px-2.5 py-0.5 rounded-lg transition-all mt-1.5 w-fit"
+                                >
+                                  <ExternalLink size={10} className="shrink-0" />
+                                  Open Link
+                                </a>
+                              )}
                               {live && !submission && (
                                 <span className="flex items-center gap-1 px-2 py-0.5 bg-rose-50 text-rose-600 rounded-full text-[8px] font-black uppercase tracking-widest border border-rose-100 w-fit mt-1">
                                   <Zap size={8} fill="currentColor" /> Live Now
@@ -341,9 +374,7 @@ export default function AssignmentsClient({
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-xs font-bold text-slate-500">
-                          {getCourseName(task)}
-                        </td>
+
                         <td className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                           {new Date(task.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                         </td>
@@ -368,23 +399,39 @@ export default function AssignmentsClient({
                                 <span className="text-xs font-bold">{task.schedule.date}</span>
                               </div>
                             ) : (
-                              <span className="text-[10px] text-slate-300 font-bold">No deadline</span>
+                              <div className="flex items-center gap-2 text-slate-350">
+                                <Calendar size={12} className="shrink-0" />
+                                <span className="text-[10px] font-bold">No deadline</span>
+                              </div>
                             )}
                           </div>
                         </td>
                         <td className="px-6 py-4 text-right">
-                          <button 
-                            onClick={() => handleOpenSubmission(task)}
-                            disabled={!!submission}
-                            className={`inline-flex items-center gap-2 px-4 py-2 text-[10px] font-black rounded-xl transition-all shadow-md active:scale-95 ${
-                              submission
-                                ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-                                : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-100"
-                            }`}
-                          >
-                            <FileUp size={12} />
-                            {submission ? "Submitted" : (isProject ? "Submit Project" : "Submit Assignment")}
-                          </button>
+                          <div className="flex items-center justify-end gap-2.5">
+                            {task.description && (
+                              <a 
+                                href={task.description}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 px-3 py-2 text-xs text-indigo-650 hover:text-indigo-850 font-black uppercase tracking-wider bg-indigo-50/50 hover:bg-indigo-50 border border-indigo-100/40 rounded-xl transition-all"
+                              >
+                                <ExternalLink size={13} className="shrink-0" />
+                                Open
+                              </a>
+                            )}
+                            <button
+                              disabled={!!submission}
+                              onClick={() => handleOpenSubmission(task)}
+                              className={`inline-flex items-center gap-1.5 px-4 py-2 text-xs font-black rounded-xl transition-all shadow-md active:scale-[0.98] ${
+                                submission
+                                  ? "bg-slate-50 text-slate-400 cursor-not-allowed shadow-none border border-slate-100"
+                                  : "bg-indigo-600 text-white shadow-indigo-100 hover:bg-indigo-700"
+                              }`}
+                            >
+                              <FileUp size={13} className="shrink-0" />
+                              {submission ? "Submitted" : "Submit"}
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
