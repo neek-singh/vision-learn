@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { 
   PenTool, 
   FileUp,
@@ -293,7 +293,18 @@ export default function AssignmentsClient({
 
   const coursesList = Array.from(new Set(initialAssignments.map(a => getCourseName(a)))).filter(Boolean);
 
-  const filteredAssignments = initialAssignments;
+  const filteredAssignments = useMemo(() => {
+    return [...initialAssignments].sort((a, b) => {
+      const subA = getSubmission(a);
+      const subB = getSubmission(b);
+      const isSubA = subA?.status === "submitted";
+      const isSubB = subB?.status === "submitted";
+      
+      if (isSubA && !isSubB) return 1;
+      if (!isSubA && isSubB) return -1;
+      return 0;
+    });
+  }, [initialAssignments, submissions]);
 
   return (
     <div className="space-y-8">
