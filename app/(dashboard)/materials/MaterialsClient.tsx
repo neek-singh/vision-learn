@@ -90,32 +90,7 @@ export default function MaterialsClient({
 
   return (
     <div className="space-y-8">
-      {/* Course Filter */}
-      <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
-        <button 
-          onClick={() => setSelectedCourse("all")}
-          aria-label="Filter by all courses"
-          aria-selected={selectedCourse === "all"}
-          className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap border active:scale-95 ${
-            selectedCourse === "all" ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-500 border-slate-100 hover:border-slate-200"
-          }`}
-        >
-          All Courses
-        </button>
-        {coursesList.map((courseName: any) => (
-          <button 
-            key={courseName}
-            onClick={() => setSelectedCourse(courseName)}
-            aria-label={`Filter by ${courseName}`}
-            aria-selected={selectedCourse === courseName}
-            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap border active:scale-95 ${
-              selectedCourse === courseName ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-500 border-slate-100 hover:border-slate-200"
-            }`}
-          >
-            {courseName}
-          </button>
-        ))}
-      </div>
+
 
       {!filteredMaterials || filteredMaterials.length === 0 ? (
         <div className="p-20 text-center bg-white rounded-[2.5rem] border border-slate-100 shadow-sm">
@@ -132,7 +107,6 @@ export default function MaterialsClient({
               <thead>
                 <tr className="bg-slate-50 text-slate-400 text-[9px] uppercase font-black tracking-[0.2em] border-b border-slate-100">
                   <th className="px-6 py-4">Material Name</th>
-                  <th className="px-6 py-4">Module / Course</th>
                   <th className="px-6 py-4">Date</th>
                   <th className="px-6 py-4 text-right">Action</th>
                 </tr>
@@ -142,14 +116,26 @@ export default function MaterialsClient({
                   <tr key={item.id} className="group hover:bg-slate-50/50 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                          item.type === 'pdf' ? 'bg-red-50 text-red-600' : 
-                          item.type === 'video' ? 'bg-blue-50 text-blue-600' : 
-                          (item.type === 'note' || item.type === 'code') ? 'bg-amber-50 text-amber-600' :
-                          'bg-indigo-50 text-indigo-600'
+                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${
+                          item.type === 'pdf' ? 'bg-rose-50 text-rose-600 border-rose-100/50' : 
+                          item.type === 'video' ? 'bg-indigo-50 text-indigo-650 border-indigo-100/50' : 
+                          item.type === 'word' ? 'bg-blue-50 text-blue-600 border-blue-100/50' : 
+                          item.type === 'excel' ? 'bg-emerald-50 text-emerald-600 border-emerald-100/50' : 
+                          item.type === 'powerpoint' ? 'bg-orange-50 text-orange-600 border-orange-100/50' : 
+                          item.type === 'onenote' ? 'bg-purple-50 text-purple-600 border-purple-100/50' : 
+                          item.type === 'canva' ? 'bg-pink-50 text-pink-600 border-pink-100/50' : 
+                          item.type === 'notion' ? 'bg-slate-100 text-slate-750 border-slate-200/50' : 
+                          (item.type === 'note' || item.type === 'code') ? 'bg-amber-50 text-amber-600 border-amber-100/50' :
+                          'bg-slate-50 text-slate-500 border-slate-100/50'
                         }`}>
                           {item.type === 'pdf' ? <FileText size={18} /> : 
                            item.type === 'video' ? <Video size={18} /> : 
+                           item.type === 'word' ? <FileText size={18} /> : 
+                           item.type === 'excel' ? <FileText size={18} /> : 
+                           item.type === 'powerpoint' ? <FileText size={18} /> : 
+                           item.type === 'onenote' ? <FileText size={18} /> : 
+                           item.type === 'canva' ? <FileText size={18} /> : 
+                           item.type === 'notion' ? <FileText size={18} /> : 
                            (item.type === 'note' || item.type === 'code') ? <BookOpen size={18} /> :
                            <ExternalLink size={18} />}
                         </div>
@@ -160,9 +146,6 @@ export default function MaterialsClient({
                           </p>
                         </div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-xs font-bold text-slate-500">{item.courses?.title}</span>
                     </td>
                     <td className="px-6 py-4">
                        <span className="text-xs font-bold text-slate-400">
@@ -216,22 +199,31 @@ export default function MaterialsClient({
               <div key={item.id} className="p-6 space-y-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                      item.type === 'pdf' ? 'bg-red-50 text-red-600' : 
-                      item.type === 'video' ? 'bg-blue-50 text-blue-600' : 
-                      (item.type === 'note' || item.type === 'code') ? 'bg-amber-50 text-amber-600' :
-                      'bg-indigo-50 text-indigo-600'
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
+                      item.type === 'pdf' ? 'bg-rose-50 text-rose-600 border-rose-100/50' : 
+                      item.type === 'video' ? 'bg-indigo-50 text-indigo-650 border-indigo-100/50' : 
+                      item.type === 'word' ? 'bg-blue-50 text-blue-600 border-blue-100/50' : 
+                      item.type === 'excel' ? 'bg-emerald-50 text-emerald-600 border-emerald-100/50' : 
+                      item.type === 'powerpoint' ? 'bg-orange-50 text-orange-600 border-orange-100/50' : 
+                      item.type === 'onenote' ? 'bg-purple-50 text-purple-600 border-purple-100/50' : 
+                      item.type === 'canva' ? 'bg-pink-50 text-pink-600 border-pink-100/50' : 
+                      item.type === 'notion' ? 'bg-slate-100 text-slate-750 border-slate-200/50' : 
+                      (item.type === 'note' || item.type === 'code') ? 'bg-amber-50 text-amber-600 border-amber-100/50' :
+                      'bg-slate-50 text-slate-500 border-slate-100/50'
                     }`}>
                       {item.type === 'pdf' ? <FileText size={18} /> : 
                        item.type === 'video' ? <Video size={18} /> : 
+                       item.type === 'word' ? <FileText size={18} /> : 
+                       item.type === 'excel' ? <FileText size={18} /> : 
+                       item.type === 'powerpoint' ? <FileText size={18} /> : 
+                       item.type === 'onenote' ? <FileText size={18} /> : 
+                       item.type === 'canva' ? <FileText size={18} /> : 
+                       item.type === 'notion' ? <FileText size={18} /> : 
                        (item.type === 'note' || item.type === 'code') ? <BookOpen size={18} /> :
                        <ExternalLink size={18} />}
                     </div>
                     <div>
                       <p className="font-black text-slate-900 text-sm leading-tight">{item.title}</p>
-                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
-                        {item.courses?.title}
-                      </p>
                     </div>
                   </div>
                   <div className="shrink-0">

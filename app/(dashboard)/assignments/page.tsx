@@ -5,6 +5,9 @@ import { createPublicSupabaseClient } from "@/lib/supabase-server";
 import AssignmentsClient from "./AssignmentsClient";
 import { BookOpen } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function AssignmentsPage() {
   const cookieStore = await cookies();
   const token = cookieStore.get("vision_learn_session")?.value;
@@ -147,8 +150,8 @@ export default async function AssignmentsPage() {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <section>
-        <h1 className="text-2xl font-black text-slate-900 tracking-tight mb-1">Projects</h1>
-        <p className="text-sm text-slate-500 font-medium">Keep track of your projects and submission deadlines.</p>
+        <h1 className="text-2xl font-black text-slate-900 tracking-tight mb-1">Active Projects</h1>
+        <p className="text-sm text-slate-500 font-medium">Manage your current tasks and deliverables.</p>
       </section>
 
       {allAssignments.length === 0 ? (
