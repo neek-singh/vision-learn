@@ -205,6 +205,12 @@ export default function AssignmentsClient({
       setLinkInput("");
     }
 
+    if (status === "submitted" && finalLinks.length === 0) {
+      alert("कृपया सबमिट करने से पहले कम से कम एक लिंक (URL) अवश्य जोड़ें। (Please add at least one link before submitting.)");
+      setIsUploading(false);
+      return;
+    }
+
     const submissionPayload = {
       notes: submissionNotes,
       files: deliverables,
