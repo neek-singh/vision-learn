@@ -625,7 +625,7 @@ export default function DashboardClient({
       {activeTab === "overview" && (
         <div className="space-y-6 animate-in fade-in duration-300">
           {/* Key Stat Cards Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <StatCard 
               icon={<CheckCircle2 size={18} />} 
               label="Classes" 
@@ -639,13 +639,6 @@ export default function DashboardClient({
               value={`${stats.completedQuizzes || 0}/${stats.totalQuizzes || 0}`} 
               sub="done"
               color="purple" 
-            />
-            <StatCard 
-              icon={<Award size={18} />} 
-              label="Assignments" 
-              value={`${stats.completedAssignments || 0}/${stats.totalAssignments || 0}`} 
-              sub="done"
-              color="amber" 
             />
             <StatCard 
               icon={<FolderCode size={18} />} 

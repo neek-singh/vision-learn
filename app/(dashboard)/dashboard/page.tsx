@@ -52,6 +52,8 @@ export default async function DashboardPage() {
   let completedQuizzes: any[] = [];
   let completedAssignments: any[] = [];
   let completedProjects: any[] = [];
+  let totalProjectsCount = 0;
+  let completedProjectsCount = 0;
   let completedCount = 0;
   let totalLessonsCount = 0;
   let progressPercentage = 0;
@@ -67,17 +69,22 @@ export default async function DashboardPage() {
   if (mainEnrollment?.course_id) {
     const activeBatch = (student?.batch || mainEnrollment?.batch)?.trim().toLowerCase();
     let activeBatchId: string | null = null;
-    const [modulesRes, schedulesRes, batchesRes, lessonsRes] = await Promise.all([
+    const courseIds = enrollments.map(e => e.course_id).filter(Boolean);
+    const [modulesRes, schedulesRes, batchesRes, lessonsRes, assignmentsRes, submissionsRes] = await Promise.all([
       supabase.from("lms_modules").select(`id, title, order_index, batches, lessons (id, title, order_index, type, batches)`).eq("course_id", mainEnrollment.course_id).order("order_index"),
       supabase.from("schedules").select("title, batch, type, date, start_time").eq("course_id", mainEnrollment.course_id),
       supabase.from("batches").select("id, title, timing").eq("course_id", mainEnrollment.course_id),
-      supabase.from("lessons").select("id, title, type, lesson_type").eq("course_id", mainEnrollment.course_id)
+      supabase.from("lessons").select("id, title, type, lesson_type").eq("course_id", mainEnrollment.course_id),
+      supabase.from("assignments").select("*, assignment_courses!inner(course_id)").in("assignment_courses.course_id", courseIds).eq("is_published", true),
+      supabase.from("submissions").select("assignment_id, status").eq("student_id", userId).eq("status", "submitted")
     ]);
 
     const modules = modulesRes.data || [];
     const schedules = schedulesRes.data || [];
     const batches = batchesRes.data || [];
     const rawLessons = lessonsRes.data || [];
+    const rawAssignments = assignmentsRes.data || [];
+    const rawSubmissions = submissionsRes.data || [];
 
     if (activeBatch) {
       const match = batches.find((b: any) => {
@@ -136,6 +143,26 @@ export default async function DashboardPage() {
     completedQuizzes = quizLessons.filter(l => completedIds.includes(l.id));
     completedAssignments = assignmentLessons.filter(l => completedIds.includes(l.id));
     completedProjects = projectLessons.filter(l => completedIds.includes(l.id));
+
+    // Calculate traditional project counts from assignments table
+    const filteredTraditionalAssignments = (rawAssignments || []).filter((a: any) => {
+      if (a.batches && a.batches.length > 0) {
+        const activeBatchLower = activeBatch ? activeBatch.toLowerCase() : "";
+        return a.batches.some((b: string) => {
+          const bLower = b.trim().toLowerCase();
+          return bLower === activeBatchLower || bLower === "all" || bLower === "all batches";
+        });
+      }
+      if (a.batch && a.batch !== "All Batches" && a.batch.trim().toLowerCase() !== "all") {
+        const enrollmentForCourse = enrollments.find(e => e.course_id === a.course_id);
+        return enrollmentForCourse && enrollmentForCourse.batch === a.batch;
+      }
+      return false;
+    });
+
+    totalProjectsCount = filteredTraditionalAssignments.length;
+    const submittedTraditionalIds = (rawSubmissions || []).map((s: any) => s.assignment_id);
+    completedProjectsCount = filteredTraditionalAssignments.filter((a: any) => submittedTraditionalIds.includes(a.id)).length;
 
     completedCount = completedClasses.length;
     totalLessonsCount = classLessons.length;
@@ -396,8 +423,8 @@ export default async function DashboardPage() {
         totalQuizzes: quizLessons.length,
         completedAssignments: completedAssignments.length,
         totalAssignments: assignmentLessons.length,
-        completedProjects: completedProjects.length,
-        totalProjects: projectLessons.length,
+        completedProjects: completedProjectsCount,
+        totalProjects: totalProjectsCount,
       }}
       nextLesson={nextLesson}
       isLessonScheduledToday={isLessonScheduledToday}

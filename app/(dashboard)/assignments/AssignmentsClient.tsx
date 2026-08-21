@@ -47,7 +47,7 @@ const getCategoryColor = (category: string) => {
 
 const getProgress = (task: any, submission: any) => {
   if (!submission) return 0;
-  if (submission.status === "submitted") return 100;
+  if (submission.status === "submitted" || submission.status === "graded") return 100;
   
   // If it's a draft, calculate based on filled content
   let notesFilled = false;
@@ -100,6 +100,8 @@ export default function AssignmentsClient({
   const [activeAssignment, setActiveAssignment] = useState<any>(null);
   const [submissions, setSubmissions] = useState<any[]>(initialSubmissions);
   const [mounted, setMounted] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
 
   // Custom states for Rich Submission
   const [submissionNotes, setSubmissionNotes] = useState("");
@@ -124,18 +126,49 @@ export default function AssignmentsClient({
     return submissions.find(s => s.assignment_id === item.id);
   };
 
+  const categoriesList = useMemo(() => {
+    const unique = new Set<string>();
+    initialAssignments.forEach((a) => {
+      const cat = a.category || "Project";
+      if (cat) unique.add(cat);
+    });
+    return Array.from(unique);
+  }, [initialAssignments]);
+
   const filteredAssignments = useMemo(() => {
-    return [...initialAssignments].sort((a, b) => {
+    let result = [...initialAssignments];
+
+    // Filter by Category
+    if (categoryFilter !== "all") {
+      result = result.filter(a => {
+        const cat = a.category || "Project";
+        return cat.toLowerCase() === categoryFilter.toLowerCase();
+      });
+    }
+
+    // Filter by Status
+    if (statusFilter !== "all") {
+      result = result.filter(a => {
+        const sub = getSubmission(a);
+        if (statusFilter === "pending") {
+          return !sub || sub.status === "draft";
+        }
+        return sub?.status === statusFilter;
+      });
+    }
+
+    // Sort: push submitted/graded to the bottom
+    return result.sort((a, b) => {
       const subA = getSubmission(a);
       const subB = getSubmission(b);
-      const isSubA = subA?.status === "submitted";
-      const isSubB = subB?.status === "submitted";
+      const isSubA = subA?.status === "submitted" || subA?.status === "graded";
+      const isSubB = subB?.status === "submitted" || subB?.status === "graded";
       
       if (isSubA && !isSubB) return 1;
       if (!isSubA && isSubB) return -1;
       return 0;
     });
-  }, [initialAssignments, submissions]);
+  }, [initialAssignments, submissions, statusFilter, categoryFilter]);
 
   if (!mounted) {
     return (
@@ -218,8 +251,8 @@ export default function AssignmentsClient({
       setLinkInput("");
     }
 
-    if (status === "submitted" && finalLinks.length === 0) {
-      alert("कृपया सबमिट करने से पहले कम से कम एक लिंक (URL) अवश्य जोड़ें। (Please add at least one link before submitting.)");
+    if (finalLinks.length === 0) {
+      alert("कृपया ड्राफ्ट सेव करने या सबमिट करने से पहले कम से कम एक लिंक (URL) अवश्य जोड़ें। (Please add at least one link before saving or submitting.)");
       setIsUploading(false);
       return;
     }
@@ -308,6 +341,68 @@ export default function AssignmentsClient({
 
   return (
     <div className="space-y-8">
+      {/* Filters Section */}
+      <div className="flex flex-col sm:flex-row gap-4 bg-white p-4 rounded-2xl border border-slate-200/60 shadow-sm">
+        <div className="flex-1 flex flex-col gap-1.5 text-left">
+          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+            Project Status
+          </label>
+          <div className="flex flex-wrap gap-1.5">
+            {[
+              { id: "all", label: "All" },
+              { id: "pending", label: "Pending" },
+              { id: "draft", label: "Draft" },
+              { id: "submitted", label: "Submitted" },
+              { id: "graded", label: "Graded" }
+            ].map(status => (
+              <button
+                key={status.id}
+                onClick={() => setStatusFilter(status.id)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  statusFilter === status.id
+                    ? "bg-blue-600 text-white shadow-sm shadow-blue-100"
+                    : "bg-slate-50 hover:bg-slate-100 text-slate-600"
+                }`}
+              >
+                {status.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {categoriesList.length > 0 && (
+          <div className="flex-1 flex flex-col gap-1.5 text-left">
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              Category
+            </label>
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                onClick={() => setCategoryFilter("all")}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  categoryFilter === "all"
+                    ? "bg-blue-600 text-white shadow-sm shadow-blue-100"
+                    : "bg-slate-50 hover:bg-slate-100 text-slate-600"
+                }`}
+              >
+                All
+              </button>
+              {categoriesList.map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => setCategoryFilter(cat)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                    categoryFilter === cat
+                      ? "bg-blue-600 text-white shadow-sm shadow-blue-100"
+                      : "bg-slate-50 hover:bg-slate-100 text-slate-600"
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
 
 
       {!filteredAssignments || filteredAssignments.length === 0 ? (
@@ -315,7 +410,7 @@ export default function AssignmentsClient({
           <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-200 mx-auto mb-4">
             <BookOpen size={32} />
           </div>
-          <p className="text-slate-400 font-bold">No assignments or projects found for this course.</p>
+          <p className="text-slate-400 font-bold">No projects found for this course.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in duration-500">
@@ -345,10 +440,10 @@ export default function AssignmentsClient({
             const hasExternalLink = task.description && (task.description.startsWith("http://") || task.description.startsWith("https://"));
 
             return (
-              <div key={task.id} className="bg-white p-6 rounded-[1.25rem] border border-slate-200/60 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between gap-5 relative overflow-hidden">
+              <div key={task.id} className="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-4 relative overflow-hidden">
                 
                 {/* Top content wrapper */}
-                <div className="space-y-4">
+                <div className="space-y-3.5">
                   {/* Header: Title and Badge */}
                   <div className="flex items-start justify-between gap-4">
                     <h4 className="font-extrabold text-slate-900 text-base leading-snug break-words flex-1">
@@ -364,19 +459,13 @@ export default function AssignmentsClient({
                     <div className="flex items-center gap-2">
                       <Calendar size={14} className="text-slate-400 shrink-0" />
                       <span className="font-medium text-slate-500">
-                        Start: <span className="font-semibold text-slate-700">{startDateStr}</span>
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Calendar size={14} className="text-slate-400 shrink-0" />
-                      <span className="font-medium text-slate-500">
-                        Due: <span className={`font-semibold ${atRisk ? 'text-rose-600' : 'text-slate-700'}`}>{dueDateStr}</span>
+                        Due Date: <span className={`font-semibold ${atRisk ? 'text-rose-600' : 'text-slate-700'}`}>{dueDateStr}</span>
                       </span>
                     </div>
                   </div>
 
                   {/* Progress Section */}
-                  <div className="space-y-2 pt-1">
+                  <div className="space-y-1.5 pt-0.5">
                     <div className="flex items-center justify-between text-xs font-semibold">
                       <span className={atRisk ? "text-rose-650 font-bold animate-pulse" : "text-slate-505"}>
                         {atRisk ? "Progress - At Risk" : "Progress"}
@@ -402,11 +491,15 @@ export default function AssignmentsClient({
                     )}
                     {submission && (
                       <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border w-fit shrink-0 ${
-                        submission.status === "submitted"
+                        submission.status === "submitted" || submission.status === "graded"
                           ? "bg-emerald-50 text-emerald-600 border-emerald-100"
                           : "bg-amber-50 text-amber-605 border-amber-100"
                       }`}>
-                        {submission.status === "submitted" ? (
+                        {submission.status === "graded" ? (
+                          <>
+                            <CheckCircle2 size={8} /> Graded
+                          </>
+                        ) : submission.status === "submitted" ? (
                           <>
                             <CheckCircle2 size={8} /> Submitted
                           </>
@@ -424,52 +517,10 @@ export default function AssignmentsClient({
                     )}
                   </div>
 
-                  {submission && (() => {
-                    let filesCount = 0;
-                    let linksCount = 0;
-                    let hasNotes = false;
-                    try {
-                      const parsed = JSON.parse(submission.content_url);
-                      filesCount = parsed.files?.length || 0;
-                      linksCount = parsed.links?.length || 0;
-                      hasNotes = !!(parsed.notes && parsed.notes.trim());
-                    } catch (e) {
-                      if (submission.content_url && submission.content_url.startsWith("http")) {
-                        linksCount = 1;
-                      }
-                    }
 
-                    if (filesCount === 0 && linksCount === 0 && !hasNotes) return null;
-
-                    return (
-                      <div className="mt-3 p-3 bg-slate-50/70 border border-slate-100/80 rounded-2xl flex flex-col gap-2 animate-in fade-in duration-300">
-                        <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 block">Saved Info:</span>
-                        <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-[10px] font-semibold text-slate-500">
-                          {filesCount > 0 && (
-                            <span className="flex items-center gap-1">
-                              <FileUp size={12} className="text-slate-400" />
-                              {filesCount} {filesCount === 1 ? "File" : "Files"}
-                            </span>
-                          )}
-                          {linksCount > 0 && (
-                            <span className="flex items-center gap-1">
-                              <ExternalLink size={12} className="text-slate-400" />
-                              {linksCount} {linksCount === 1 ? "Link" : "Links"}
-                            </span>
-                          )}
-                          {hasNotes && (
-                            <span className="flex items-center gap-1">
-                              <FileText size={12} className="text-slate-400" />
-                              Notes
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })()}
 
                   {submission?.feedback && (
-                    <div className="text-[10px] text-slate-500 font-bold bg-amber-50/50 border border-amber-100/50 rounded-xl p-3 mt-2">
+                    <div className="text-[10px] text-slate-500 font-bold bg-amber-50/50 border border-amber-100/50 rounded-xl p-2.5 mt-2">
                       <span className="text-[8px] font-black uppercase tracking-wider text-amber-800 block mb-0.5">Feedback:</span>
                       "{submission.feedback}"
                     </div>
@@ -477,7 +528,7 @@ export default function AssignmentsClient({
                 </div>
 
                 {/* Buttons Section (Bottom) */}
-                <div className="flex gap-3 pt-3 border-t border-slate-100 mt-auto shrink-0">
+                <div className="flex gap-2.5 pt-2.5 border-t border-slate-100 mt-auto shrink-0">
                   {hasExternalLink ? (
                     <a
                       href={task.description}
@@ -498,16 +549,21 @@ export default function AssignmentsClient({
 
                   <button
                     onClick={() => handleOpenSubmission(task)}
-                    disabled={submission?.status === "submitted"}
                     className={`flex-1 py-2 text-sm font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-[0.98] ${
-                      submission?.status === "submitted"
-                        ? "bg-slate-50 text-slate-400 cursor-not-allowed shadow-none border border-slate-100"
+                      submission?.status === "submitted" || submission?.status === "graded"
+                        ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-250"
                         : submission?.status === "draft"
                           ? "bg-amber-500 hover:bg-amber-600 text-white shadow-amber-100"
                           : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-100 hover:shadow-md"
                     }`}
                   >
-                    {submission?.status === "submitted" ? "Submitted" : submission?.status === "draft" ? "Edit Draft" : "Submit"}
+                    {submission?.status === "graded" 
+                      ? "Graded (Review)" 
+                      : submission?.status === "submitted" 
+                        ? "Submitted (Review)" 
+                        : submission?.status === "draft" 
+                          ? "Edit Draft" 
+                          : "Submit"}
                   </button>
                 </div>
 
@@ -520,7 +576,7 @@ export default function AssignmentsClient({
       {/* Submission Modal */}
       {isSubmittingModal && activeAssignment && (() => {
         const isActiveProject = (activeAssignment.lesson_type || activeAssignment.type || "").toLowerCase() === "project";
-        const isFinalized = getSubmission(activeAssignment)?.status === "submitted";
+        const isFinalized = getSubmission(activeAssignment)?.status === "submitted" || getSubmission(activeAssignment)?.status === "graded";
 
         return (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-0 sm:p-4 animate-in fade-in duration-300">
@@ -536,7 +592,7 @@ export default function AssignmentsClient({
                   <ArrowLeft size={20} className="text-slate-800" />
                 </button>
                 <h3 className="font-extrabold text-slate-900 text-lg absolute left-1/2 -translate-x-1/2">
-                  {isActiveProject ? "Submit Project" : "Submit Assignment"}
+                  {"Submit Project"}
                 </h3>
               </div>
 
@@ -711,7 +767,7 @@ export default function AssignmentsClient({
                     className="w-full py-3 bg-emerald-50 text-emerald-700 border border-emerald-250 font-bold text-sm rounded-xl flex items-center justify-center gap-1.5 cursor-not-allowed"
                   >
                     <CheckCircle2 size={16} />
-                    Project Finalized & Submitted
+                    {getSubmission(activeAssignment)?.status === "graded" ? "Project Graded" : "Project Finalized & Submitted"}
                   </button>
                 )}
               </div>

@@ -54,25 +54,27 @@ export default function MaterialsClient({
   // 2. Apply Schedule Filter to initialMaterials
   const currentlyAvailableMaterials = useMemo(() => {
     return initialMaterials.filter((m: any) => {
-      // First check if it's scheduled
-      const isScheduled = scheduledTitles.some((st: string) => {
-        const normalize = (txt: string) => {
-          return txt.toLowerCase()
-            .replace(/^(test|note|assignment|class|lecture|event):/i, '')
-            .trim();
-        };
-        const cleanST = normalize(st);
-        const cleanMT = normalize(m.title);
-        return cleanST.includes(cleanMT) || cleanMT.includes(cleanST);
-      });
-      if (!isScheduled) return false;
+      if (m.is_published === false) return false;
 
-      // Batch check from material column (as fallback)
-      if (!m.batch || m.batch === "All Batches") return true;
-      const mBatch = m.batch.trim().toLowerCase();
-      return mBatch.includes(activeBatch) || activeBatch.includes(mBatch);
+      // Check batches array
+      if (m.batches && m.batches.length > 0) {
+        const cleanActive = activeBatch ? activeBatch.toLowerCase().trim() : "";
+        return m.batches.some((b: any) => {
+          const bLower = b.trim().toLowerCase();
+          return bLower === cleanActive || bLower === "all" || bLower === "all batches";
+        });
+      }
+
+      // Check legacy batch column
+      if (m.batch && m.batch !== "All Batches" && m.batch.trim().toLowerCase() !== "all") {
+        const mBatch = m.batch.trim().toLowerCase();
+        const cleanActive = activeBatch ? activeBatch.toLowerCase().trim() : "";
+        return mBatch.includes(cleanActive) || cleanActive.includes(mBatch);
+      }
+
+      return true;
     });
-  }, [initialMaterials, scheduledTitles, activeBatch]);
+  }, [initialMaterials, activeBatch]);
 
 
 
@@ -125,7 +127,8 @@ export default function MaterialsClient({
                           item.type === 'onenote' ? 'bg-purple-50 text-purple-600 border-purple-100/50' : 
                           item.type === 'canva' ? 'bg-pink-50 text-pink-600 border-pink-100/50' : 
                           item.type === 'notion' ? 'bg-slate-100 text-slate-750 border-slate-200/50' : 
-                          (item.type === 'note' || item.type === 'code') ? 'bg-amber-50 text-amber-600 border-amber-100/50' :
+                          item.type === 'windows' ? 'bg-sky-50 text-sky-600 border-sky-100/50' : 
+                          (item.type === 'note' || item.type === 'notes' || item.type === 'code') ? 'bg-amber-50 text-amber-600 border-amber-100/50' :
                           'bg-slate-50 text-slate-500 border-slate-100/50'
                         }`}>
                           {item.type === 'pdf' ? <FileText size={18} /> : 
@@ -136,7 +139,8 @@ export default function MaterialsClient({
                            item.type === 'onenote' ? <FileText size={18} /> : 
                            item.type === 'canva' ? <FileText size={18} /> : 
                            item.type === 'notion' ? <FileText size={18} /> : 
-                           (item.type === 'note' || item.type === 'code') ? <BookOpen size={18} /> :
+                           item.type === 'windows' ? <FileText size={18} /> : 
+                           (item.type === 'note' || item.type === 'notes' || item.type === 'code') ? <BookOpen size={18} /> :
                            <ExternalLink size={18} />}
                         </div>
                         <div>
@@ -153,7 +157,7 @@ export default function MaterialsClient({
                        </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      {(item.type === 'note' || item.type === 'code') ? (
+                      {(item.type === 'note' || item.type === 'notes' || item.type === 'code') && item.code_content ? (
                         <button 
                           onClick={() => setViewingCode(item)}
                           aria-label={`Read note: ${item.title}`}
@@ -173,17 +177,8 @@ export default function MaterialsClient({
                             ? 'bg-slate-100 text-slate-700 hover:bg-indigo-600 hover:text-white' 
                             : 'bg-indigo-600 text-white hover:bg-indigo-700'
                         }`}>
-                          {item.type === 'pdf' ? (
-                            <>
-                              <Download size={12} />
-                              Download
-                            </>
-                          ) : (
-                            <>
-                              <ExternalLink size={12} />
-                              Open
-                            </>
-                          )}
+                          {item.type === 'pdf' ? <Download size={12} /> : <ExternalLink size={12} />}
+                          {item.type === 'pdf' ? 'Download' : 'Open'}
                         </a>
                       )}
                     </td>
@@ -208,7 +203,8 @@ export default function MaterialsClient({
                       item.type === 'onenote' ? 'bg-purple-50 text-purple-600 border-purple-100/50' : 
                       item.type === 'canva' ? 'bg-pink-50 text-pink-600 border-pink-100/50' : 
                       item.type === 'notion' ? 'bg-slate-100 text-slate-750 border-slate-200/50' : 
-                      (item.type === 'note' || item.type === 'code') ? 'bg-amber-50 text-amber-600 border-amber-100/50' :
+                      item.type === 'windows' ? 'bg-sky-50 text-sky-600 border-sky-100/50' : 
+                      (item.type === 'note' || item.type === 'notes' || item.type === 'code') ? 'bg-amber-50 text-amber-600 border-amber-100/50' :
                       'bg-slate-50 text-slate-500 border-slate-100/50'
                     }`}>
                       {item.type === 'pdf' ? <FileText size={18} /> : 
@@ -219,7 +215,8 @@ export default function MaterialsClient({
                        item.type === 'onenote' ? <FileText size={18} /> : 
                        item.type === 'canva' ? <FileText size={18} /> : 
                        item.type === 'notion' ? <FileText size={18} /> : 
-                       (item.type === 'note' || item.type === 'code') ? <BookOpen size={18} /> :
+                       item.type === 'windows' ? <FileText size={18} /> : 
+                       (item.type === 'note' || item.type === 'notes' || item.type === 'code') ? <BookOpen size={18} /> :
                        <ExternalLink size={18} />}
                     </div>
                     <div>
@@ -227,25 +224,29 @@ export default function MaterialsClient({
                     </div>
                   </div>
                   <div className="shrink-0">
-                    {(item.type === 'note' || item.type === 'code') ? (
+                    {(item.type === 'note' || item.type === 'notes' || item.type === 'code') && item.code_content ? (
                       <button 
                         onClick={() => setViewingCode(item)}
-                        className="p-2.5 bg-amber-100 text-amber-700 rounded-xl active:scale-95 transition-all"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-xl active:scale-95 transition-all text-xs font-bold border border-amber-200/50"
                         aria-label="Read Note"
                       >
-                        <BookOpen size={16} />
+                        <BookOpen size={12} />
+                        <span>Read</span>
                       </button>
                     ) : (
                       <a 
                         href={item.content_url} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className={`p-2.5 rounded-xl active:scale-95 transition-all block ${
-                          item.type === 'pdf' ? 'bg-slate-100 text-slate-600' : 'bg-indigo-600 text-white'
+                        className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-xl active:scale-95 transition-all text-xs font-bold border ${
+                          item.type === 'pdf' 
+                            ? 'bg-slate-100 text-slate-700 border-slate-200/55' 
+                            : 'bg-blue-600 text-white border-blue-500 hover:bg-blue-700 shadow-sm shadow-blue-105'
                         }`}
                         aria-label="Open Material"
                       >
-                        {item.type === 'pdf' ? <Download size={16} /> : <ExternalLink size={16} />}
+                        {item.type === 'pdf' ? <Download size={12} /> : <ExternalLink size={12} />}
+                        <span>{item.type === 'pdf' ? 'Get' : 'Open'}</span>
                       </a>
                     )}
                   </div>

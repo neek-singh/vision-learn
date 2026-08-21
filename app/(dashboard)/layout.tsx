@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, memo } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import packageJson from "@/package.json";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase-browser";
 import { 
@@ -268,7 +269,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 priority
               />
             </div>
-            <span className="text-lg font-black text-slate-900 tracking-tight">Vision Learn</span>
+            <div className="flex flex-col">
+              <span className="text-lg font-black text-slate-900 tracking-tight leading-none">Vision Learn</span>
+              <span className="text-[10px] font-extrabold text-slate-400 mt-0.5">v{packageJson.version}</span>
+            </div>
           </Link>
         </div>
 
@@ -320,7 +324,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 priority
               />
             </div>
-            <span className="text-xl font-black text-slate-900">Vision Learn</span>
+            <div className="flex flex-col">
+              <span className="text-xl font-black text-slate-900 leading-none">Vision Learn</span>
+              <span className="text-[10px] font-extrabold text-slate-400 mt-1">v{packageJson.version}</span>
+            </div>
           </Link>
           <button 
             onClick={() => setIsMobileMenuOpen(false)} 

@@ -120,7 +120,7 @@ export default async function AssignmentsPage() {
   // 5. Fetch Submissions
   const { data: submissions } = await supabase
     .from("submissions")
-    .select("assignment_id, lesson_id, status, content_url")
+    .select("assignment_id, lesson_id, status, content_url, score, feedback, graded_at")
     .eq("student_id", payload.id);
 
   // 6. Find the matching schedule for each lesson to get due date
@@ -145,7 +145,7 @@ export default async function AssignmentsPage() {
     source: "assignment" as const
   }));
 
-  const allAssignments = [...scheduledLessonsWithSchedule, ...traditionalWithSource];
+  const allAssignments = [...traditionalWithSource];
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
