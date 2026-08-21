@@ -117,6 +117,26 @@ export default function AssignmentsClient({
 
   const supabase = createPublicSupabaseClient();
 
+  const getSubmission = (item: any) => {
+    if (item.source === "lesson") {
+      return submissions.find(s => s.lesson_id === item.id);
+    }
+    return submissions.find(s => s.assignment_id === item.id);
+  };
+
+  const filteredAssignments = useMemo(() => {
+    return [...initialAssignments].sort((a, b) => {
+      const subA = getSubmission(a);
+      const subB = getSubmission(b);
+      const isSubA = subA?.status === "submitted";
+      const isSubB = subB?.status === "submitted";
+      
+      if (isSubA && !isSubB) return 1;
+      if (!isSubA && isSubB) return -1;
+      return 0;
+    });
+  }, [initialAssignments, submissions]);
+
   if (!mounted) {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-4 bg-white rounded-3xl border border-slate-100 shadow-sm">
@@ -125,13 +145,6 @@ export default function AssignmentsClient({
       </div>
     );
   }
-
-  const getSubmission = (item: any) => {
-    if (item.source === "lesson") {
-      return submissions.find(s => s.lesson_id === item.id);
-    }
-    return submissions.find(s => s.assignment_id === item.id);
-  };
 
   const handleOpenSubmission = (assignment: any) => {
     setActiveAssignment(assignment);
@@ -292,19 +305,6 @@ export default function AssignmentsClient({
   };
 
   const coursesList = Array.from(new Set(initialAssignments.map(a => getCourseName(a)))).filter(Boolean);
-
-  const filteredAssignments = useMemo(() => {
-    return [...initialAssignments].sort((a, b) => {
-      const subA = getSubmission(a);
-      const subB = getSubmission(b);
-      const isSubA = subA?.status === "submitted";
-      const isSubB = subB?.status === "submitted";
-      
-      if (isSubA && !isSubB) return 1;
-      if (!isSubA && isSubB) return -1;
-      return 0;
-    });
-  }, [initialAssignments, submissions]);
 
   return (
     <div className="space-y-8">
