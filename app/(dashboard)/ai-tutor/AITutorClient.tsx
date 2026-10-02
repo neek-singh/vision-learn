@@ -684,8 +684,14 @@ export default function AITutorClient({ studentId, studentName, courses }: Props
   const [isLoading, setIsLoading] = useState(false);
 
   // Layout & UI
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.innerWidth >= 1024) {
+      setIsSidebarOpen(true);
+    }
+  }, []);
 
   // Speech & Audio
   const [copiedMsgId, setCopiedMsgId] = useState<string | null>(null);
@@ -946,6 +952,9 @@ export default function AITutorClient({ studentId, studentName, courses }: Props
     setInput("");
     setActivePlugin(null);
     setSpeakingMsgId(null);
+    if (typeof window !== "undefined" && window.innerWidth < 1024) {
+      setIsSidebarOpen(false);
+    }
     if (inputRef.current) inputRef.current.focus();
   }, []);
 
@@ -958,6 +967,9 @@ export default function AITutorClient({ studentId, studentName, courses }: Props
     if (session.modelTier) setModelTier(session.modelTier);
     setActivePlugin(null);
     setSpeakingMsgId(null);
+    if (typeof window !== "undefined" && window.innerWidth < 1024) {
+      setIsSidebarOpen(false);
+    }
   }, []);
 
   const deleteSession = useCallback(
@@ -1351,19 +1363,31 @@ export default function AITutorClient({ studentId, studentName, courses }: Props
 
       {/* ── Main Container: Simple Claude Style ── */}
       <div
-        className={`flex w-full bg-white text-slate-800 font-sans ${
+        className={`flex w-full bg-white text-slate-800 font-sans relative ${
           isFullscreen
             ? "fixed inset-0 z-[100] h-screen w-screen overflow-hidden"
             : "h-full flex-1 overflow-hidden"
         }`}
       >
+        {/* Mobile Backdrop for Sidebar Drawer */}
+        {isSidebarOpen && (
+          <div
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-40 lg:hidden animate-in fade-in duration-200"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+        )}
+
         {/* ── Left Sidebar (Claude Style) ── */}
         <aside
-          className={`flex flex-col bg-[#fafaf9] border-r border-slate-200/80 transition-all duration-200 shrink-0 z-20 ${
-            isSidebarOpen
-              ? "w-60 sm:w-64"
-              : "w-0 -translate-x-full lg:w-0 lg:translate-x-0 overflow-hidden border-none"
-          }`}
+          className={`
+            fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-[#fafaf9] border-r border-slate-200/80 shadow-2xl flex flex-col transition-transform duration-200
+            lg:static lg:z-20 lg:shadow-none lg:w-64 lg:translate-x-0 shrink-0
+            ${
+              isSidebarOpen
+                ? "translate-x-0"
+                : "-translate-x-full lg:w-0 lg:overflow-hidden lg:border-none"
+            }
+          `}
         >
           {/* Top Brand & New Chat */}
           <div className="p-3">
@@ -1554,12 +1578,22 @@ export default function AITutorClient({ studentId, studentName, courses }: Props
         <div className="flex-1 flex flex-col h-full min-w-0 bg-white">
           
           {/* ── Simple Top Header ── */}
-          <header className="h-12 border-b border-slate-100 px-4 flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-2 min-w-0">
+          <header className="h-12 border-b border-slate-100 px-3 sm:px-4 flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+              {/* Mobile Sidebar Toggle Button */}
+              <button
+                onClick={() => setIsSidebarOpen((prev) => !prev)}
+                className="p-1.5 text-slate-500 hover:text-slate-800 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer mr-0.5 lg:hidden"
+                title="Chats and history"
+              >
+                <PanelLeftOpen size={17} />
+              </button>
+
+              {/* Desktop Sidebar Toggle Button */}
               {!isSidebarOpen && (
                 <button
                   onClick={() => setIsSidebarOpen(true)}
-                  className="p-1 text-slate-500 hover:text-slate-800 rounded transition-colors cursor-pointer mr-1"
+                  className="p-1 text-slate-500 hover:text-slate-800 rounded transition-colors cursor-pointer mr-1 hidden lg:inline-flex"
                   title="Open sidebar"
                 >
                   <PanelLeftOpen size={16} />
@@ -1806,7 +1840,7 @@ export default function AITutorClient({ studentId, studentName, courses }: Props
           </div>
 
           {/* ── Bottom Input Section (Claude Style) ── */}
-          <div className="p-4 bg-white shrink-0">
+          <div className="p-2 sm:p-4 bg-white shrink-0 border-t border-slate-100 sm:border-none">
             <div className="max-w-2xl mx-auto relative">
               
               {/* Hidden file input for Photo Upload */}
@@ -2022,11 +2056,11 @@ export default function AITutorClient({ studentId, studentName, courses }: Props
               </div>
 
               {/* Bottom Minimal Footer (Claude Style) */}
-              <div className="flex items-center justify-between text-[11px] text-slate-400 px-1 mt-2">
-                <span>Vision AI is AI and can make mistakes. Please double-check responses.</span>
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-1 text-[10px] sm:text-[11px] text-slate-400 px-1 mt-1.5 sm:mt-2">
+                <span className="text-center sm:text-left truncate max-w-full">Vision AI is AI and can make mistakes. Please double-check responses.</span>
 
                 {/* Model Selector Menu at Bottom Right */}
-                <div className="relative" data-dropdown>
+                <div className="relative shrink-0" data-dropdown>
                   <button
                     onClick={() => setShowModelDropdown(!showModelDropdown)}
                     className="flex items-center gap-1 font-medium text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"

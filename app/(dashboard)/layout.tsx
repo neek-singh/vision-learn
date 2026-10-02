@@ -411,7 +411,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        <main className={pathname === "/ai-tutor" ? "p-0 h-[calc(100dvh-4rem)] flex flex-col overflow-hidden" : "p-4 lg:p-6 max-w-7xl pb-24 lg:pb-6"}>
+        <main className={pathname === "/ai-tutor" ? "p-0 h-[calc(100dvh-4rem-3.75rem)] lg:h-[calc(100dvh-4rem)] flex flex-col overflow-hidden" : "p-4 lg:p-6 max-w-7xl pb-24 lg:pb-6"}>
           {children}
         </main>
 
