@@ -200,31 +200,31 @@ export function AttendanceSkeleton() {
 
 export function ProfilePageSkeleton() {
   return (
-    <div className="max-w-4xl space-y-6 pb-12 animate-pulse">
+    <div className="max-w-4xl space-y-4 pb-10 animate-pulse">
       {/* Header Skeleton */}
-      <div className="flex flex-col md:flex-row items-center gap-6 bg-white p-6 md:p-8 rounded-3xl border border-slate-100 shadow-sm">
-        <div className="w-28 h-28 rounded-3xl bg-slate-100" />
-        <div className="space-y-3 flex-1">
-          <div className="h-3 w-32 bg-slate-100 rounded mx-auto md:mx-0" />
-          <div className="h-9 w-64 bg-slate-200 rounded mx-auto md:mx-0" />
-          <div className="flex gap-3 justify-center md:justify-start">
-            <div className="h-6 w-24 bg-slate-100 rounded-xl" />
-            <div className="h-6 w-32 bg-slate-100 rounded-xl" />
+      <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-5 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs">
+        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-slate-200" />
+        <div className="space-y-2 flex-1 w-full text-center sm:text-left">
+          <div className="h-2.5 w-24 bg-slate-200 rounded mx-auto sm:mx-0" />
+          <div className="h-6 w-44 bg-slate-200 rounded mx-auto sm:mx-0" />
+          <div className="flex gap-2 justify-center sm:justify-start">
+            <div className="h-5 w-20 bg-slate-100 rounded-md" />
+            <div className="h-5 w-24 bg-slate-100 rounded-md" />
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {[1, 2].map((i) => (
-          <div key={i} className="bg-white p-6 rounded-3xl border border-slate-100 space-y-6">
-            <div className="h-6 w-48 bg-slate-200 rounded" />
-            <div className="space-y-6">
+          <div key={i} className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-3.5">
+            <div className="h-4 w-36 bg-slate-200 rounded pb-2.5 border-b border-slate-100" />
+            <div className="space-y-3">
               {[1, 2, 3].map((j) => (
-                <div key={j} className="flex gap-4">
-                  <div className="w-10 h-10 bg-slate-50 rounded-xl" />
-                  <div className="space-y-2">
-                    <div className="h-3 w-20 bg-slate-50 rounded" />
-                    <div className="h-4 w-40 bg-slate-100 rounded" />
+                <div key={j} className="flex items-start gap-2.5">
+                  <div className="w-7 h-7 bg-slate-100 rounded-lg shrink-0" />
+                  <div className="space-y-1.5 flex-1">
+                    <div className="h-2.5 w-16 bg-slate-100 rounded" />
+                    <div className="h-3.5 w-36 bg-slate-200 rounded" />
                   </div>
                 </div>
               ))}
@@ -232,13 +232,13 @@ export function ProfilePageSkeleton() {
           </div>
         ))}
         
-        <div className="bg-white p-6 rounded-3xl border border-slate-100 md:col-span-2 space-y-6">
-          <div className="h-6 w-48 bg-slate-200 rounded" />
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs md:col-span-2 space-y-3.5">
+          <div className="h-4 w-36 bg-slate-200 rounded pb-2.5 border-b border-slate-100" />
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="space-y-2">
-                <div className="h-3 w-20 bg-slate-50 rounded" />
-                <div className="h-4 w-32 bg-slate-100 rounded" />
+              <div key={i} className="space-y-1.5">
+                <div className="h-2.5 w-16 bg-slate-100 rounded" />
+                <div className="h-3.5 w-28 bg-slate-200 rounded" />
               </div>
             ))}
           </div>

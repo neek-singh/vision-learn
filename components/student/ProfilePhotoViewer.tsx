@@ -13,14 +13,14 @@ export function ProfilePhotoViewer({ photoUrl, name }: ProfilePhotoViewerProps) 
   return (
     <div
       onClick={() => setExpanded(!expanded)}
-      title={expanded ? "Click to shrink" : "Click to expand"}
+      title={expanded ? "Click to shrink" : "Click to expand photo"}
       className={`
         relative z-10 shrink-0 cursor-pointer overflow-hidden
-        border-4 border-white shadow-2xl
-        transition-all duration-500 ease-in-out
+        border-2 border-white shadow-sm ring-1 ring-slate-200/80
+        transition-all duration-300 ease-in-out
         ${expanded
-          ? "w-80 h-80 rounded-[2rem] shadow-[0_20px_60px_rgba(0,0,0,0.25)]"
-          : "w-28 h-28 rounded-3xl hover:shadow-[0_8px_30px_rgba(0,0,0,0.15)]"
+          ? "w-56 h-56 sm:w-64 sm:h-64 rounded-2xl shadow-xl"
+          : "w-16 h-16 sm:w-20 sm:h-20 rounded-2xl hover:scale-105"
         }
       `}
     >

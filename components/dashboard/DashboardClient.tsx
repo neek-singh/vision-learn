@@ -547,32 +547,35 @@ export default function DashboardClient({
   return (
     <div className="space-y-6">
       
-      {/* 1. Glassmorphic Greeting Banner with Theme Chooser */}
-      <section className={`relative overflow-hidden rounded-3xl p-6 text-white shadow-xl shadow-slate-100 bg-gradient-to-r ${style.gradient} transition-all duration-700 animate-in fade-in duration-500`}>
-        {/* Dynamic moving glow blobs */}
-        <div className="absolute top-0 right-0 w-80 h-80 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl animate-pulse pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-56 h-56 bg-white/5 rounded-full -ml-20 -mb-20 blur-2xl pointer-events-none" />
+      {/* 1. Minimal Sleek Greeting Banner */}
+      <section className="relative overflow-hidden rounded-2xl sm:rounded-3xl p-6 sm:p-7 text-white bg-[#0f172a] border border-slate-800 shadow-xs transition-all">
+        {/* Subtle radial ambient glow */}
+        <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-500/10 rounded-full -mr-28 -mt-28 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-56 h-56 bg-slate-700/10 rounded-full -ml-20 -mb-20 blur-2xl pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
           <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-2.5">
+            <div className="flex flex-wrap items-center gap-2">
               {student?.batch && (
-                <span className="bg-white/15 text-white font-black text-[11px] tracking-wider uppercase px-3 py-1 rounded-lg backdrop-blur-md border border-white/10 flex items-center gap-1.5">
-                  <Users size={12} /> {student.batch}
+                <span className="bg-white/10 text-slate-200 font-medium text-[11px] tracking-wide uppercase px-3 py-1 rounded-full backdrop-blur-md border border-white/10 flex items-center gap-1.5">
+                  <Users size={12} className="text-indigo-400" /> {student.batch}
                 </span>
               )}
               {student?.batchTiming && (
-                <span className="bg-white/15 text-white font-black text-[11px] tracking-wider uppercase px-3 py-1 rounded-lg backdrop-blur-md border border-white/10 flex items-center gap-1.5">
-                  <Clock size={12} /> {student.batchTiming}
+                <span className="bg-white/10 text-slate-200 font-medium text-[11px] tracking-wide uppercase px-3 py-1 rounded-full backdrop-blur-md border border-white/10 flex items-center gap-1.5">
+                  <Clock size={12} className="text-indigo-400" /> {student.batchTiming}
                 </span>
               )}
+              <span className="bg-indigo-500/15 text-indigo-300 font-medium text-[11px] tracking-wide uppercase px-3 py-1 rounded-full border border-indigo-500/25 flex items-center gap-1.5">
+                <Sparkles size={11} /> 2026-27 Session
+              </span>
             </div>
             
-            <h1 className="text-3xl font-black tracking-tight leading-none">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-white leading-tight">
               {greeting}, {student?.name?.split(" ")[0] || "Learner"}!
             </h1>
             
-            <p className="text-sm text-indigo-100 font-medium italic max-w-lg leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-400 font-normal italic max-w-xl leading-relaxed">
               "{quote}"
             </p>
           </div>
@@ -584,40 +587,40 @@ export default function DashboardClient({
         <NoticeBoard notifications={notifications} />
       )}
 
-      {/* 3. Interactive Navigation Tabs */}
-      <div className="flex border-b border-slate-100 p-0.5 gap-3 sm:gap-4 overflow-x-auto custom-scrollbar">
+      {/* 3. Interactive Navigation Tabs (Minimal Segmented Pill) */}
+      <div className="inline-flex items-center gap-1 p-1 bg-slate-100/80 rounded-2xl border border-slate-200/60 overflow-x-auto max-w-full">
         <button
           onClick={() => setActiveTab("overview")}
-          className={`px-4 sm:px-6 py-3.5 text-xs font-black uppercase tracking-wider rounded-xl transition-all flex items-center gap-2 sm:gap-2.5 cursor-pointer ${
+          className={`px-4 sm:px-5 py-2 text-xs sm:text-sm font-semibold rounded-xl transition-all flex items-center gap-2 cursor-pointer shrink-0 ${
             activeTab === "overview"
-              ? `${style.bgLight} ${style.text} shadow-sm border border-slate-100`
-              : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
+              ? "bg-white text-slate-900 shadow-2xs border border-slate-200/50"
+              : "text-slate-500 hover:text-slate-900 hover:bg-slate-200/40"
           }`}
         >
-          <BookOpen size={16} className="shrink-0" />
-          <span className="hidden sm:inline">Overview</span>
+          <BookOpen size={15} className="shrink-0" />
+          <span>Overview</span>
         </button>
         <button
           onClick={() => setActiveTab("analytics")}
-          className={`px-4 sm:px-6 py-3.5 text-xs font-black uppercase tracking-wider rounded-xl transition-all flex items-center gap-2 sm:gap-2.5 cursor-pointer ${
+          className={`px-4 sm:px-5 py-2 text-xs sm:text-sm font-semibold rounded-xl transition-all flex items-center gap-2 cursor-pointer shrink-0 ${
             activeTab === "analytics"
-              ? `${style.bgLight} ${style.text} shadow-sm border border-slate-100`
-              : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
+              ? "bg-white text-slate-900 shadow-2xs border border-slate-200/50"
+              : "text-slate-500 hover:text-slate-900 hover:bg-slate-200/40"
           }`}
         >
-          <TrendingUp size={16} className="shrink-0" />
-          <span className="hidden sm:inline">Performance & Analytics</span>
+          <TrendingUp size={15} className="shrink-0" />
+          <span>Performance & Analytics</span>
         </button>
         <button
           onClick={() => setActiveTab("planner")}
-          className={`px-4 sm:px-6 py-3.5 text-xs font-black uppercase tracking-wider rounded-xl transition-all flex items-center gap-2 sm:gap-2.5 cursor-pointer ${
+          className={`px-4 sm:px-5 py-2 text-xs sm:text-sm font-semibold rounded-xl transition-all flex items-center gap-2 cursor-pointer shrink-0 ${
             activeTab === "planner"
-              ? `${style.bgLight} ${style.text} shadow-sm border border-slate-100`
-              : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
+              ? "bg-white text-slate-900 shadow-2xs border border-slate-200/50"
+              : "text-slate-500 hover:text-slate-900 hover:bg-slate-200/40"
           }`}
         >
-          <Calendar size={16} className="shrink-0" />
-          <span className="hidden sm:inline">Planner & Tasks</span>
+          <Calendar size={15} className="shrink-0" />
+          <span>Planner & Tasks</span>
         </button>
       </div>
 
@@ -652,81 +655,83 @@ export default function DashboardClient({
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
             {/* Active Course Section */}
-            <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
+            <div className="lg:col-span-2 bg-white p-6 sm:p-7 rounded-2xl border border-slate-200/80 shadow-2xs hover:shadow-xs transition-all">
               <div className="flex flex-col md:flex-row gap-6 items-center">
-                <div className="relative w-28 h-28 md:w-36 md:h-36 shrink-0">
+                <div className="relative w-28 h-28 md:w-32 md:h-32 shrink-0">
                   <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
-                    <circle cx="18" cy="18" r="15.5" fill="none" className="stroke-slate-100" strokeWidth="3.2" />
+                    <circle cx="18" cy="18" r="15.5" fill="none" className="stroke-slate-100" strokeWidth="2.8" />
                     <circle
                       cx="18" cy="18" r="15.5" fill="none"
                       stroke={accent === "indigo" ? "#6366f1" : accent === "emerald" ? "#10b981" : accent === "violet" ? "#8b5cf6" : "#f97316"}
                       className="transition-all duration-1000 ease-out"
-                      strokeWidth="3.2"
+                      strokeWidth="2.8"
                       strokeDasharray={`${stats.progressPercentage}, 100`}
                       strokeLinecap="round"
                     />
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-2xl md:text-3xl font-black text-slate-900 leading-none tabular-nums">{stats.progressPercentage}%</span>
-                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1">Complete</span>
+                    <span className="text-2xl font-bold text-slate-900 leading-none tabular-nums">{stats.progressPercentage}%</span>
+                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mt-1">Complete</span>
                   </div>
                 </div>
 
-                <div className="flex-1 space-y-4 text-center md:text-left w-full">
+                <div className="flex-1 space-y-3.5 text-center md:text-left w-full">
                   <div>
-                    <span className={`text-[10px] font-black ${style.text} uppercase tracking-[0.2em] mb-1 block`}>Active Course</span>
-                    <h2 className="text-xl font-black text-slate-900 leading-tight">
+                    <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider mb-1 block">Active Course</span>
+                    <h2 className="text-lg sm:text-xl font-bold text-slate-900 leading-snug">
                       {mainCourse?.title || "No active course"}
                     </h2>
                   </div>
                   
-                  <div className="space-y-2">
-                    <div className="w-full h-2.5 bg-slate-50 rounded-full overflow-hidden border border-slate-100 p-[2px] relative">
+                  <div className="space-y-1.5">
+                    <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
                       <div 
                         className={`h-full bg-gradient-to-r ${style.gradient} rounded-full transition-all duration-1000 ease-out`} 
                         style={{ width: `${stats.progressPercentage}%` }} 
                       />
                     </div>
                     <div className="flex justify-between items-center px-0.5">
-                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{stats.completedCount} / {stats.totalLessonsCount} Classes</span>
-                      <span className={`text-[9px] font-black ${style.text} ${style.bgLight} px-2 py-0.5 rounded border ${style.border} uppercase tracking-widest`}>{stats.remainingCount} Left</span>
+                      <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">{stats.completedCount} / {stats.totalLessonsCount} Classes</span>
+                      <span className="text-[10px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded uppercase tracking-wider">{stats.remainingCount} Left</span>
                     </div>
                   </div>
                   
-                  <div className="flex flex-wrap justify-center md:justify-start gap-3">
-                     <div className="flex items-center gap-1.5 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">
+                  <div className="flex flex-wrap justify-center md:justify-start gap-2">
+                     <div className="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200/70 text-slate-600 text-xs font-medium">
                        <CheckCircle2 size={12} className="text-emerald-500" />
-                       <span className="text-[10px] font-bold text-emerald-700">{stats.completedCount} Done</span>
+                       <span>{stats.completedCount} Done</span>
                      </div>
-                     <div className="flex items-center gap-1.5 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-100">
+                     <div className="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200/70 text-slate-600 text-xs font-medium">
                        <Award size={12} className="text-amber-500" />
-                       <span className="text-[10px] font-bold text-amber-700">VIT-{mainCourse?.course_code || "GEN"}</span>
+                       <span>VIT-{mainCourse?.course_code || "DCA"}</span>
                      </div>
                   </div>
 
-                  <Link 
-                    href="/curriculum"
-                    className={`inline-flex items-center gap-2 text-white px-6 py-2.5 rounded-xl font-bold text-sm transition-all shadow-lg active:scale-95 ${style.btnBg} ${style.glow}`}
-                  >
-                    Continue Learning <ArrowRight size={16} />
-                  </Link>
+                  <div>
+                    <Link 
+                      href="/curriculum"
+                      className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition-all shadow-2xs hover:shadow-xs active:scale-95"
+                    >
+                      Continue Learning <ArrowRight size={15} />
+                    </Link>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Streak & Profile Card Section */}
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* Personal streak info */}
               <StreakWidget streak={streak} />
               
-              {/* Tiny Student ID Badge card */}
-              <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${style.gradient} flex items-center justify-center text-white font-black text-base shadow-md`}>
+              {/* Minimal Student ID Badge card */}
+              <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center gap-3.5">
+                <div className="w-11 h-11 rounded-xl bg-slate-100 text-slate-700 border border-slate-200/80 flex items-center justify-center font-bold text-base shrink-0">
                   {student?.name?.[0] || "U"}
                 </div>
-                <div className="min-w-0">
-                  <h4 className="text-xs font-black text-slate-800 leading-none">{student?.name}</h4>
-                  <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-wider">{student?.student_id}</p>
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-sm font-bold text-slate-800 leading-tight truncate">{student?.name}</h4>
+                  <p className="text-[10px] font-medium text-slate-400 mt-0.5 uppercase tracking-wider">{student?.student_id || "Student"}</p>
                 </div>
               </div>
             </div>

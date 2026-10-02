@@ -18,7 +18,9 @@ import {
   Bell,
   Calendar,
   CheckCircle2,
-  Wallet
+  Wallet,
+  Bot,
+  MessageSquare
 } from "lucide-react";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { SyncStatus } from "@/components/SyncStatus";
@@ -28,6 +30,8 @@ const sidebarLinks = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "My Classes", href: "/curriculum", icon: BookOpen },
   { name: "My Courses", href: "/courses", icon: BookOpen },
+  { name: "AI Tutor", href: "/ai-tutor", icon: Bot },
+  { name: "Chat", href: "/chats", icon: MessageSquare },
   { name: "Tests", href: "/tests", icon: FileText },
   { name: "Notes & Materials", href: "/materials", icon: FileText },
   { name: "Projects", href: "/assignments", icon: PenTool },
@@ -155,40 +159,33 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     // Local accumulation
     let accumulatedSeconds = 0;
+    let isSyncing = false;
 
     const syncToDatabase = async (secondsToAdd: number) => {
-      if (secondsToAdd <= 0) return;
+      if (secondsToAdd <= 0 || isSyncing) return;
+      isSyncing = true;
       try {
-        // 1. Fetch current active_seconds for today
-        const { data, error: selectError } = await supabase
-          .from('student_daily_activity')
-          .select('active_seconds')
-          .eq('student_id', studentId)
-          .eq('date', todayStr)
-          .maybeSingle();
-
-        if (selectError) throw selectError;
-
-        const currentActive = data?.active_seconds || 0;
-        const newActive = currentActive + secondsToAdd;
-
-        // 2. Upsert updated value
-        const { error: upsertError } = await supabase
-          .from('student_daily_activity')
-          .upsert({
-            student_id: studentId,
-            date: todayStr,
-            active_seconds: newActive,
-            updated_at: new Date().toISOString()
-          }, { onConflict: 'student_id,date' });
-
-        if (upsertError) throw upsertError;
-      } catch (err) {
-        console.error("[Active Tracker] Sync failed:", err);
+        const res = await fetch('/api/user/active-time', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ secondsToAdd }),
+          keepalive: true,
+        });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          console.warn("[Active Tracker] Server sync response:", errData?.error || res.statusText);
+          accumulatedSeconds += secondsToAdd;
+        }
+      } catch (err: any) {
+        // Network or offline — restore accumulated seconds to sync later
+        accumulatedSeconds += secondsToAdd;
+        console.warn("[Active Tracker] Sync postponed (offline or busy)");
+      } finally {
+        isSyncing = false;
       }
     };
 
-    const interval = setInterval(async () => {
+    const interval = setInterval(() => {
       if (document.visibilityState === 'visible') {
         accumulatedSeconds += 1;
         
@@ -213,29 +210,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           detail: { totalSeconds: newTotal, todaySeconds: dailyMap[todayStr] }
         }));
 
-        // Periodically sync every 10 seconds
-        if (accumulatedSeconds >= 10) {
+        // Periodically sync every 60 seconds (prevents request flooding and server lockup)
+        if (accumulatedSeconds >= 60 && !isSyncing) {
           const secondsToSync = accumulatedSeconds;
           accumulatedSeconds = 0;
-          await syncToDatabase(secondsToSync);
+          syncToDatabase(secondsToSync);
         }
       }
     }, 1000);
 
     // Sync pending on visibility change or unload
-    const handleVisibilityChange = async () => {
-      if (document.visibilityState === 'hidden' && accumulatedSeconds > 0) {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden' && accumulatedSeconds > 0 && !isSyncing) {
         const secondsToSync = accumulatedSeconds;
         accumulatedSeconds = 0;
-        await syncToDatabase(secondsToSync);
+        syncToDatabase(secondsToSync);
       }
     };
 
-    const handleBeforeUnload = async () => {
-      if (accumulatedSeconds > 0) {
+    const handleBeforeUnload = () => {
+      if (accumulatedSeconds > 0 && !isSyncing) {
         const secondsToSync = accumulatedSeconds;
         accumulatedSeconds = 0;
-        await syncToDatabase(secondsToSync);
+        syncToDatabase(secondsToSync);
       }
     };
 
@@ -246,12 +243,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       clearInterval(interval);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("beforeunload", handleBeforeUnload);
-      // Final flush
-      if (accumulatedSeconds > 0) {
-        syncToDatabase(accumulatedSeconds);
+      // Final flush if any pending seconds
+      if (accumulatedSeconds > 0 && !isSyncing) {
+        const secondsToSync = accumulatedSeconds;
+        accumulatedSeconds = 0;
+        syncToDatabase(secondsToSync);
       }
     };
-  }, [student, supabase]);
+  }, [student?.id]);
 
   return (
     <div className="min-h-screen bg-slate-50 flex">
@@ -412,7 +411,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        <main className="p-4 lg:p-6 max-w-7xl pb-24 lg:pb-6">
+        <main className={pathname === "/ai-tutor" ? "p-0 h-[calc(100dvh-4rem)] flex flex-col overflow-hidden" : "p-4 lg:p-6 max-w-7xl pb-24 lg:pb-6"}>
           {children}
         </main>
 
@@ -421,6 +420,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 px-4 py-2 z-50 flex items-center justify-around shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.05)] animate-in slide-in-from-bottom duration-300">
             <MobileBottomLink href="/dashboard" icon={LayoutDashboard} name="Home" isActive={pathname === '/dashboard'} />
             <MobileBottomLink href="/curriculum" icon={BookOpen} name="Classes" isActive={pathname === '/curriculum'} />
+            <MobileBottomLink href="/ai-tutor" icon={Bot} name="AI Tutor" isActive={pathname === '/ai-tutor'} />
             <MobileBottomLink href="/materials" icon={FileText} name="Notes" isActive={pathname === '/materials'} />
             <MobileBottomLink href="/tests" icon={PenTool} name="Tests" isActive={pathname === '/tests'} />
           </nav>

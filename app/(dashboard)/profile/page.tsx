@@ -20,6 +20,7 @@ import { createPublicSupabaseClient } from "@/lib/supabase-server";
 import { ProfilePageSkeleton } from "@/components/dashboard/DashboardSkeletons";
 import { ThemePicker } from "@/components/student/ThemePicker";
 import { ProfilePhotoViewer } from "@/components/student/ProfilePhotoViewer";
+import { UsernameCard } from "@/components/student/UsernameCard";
 
 export default async function ProfilePage() {
   const cookieStore = await cookies();
@@ -76,88 +77,95 @@ async function ProfileContent({ userId }: { userId: string }) {
   }
 
   return (
-    <div className="max-w-4xl space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
+    <div className="max-w-4xl space-y-4 animate-in fade-in slide-in-from-bottom-3 duration-300 pb-10">
       {/* Header / Profile Card */}
-      <section className="flex flex-col md:flex-row items-center gap-6 bg-white p-6 md:p-8 rounded-3xl border border-slate-100 shadow-sm relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full -mr-32 -mt-32 opacity-50" />
-        
+      <section className="flex flex-col sm:flex-row items-center gap-4 sm:gap-5 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs">
         {student.photo_url ? (
           <ProfilePhotoViewer photoUrl={student.photo_url} name={student.name || "Student"} />
         ) : (
-          <div className="w-28 h-28 rounded-3xl bg-indigo-600 border-4 border-white shadow-2xl overflow-hidden flex items-center justify-center text-white text-4xl font-black relative z-10 shrink-0">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-indigo-600 border-2 border-white shadow-sm ring-1 ring-slate-200/80 overflow-hidden flex items-center justify-center text-white text-2xl font-bold shrink-0">
             {student.name?.charAt(0) || "S"}
           </div>
         )}
         
-        <div className="relative z-10 text-center md:text-left space-y-1.5">
-          <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.3em] mb-1">Student Profile</p>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">{student.name}</h1>
-          <div className="flex flex-wrap justify-center md:justify-start gap-3 pt-1">
-            <span className="bg-indigo-50 text-indigo-700 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-xl border border-indigo-100">
+        <div className="flex-1 text-center sm:text-left space-y-1">
+          <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">Student Profile</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">{student.name}</h1>
+          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-0.5">
+            <span className="bg-slate-100 text-slate-700 text-[11px] font-semibold px-2.5 py-0.5 rounded-md border border-slate-200/70">
               ID: {student.student_id}
             </span>
-            <span className="bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-xl border border-emerald-100">
+            <span className="bg-emerald-50 text-emerald-700 text-[11px] font-semibold px-2.5 py-0.5 rounded-md border border-emerald-200/60 inline-flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               Active Student
             </span>
+            {student.course && (
+              <span className="bg-indigo-50/70 text-indigo-700 text-[11px] font-semibold px-2.5 py-0.5 rounded-md border border-indigo-100 hidden sm:inline-block">
+                {student.course}
+              </span>
+            )}
           </div>
         </div>
       </section>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Contact & Bio */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-6">
-          <h3 className="text-lg font-black text-slate-900 flex items-center gap-3">
-            <User size={20} className="text-indigo-600" /> Contact Information
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Contact Information */}
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-3.5">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2 pb-2.5 border-b border-slate-100">
+            <User size={15} className="text-indigo-600" /> Contact Information
           </h3>
           
-          <div className="grid grid-cols-1 gap-6">
-            <ProfileInfo icon={<Mail size={16}/>} label="Email Address" value={student.email} />
-            <ProfileInfo icon={<Phone size={16}/>} label="Phone Number" value={student.phone} />
-            <ProfileInfo icon={<MapPin size={16}/>} label="Residential Address" value={student.address || "Address not provided"} />
+          <div className="space-y-3">
+            <ProfileInfo icon={<Mail size={14}/>} label="Email Address" value={student.email} />
+            <ProfileInfo icon={<Phone size={14}/>} label="Phone Number" value={student.phone} />
+            <ProfileInfo icon={<MapPin size={14}/>} label="Residential Address" value={student.address || "Address not provided"} />
           </div>
         </div>
 
         {/* Family & Personal Details */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-6">
-          <h3 className="text-lg font-black text-slate-900 flex items-center gap-3">
-            <Users size={20} className="text-indigo-600" /> Family & Personal
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-3.5">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2 pb-2.5 border-b border-slate-100">
+            <Users size={15} className="text-indigo-600" /> Family & Personal
           </h3>
           
-          <div className="grid grid-cols-1 gap-6">
-            <ProfileInfo icon={<Users size={16}/>} label="Father's Name" value={student.father_name} />
-            <ProfileInfo icon={<Baby size={16}/>} label="Mother's Name" value={student.mother_name} />
+          <div className="space-y-3">
+            <ProfileInfo icon={<Users size={14}/>} label="Father's Name" value={student.father_name} />
+            <ProfileInfo icon={<Baby size={14}/>} label="Mother's Name" value={student.mother_name} />
             
-            <div className="grid grid-cols-2 gap-4">
-               <ProfileInfo icon={<Calendar size={16}/>} label="Date of Birth" value={student.dob ? new Date(student.dob).toLocaleDateString() : "—"} />
-               <ProfileInfo icon={<Dna size={16}/>} label="Gender" value={student.gender} className="capitalize" />
+            <div className="grid grid-cols-2 gap-3 pt-0.5">
+               <ProfileInfo icon={<Calendar size={14}/>} label="Date of Birth" value={student.dob ? new Date(student.dob).toLocaleDateString() : "—"} />
+               <ProfileInfo icon={<Dna size={14}/>} label="Gender" value={student.gender} className="capitalize" />
             </div>
           </div>
         </div>
 
         {/* Academic Profile */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-6 md:col-span-2">
-          <h3 className="text-lg font-black text-slate-900 flex items-center gap-3">
-            <Shield size={20} className="text-indigo-600" /> Academic Profile
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-3.5 md:col-span-2">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2 pb-2.5 border-b border-slate-100">
+            <Shield size={15} className="text-indigo-600" /> Academic Details
           </h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <ProfileInfo icon={<BookOpen size={16}/>} label="Primary Course" value={student.course} />
-            <ProfileInfo icon={<IdCard size={16}/>} label="Official Student ID" value={student.student_id} />
-            <ProfileInfo icon={<Users size={16}/>} label="Assigned Batch" value={batchTiming ? `${mainBatch} (${batchTiming})` : mainBatch} />
-            <ProfileInfo icon={<Calendar size={16}/>} label="Admission Date" value={student.admission_date ? new Date(student.admission_date).toLocaleDateString() : "—"} />
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+            <ProfileInfo icon={<BookOpen size={14}/>} label="Primary Course" value={student.course} />
+            <ProfileInfo icon={<IdCard size={14}/>} label="Student ID" value={student.student_id} />
+            <ProfileInfo icon={<Users size={14}/>} label="Assigned Batch" value={batchTiming ? `${mainBatch} (${batchTiming})` : mainBatch} />
+            <ProfileInfo icon={<Calendar size={14}/>} label="Admission Date" value={student.admission_date ? new Date(student.admission_date).toLocaleDateString() : "—"} />
           </div>
 
-          <div className="pt-4 border-t border-slate-50 flex flex-col md:flex-row gap-4">
-             <div className="flex-1 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-50">
-                <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Highest Education</p>
-                <p className="text-sm font-black text-indigo-700">{student.education || "Undergraduate"}</p>
+          <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row gap-2.5">
+             <div className="flex-1 px-3 py-2 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between">
+                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Highest Education</span>
+                <span className="text-xs font-bold text-slate-700">{student.education || "Undergraduate"}</span>
              </div>
-             <div className="flex-1 p-4 bg-emerald-50/50 rounded-2xl border border-emerald-50">
-                <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">Student Category</p>
-                <p className="text-sm font-black text-emerald-700">{student.category || "General"}</p>
+             <div className="flex-1 px-3 py-2 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between">
+                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Student Category</span>
+                <span className="text-xs font-bold text-slate-700">{student.category || "General"}</span>
              </div>
           </div>
         </div>
+
+        {/* Username / Chat Handle */}
+        <UsernameCard userId={userId} initialUsername={student?.username || ""} />
 
         {/* Theme Settings Section */}
         <div className="md:col-span-2">
@@ -166,13 +174,13 @@ async function ProfileContent({ userId }: { userId: string }) {
       </div>
 
       {/* Logout Section at the Bottom */}
-      <div className="pt-8 flex justify-center">
+      <div className="pt-4 flex justify-center">
         <form action="/api/logout" method="POST">
           <button
             type="submit"
-            className="flex items-center gap-3 px-10 py-4 bg-red-50 text-red-600 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-red-100 transition-all border border-red-100 shadow-sm"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-rose-50 text-rose-600 border border-slate-200 hover:border-rose-200 rounded-xl text-xs font-semibold transition-all shadow-xs"
           >
-            <LogOut size={20} />
+            <LogOut size={14} />
             Logout from Account
           </button>
         </form>
@@ -183,13 +191,13 @@ async function ProfileContent({ userId }: { userId: string }) {
 
 function ProfileInfo({ icon, label, value, className = "" }: any) {
   return (
-    <div className="flex items-start gap-4">
-      <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 shrink-0">
+    <div className="flex items-start gap-2.5 min-w-0">
+      <div className="w-7 h-7 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 shrink-0 mt-0.5">
         {icon}
       </div>
-      <div>
-        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.15em] leading-none mb-1.5">{label}</p>
-        <p className={`text-sm font-bold text-slate-700 ${className}`}>{value || "—"}</p>
+      <div className="min-w-0 flex-1">
+        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider leading-none mb-1">{label}</p>
+        <p className={`text-xs sm:text-sm font-semibold text-slate-800 break-words ${className}`}>{value || "—"}</p>
       </div>
     </div>
   );

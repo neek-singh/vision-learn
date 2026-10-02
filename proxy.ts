@@ -7,7 +7,7 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // 1. Define Public Paths
-  const isAuthRoute = pathname.startsWith("/login") || pathname.startsWith("/api/auth");
+  const isAuthRoute = pathname.startsWith("/login") || pathname.startsWith("/api/auth") || pathname.startsWith("/api/user");
   const isPublicAsset = pathname.match(/\.(.*)$/); // Match any file extension
   const isRoot = pathname === "/";
 
@@ -16,6 +16,12 @@ export async function proxy(request: NextRequest) {
 
   // 3. If no token and trying to access protected route
   if (!token) {
+    if (pathname.startsWith("/api/")) {
+      if (!isAuthRoute) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+      return NextResponse.next();
+    }
     if (!isAuthRoute && !isPublicAsset && !isRoot) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
@@ -27,6 +33,12 @@ export async function proxy(request: NextRequest) {
 
   // 5. If token is invalid (expired/tampered)
   if (!payload) {
+    if (pathname.startsWith("/api/")) {
+      if (!isAuthRoute) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+      return NextResponse.next();
+    }
     if (!isAuthRoute && !isPublicAsset) {
       const response = NextResponse.redirect(new URL("/login", request.url));
       response.cookies.delete("vision_learn_session");

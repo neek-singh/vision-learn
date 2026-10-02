@@ -16,23 +16,26 @@ import {
 } from "lucide-react";
 
 export function StatCard({ icon, label, value, sub, color }: { icon: React.ReactNode; label: string; value: string; sub: string; color: string }) {
-  const colorMap: Record<string, { bg: string; text: string; border: string; iconBg: string }> = {
-    emerald: { bg: "bg-emerald-50/50", text: "text-emerald-700", border: "border-emerald-100", iconBg: "bg-emerald-100 text-emerald-600" },
-    blue: { bg: "bg-blue-50/50", text: "text-blue-700", border: "border-blue-100", iconBg: "bg-blue-100 text-blue-600" },
-    indigo: { bg: "bg-indigo-50/50", text: "text-indigo-700", border: "border-indigo-100", iconBg: "bg-indigo-100 text-indigo-600" },
-    amber: { bg: "bg-amber-50/50", text: "text-amber-700", border: "border-amber-100", iconBg: "bg-amber-100 text-amber-600" },
-    purple: { bg: "bg-purple-50/50", text: "text-purple-700", border: "border-purple-100", iconBg: "bg-purple-100 text-purple-600" },
+  const colorMap: Record<string, { iconBg: string; iconColor: string; pillBg: string; pillColor: string }> = {
+    emerald: { iconBg: "bg-emerald-50", iconColor: "text-emerald-600", pillBg: "bg-emerald-50", pillColor: "text-emerald-700" },
+    blue: { iconBg: "bg-blue-50", iconColor: "text-blue-600", pillBg: "bg-blue-50", pillColor: "text-blue-700" },
+    indigo: { iconBg: "bg-indigo-50", iconColor: "text-indigo-600", pillBg: "bg-indigo-50", pillColor: "text-indigo-700" },
+    amber: { iconBg: "bg-amber-50", iconColor: "text-amber-600", pillBg: "bg-amber-50", pillColor: "text-amber-700" },
+    purple: { iconBg: "bg-purple-50", iconColor: "text-purple-600", pillBg: "bg-purple-50", pillColor: "text-purple-700" },
   };
   const c = colorMap[color] || colorMap.indigo;
 
   return (
-    <div className={`${c.bg} p-4 rounded-xl border ${c.border} flex items-center gap-3 group hover:shadow-sm transition-all`}>
-      <div className={`w-9 h-9 ${c.iconBg} rounded-lg flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform`}>
+    <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-2xs hover:border-slate-300 hover:shadow-xs transition-all flex items-center gap-3.5 group">
+      <div className={`w-10 h-10 ${c.iconBg} ${c.iconColor} rounded-xl flex items-center justify-center shrink-0 border border-slate-100 group-hover:scale-105 transition-transform`}>
         {icon}
       </div>
-      <div className="min-w-0">
-        <p className="text-lg font-black text-slate-900 leading-none tabular-nums">{value} <span className={`text-xs font-bold ${c.text} opacity-70`}>{sub}</span></p>
-        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5">{label}</p>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline gap-1.5">
+          <p className="text-xl font-bold text-slate-900 leading-none tracking-tight tabular-nums">{value}</p>
+          <span className={`text-[11px] font-medium ${c.pillColor} ${c.pillBg} px-1.5 py-0.5 rounded`}>{sub}</span>
+        </div>
+        <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider mt-1">{label}</p>
       </div>
     </div>
   );
@@ -167,18 +170,18 @@ export function NoticeBoard({ notifications }: { notifications: any[] }) {
 
 export function StreakWidget({ streak }: { streak: number }) {
   return (
-    <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between group hover:border-orange-200 transition-all">
+    <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between group hover:border-slate-300 transition-all">
        <div className="space-y-1">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Current Streak</p>
-          <div className="flex items-baseline gap-2">
-             <h4 className="text-3xl font-black text-slate-900 tabular-nums">{streak}</h4>
-             <span className="text-xs font-bold text-slate-500">Days</span>
+          <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Current Streak</p>
+          <div className="flex items-baseline gap-1.5">
+             <h4 className="text-2xl sm:text-3xl font-bold text-slate-900 tabular-nums">{streak}</h4>
+             <span className="text-xs font-medium text-slate-500">Days</span>
           </div>
        </div>
-       <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 ${
-         streak > 0 ? 'bg-orange-50 text-orange-500 rotate-6 scale-110 shadow-lg shadow-orange-100' : 'bg-slate-50 text-slate-300'
+       <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${
+         streak > 0 ? 'bg-orange-50 text-orange-500 shadow-xs border border-orange-100' : 'bg-slate-50 text-slate-300 border border-slate-100'
        }`}>
-          <Flame size={28} fill={streak > 0 ? "currentColor" : "none"} className={streak > 0 ? "animate-pulse" : ""} />
+          <Flame size={24} fill={streak > 0 ? "currentColor" : "none"} className={streak > 0 ? "animate-pulse" : ""} />
        </div>
     </div>
   );

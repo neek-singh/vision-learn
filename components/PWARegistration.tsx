@@ -10,6 +10,8 @@ export function PWARegistration() {
   const [isDemoUser, setIsDemoUser] = useState(false);
 
   useEffect(() => {
+    if (process.env.NODE_ENV === 'development') return;
+
     // Check if user is the demo student to bypass the update notification
     fetch("/api/auth/profile")
       .then((res) => {
@@ -22,8 +24,6 @@ export function PWARegistration() {
         }
       })
       .catch((err) => console.error("Error checking demo user profile:", err));
-
-    if (process.env.NODE_ENV === 'development') return;
 
     const registerSW = () => {
       if (

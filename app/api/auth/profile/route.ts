@@ -20,7 +20,7 @@ export async function GET() {
     const supabase = createPublicSupabaseClient();
     const { data: student, error } = await supabase
       .from("students")
-      .select("id, name, photo_url, student_id")
+      .select("id, name, photo_url, student_id, username")
       .eq("id", payload.id)
       .single();
 
