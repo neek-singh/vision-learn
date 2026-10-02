@@ -6,11 +6,9 @@ export type ModelTier = "vision" | "vision-pro" | "vision-elite";
 export type PluginType = "notes" | "quiz" | "coder" | "study" | null;
 
 const GEMINI_MODELS = [
+  "gemini-3.8-flash",
   "gemini-3.1-flash-lite",
-  "gemini-3.5-flash-lite",
-  "gemini-3.6-flash",
   "gemini-flash-lite-latest",
-  "gemini-3.5-flash",
 ];
 
 export async function POST(request: Request) {
@@ -56,19 +54,6 @@ export async function POST(request: Request) {
 
     const effectiveMessage = message?.trim() || "Please analyze this uploaded photo and explain the concepts/problem in detail.";
     const studentName = payload.name || "Student";
-
-    // Fast-path: Sub-10ms response for simple conversational greetings or quick links without external network lag
-    const isAcademic = effectiveMessage.length > 35 || Boolean(imageUrl) || Boolean(activePlugin) || studyMode !== "tutor";
-    if (!isAcademic) {
-      const fastReply = generateOfflineTutorReply(effectiveMessage, studentName, activePlugin || studyMode, courseContext, modelTier, imageUrl);
-      if (fastReply && !fastReply.includes("Core Idea")) {
-        return NextResponse.json({
-          reply: fastReply,
-          modelUsed: modelTier,
-          pluginUsed: activePlugin,
-        });
-      }
-    }
 
     const systemPrompt = buildSystemPrompt(
       studentName,
@@ -245,7 +230,7 @@ async function callGemini(
 
   const res = await fetch(url, {
     method: "POST",
-    signal: AbortSignal.timeout(6000),
+    signal: AbortSignal.timeout(12000),
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       system_instruction: {
