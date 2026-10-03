@@ -363,7 +363,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Navbar */}
-        <header className="h-16 bg-white border-b border-slate-100 flex items-center justify-between px-4 sm:px-6 lg:px-8 sticky top-0 z-30">
+        <header className={`h-16 bg-white border-b border-slate-100 flex items-center justify-between px-4 sm:px-6 lg:px-8 sticky top-0 z-30 ${pathname === "/ai-tutor" ? "hidden lg:flex" : ""}`}>
           <button 
             onClick={() => setIsMobileMenuOpen(true)}
             aria-label="Open mobile menu"
@@ -411,12 +411,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        <main className={pathname === "/ai-tutor" ? "p-0 h-[calc(100dvh-4rem-3.75rem)] lg:h-[calc(100dvh-4rem)] flex flex-col overflow-hidden" : "p-4 lg:p-6 max-w-7xl pb-24 lg:pb-6"}>
+        <main className={pathname === "/ai-tutor" ? "p-0 h-[100dvh] lg:h-[calc(100dvh-4rem)] flex flex-col overflow-hidden" : "p-4 lg:p-6 max-w-7xl pb-24 lg:pb-6"}>
           {children}
         </main>
 
         {/* Mobile Bottom Navigation */}
-        {!isMobileMenuOpen && (
+        {!isMobileMenuOpen && pathname !== "/ai-tutor" && (
           <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 px-4 py-2 z-50 flex items-center justify-around shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.05)] animate-in slide-in-from-bottom duration-300">
             <MobileBottomLink href="/dashboard" icon={LayoutDashboard} name="Home" isActive={pathname === '/dashboard'} />
             <MobileBottomLink href="/curriculum" icon={BookOpen} name="Classes" isActive={pathname === '/curriculum'} />

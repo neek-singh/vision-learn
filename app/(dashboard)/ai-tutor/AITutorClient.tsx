@@ -39,7 +39,9 @@ import {
   Loader2,
   CheckCircle2,
   Pencil,
+  ArrowLeft,
 } from "lucide-react";
+import Link from "next/link";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 const SyntaxHighlighter = dynamic(
@@ -917,6 +919,19 @@ export default function AITutorClient({ studentId, studentName, courses }: Props
   }, [messages, isLoading]);
 
   useEffect(() => {
+    if (typeof window === "undefined" || !window.visualViewport) return;
+
+    const handleViewportResize = () => {
+      if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+      }
+    };
+
+    window.visualViewport.addEventListener("resize", handleViewportResize);
+    return () => window.visualViewport?.removeEventListener("resize", handleViewportResize);
+  }, []);
+
+  useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       if (!target.closest("[data-dropdown]")) {
@@ -1363,10 +1378,10 @@ export default function AITutorClient({ studentId, studentName, courses }: Props
 
       {/* ── Main Container: Simple Claude Style ── */}
       <div
-        className={`flex w-full bg-white text-slate-800 font-sans relative ${
+        className={`flex w-full bg-white text-slate-800 font-sans fixed inset-0 lg:static lg:h-full lg:flex-1 overflow-hidden z-30 lg:z-auto ${
           isFullscreen
             ? "fixed inset-0 z-[100] h-screen w-screen overflow-hidden"
-            : "h-full flex-1 overflow-hidden"
+            : ""
         }`}
       >
         {/* Mobile Backdrop for Sidebar Drawer */}
@@ -1578,15 +1593,24 @@ export default function AITutorClient({ studentId, studentName, courses }: Props
         <div className="flex-1 flex flex-col h-full min-w-0 bg-white">
           
           {/* ── Simple Top Header ── */}
-          <header className="h-12 border-b border-slate-100 px-3 sm:px-4 flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+          <header className="h-12 border-b border-slate-100 px-2.5 sm:px-4 flex items-center justify-between shrink-0 bg-white">
+            <div className="flex items-center gap-1 sm:gap-2 min-w-0">
+              {/* Mobile Back to Dashboard Button */}
+              <Link
+                href="/dashboard"
+                className="p-1.5 text-slate-500 hover:text-slate-800 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer mr-0.5 lg:hidden"
+                title="Back to Dashboard"
+              >
+                <ArrowLeft size={18} />
+              </Link>
+
               {/* Mobile Sidebar Toggle Button */}
               <button
                 onClick={() => setIsSidebarOpen((prev) => !prev)}
                 className="p-1.5 text-slate-500 hover:text-slate-800 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer mr-0.5 lg:hidden"
                 title="Chats and history"
               >
-                <PanelLeftOpen size={17} />
+                <PanelLeftOpen size={18} />
               </button>
 
               {/* Desktop Sidebar Toggle Button */}
@@ -1698,8 +1722,16 @@ export default function AITutorClient({ studentId, studentName, courses }: Props
               )}
             </div>
 
-            {/* Right: Fullscreen Toggle */}
-            <div className="flex items-center gap-2">
+            {/* Right: New Chat on mobile & Fullscreen Toggle */}
+            <div className="flex items-center gap-1 sm:gap-2">
+              <button
+                onClick={startNewChat}
+                className="p-1.5 text-slate-600 hover:text-indigo-600 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer lg:hidden"
+                title="New chat"
+              >
+                <Plus size={18} />
+              </button>
+
               <button
                 onClick={() => setIsFullscreen(!isFullscreen)}
                 className="p-1 text-slate-400 hover:text-slate-700 rounded transition-colors cursor-pointer"
@@ -1713,7 +1745,7 @@ export default function AITutorClient({ studentId, studentName, courses }: Props
           {/* ── Chat Messages Canvas ── */}
           <div
             ref={chatContainerRef}
-            className={`flex-1 overflow-y-auto claude-scroll px-3 sm:px-8 lg:px-12 py-3 sm:py-6 ${
+            className={`flex-1 overflow-y-auto overscroll-contain claude-scroll px-3 sm:px-8 lg:px-12 py-3 sm:py-6 ${
               messages.length === 0 ? "flex flex-col justify-center items-center" : ""
             }`}
           >
@@ -1840,7 +1872,7 @@ export default function AITutorClient({ studentId, studentName, courses }: Props
           </div>
 
           {/* ── Bottom Input Section (Claude Style) ── */}
-          <div className="p-2 sm:p-4 bg-white shrink-0 border-t border-slate-100 sm:border-none">
+          <div className="p-2 sm:p-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-white shrink-0 border-t border-slate-100 sm:border-none">
             <div className="max-w-2xl mx-auto relative">
               
               {/* Hidden file input for Photo Upload */}
@@ -2014,6 +2046,11 @@ export default function AITutorClient({ studentId, studentName, courses }: Props
                   value={input}
                   onChange={handleTextareaChange}
                   onKeyDown={handleKeyDown}
+                  onFocus={() => {
+                    setTimeout(() => {
+                      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+                    }, 250);
+                  }}
                   placeholder={attachedImage ? "Ask a question about this photo..." : "Write a message..."}
                   rows={1}
                   className="flex-1 resize-none bg-transparent py-0.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none max-h-32 claude-scroll"
