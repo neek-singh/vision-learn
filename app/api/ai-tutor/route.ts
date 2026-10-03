@@ -6,9 +6,9 @@ export type ModelTier = "vision" | "vision-pro" | "vision-elite";
 export type PluginType = "notes" | "quiz" | "coder" | "study" | null;
 
 const GEMINI_MODELS = [
-  "gemini-3.8-flash",
   "gemini-3.1-flash-lite",
   "gemini-flash-lite-latest",
+  "gemini-3.8-flash",
 ];
 
 export async function POST(request: Request) {
@@ -536,6 +536,21 @@ console.log(studentReport);
 > **💡 Expert Tip**: Viva interview mein jab question pucha jaye, pehle 1-line definition dein, fir practical example aur real-life analogy zaroor jod dein!`;
   }
 
+  // English learning queries
+  if (cleanQ.includes("english") || cleanQ.includes("eng") || cleanQ.includes("speaking") || cleanQ.includes("angreji")) {
+    return `English seekhna bohot accha aur rewarding decision hai! 🎯\n\nAapko mainly kis cheez par focus karna hai?\n1. **Spoken English & Daily Conversation** (confident bolne ke liye)\n2. **Grammar & Sentence Formation** (Tenses aur basic rules)\n3. **Interview & Professional Communication**\n\nBatayein, aap kahan se shuru karna chahte hain? Hum basic conversation se simple practice shuru kar sakte hain!`;
+  }
+
+  // Demotivated / mood queries
+  if (cleanQ.includes("mann nahi") || cleanQ.includes("man nahi") || cleanQ.includes("bore") || cleanQ.includes("thak gaya") || cleanQ.includes("mood nahi")) {
+    return `Kabhi-kabhi thoda break lena bilkul zaroori aur normal hai! 🌟 Aaj padhai thodi der side rakh dete hain. Bataiye kya chal raha hai? Koi specific baat pareshan kar rahi hai ya bas thoda relax karne ka mann hai?`;
+  }
+
+  // Coding or beginner advice
+  if (cleanQ.includes("coding") || cleanQ.includes("programming") || cleanQ.includes("kaha se shuru") || cleanQ.includes("kaise shuru")) {
+    return `Nayi cheez shuru karna thoda confusing lag sakta hai, par bilkul tension mat lijiye! 🚀\n\nAgar aap bilkul beginner hain, toh **Python** ya **HTML & Web Development** se shuru karna sabse aasan aur interesting hota hai.\n\nAapka main goal kya hai — software/web developer banna hai, institute ke exams clear karne hain, ya koi specific language seekhni hai? Batayein!`;
+  }
+
   // Academic / technical keywords check
   const academicKeywords = [
     "html", "css", "javascript", "js", "python", "java", "c++", "c language",
@@ -549,23 +564,11 @@ console.log(studentReport);
 
   // If query is casual SMS or non-academic general chat
   if (!isAcademic && effectiveMode !== "study" && effectiveMode !== "coder" && effectiveMode !== "notes") {
-    return `Bilkul dost! Main samajh gaya. Bataiye aaj kis topic, subject ya coding doubt par help chahiye?`;
+    return `Namaste ${studentName}! Main aapki baat samajh gaya. Bataiye iske baare mein aap kya discuss karna chahte hain, ya kisi specific topic par help chahiye toh batayein, hum milkar start karte hain!`;
   }
 
   // @study plugin or detailed query
-  return `Namaste **${studentName}**! 👋 (${tierBadge})
-
-Aapne poocha: *"${query}"*
-
-### 💡 Concept Explanation (${course}):
-1. **Core Idea**: Is concept ka primary objective complex data aur workflows ko modular, scalable aur easily readable banana hai.
-2. **Real-Life Analogy**: Jaise ek car mein engine, brakes, aur steering wheel alag-alag specialized units hote hain par milkar smoothly chalte hain, waise hi software mein modular architecture use ki jaati hai.
-3. **Step-by-Step Approach**:
-   - Pehle foundational input/output samajhein.
-   - Phir edge cases (empty data, errors) handle karein.
-   - Last mein code performance aur clean readability optimize karein.
-
-Aapko iska **@coder** se code dekhna hai, **@quiz** se test lena hai, ya **@notes** se summary chahiye? Batayein!`;
+  return `Namaste **${studentName}**! 👋\n\nAapne poocha: *"${query}"*\n\nIs topic par aapka concept bilkul clear karne ke liye hum step-by-step shuru karte hain. Bataiye aapko iska basic simple explanation chahiye, real-life practical example dekhna hai, ya code ke sath samajhna hai?`;
 }
 
 // ─── System Prompt Builder ────────────────────────────────────────────────────
@@ -635,19 +638,24 @@ Tumhara model tier "${modelTier.toUpperCase()}" (${tierDesc}) hai.
   - **Institute Courses**: DCA, ADCA, PGDCA, BCA, Tally Prime, Web Design, Full Stack Development, Python, C++, Data Entry.
   - **Vision Learn Features**: Online video lectures, syllabus PDF notes, 24/7 AI Tutor (@study, @coder, @quiz, @notes), photo question scanner, attendance & performance dashboard, certificates.
 
-## 💬 Normal Conversation me Jitna Ho Sake Utna Chhota Reply (CRITICAL RULE):
-- **Ultra-Short Replies for Normal/Casual Conversation**:
-  Jab student normal baatein, greetings ya general baat kare (jaise "hi", "hello", "hey", "namaste", "kaise ho", "kya kar rahe ho", "kya chal raha hai", "ok", "theek hai", "hmm", "accha"):
-  - **Jitna ho sake utna CHHOTA reply do (Maximum 1 single short sentence, 4 se 8 words).**
-  - Bilkul bhi extra sentences, unprompted study topics, badging, ya lamba bhashan mat likho.
-  - Direct exact examples:
-    - Student: "hi" ya "hello" -> AI: "Hi ${studentName}! Aaj kya kaam karna hai?" ya "Hi ${studentName}! Mai aapki kaise madad kar sakta hoon?"
-    - Student: "kaise ho" -> AI: "Main badhiya hoon! Aaj kya padhna hai?"
-    - Student: "kya kar rahe ho" -> AI: "Aapki help ke liye ready hoon! Bataiye kya karna hai?"
-    - Student: "ok" / "theek hai" / "accha" -> AI: "Ji bilkul! Aage kya karein?"
-    - Student: "thanks" / "dhanyawad" -> AI: "You're welcome! Koi aur doubt hai?"
-    - Student: "bye" -> AI: "Bye, take care! 👋"
-- **Detailed Explanations**: Lamba aur structured educational explanation (formula, concept breakdown, code, notes, quiz) SIRF aur SIRF tabhi do jab student sach me koi question, study doubt, code ya problem pooche.
+## 🧠 Common Sense, Natural Thinking & Human-like Conversations (CRITICAL):
+- **🚫 KABHI BHI PRE-SCRIPTED YA TEMPLATE JAISE ANSWERS MAT DO**:
+  - Kisi bhi sawal ka fixed format (jaise "1. Core Idea, 2. Real-Life Analogy, 3. Step-by-Step Approach") har baar zabardasti chipkana BILKUL MANA HAI.
+  - Har message ko dhyan se padho, context samjho aur **COMMON SENSE** use karke bilkul ek real, samajhdaar aur friendly mentor/teacher ki tarah naturally reply do.
+  - Har sawal ke hisaab se natural, intuitive aur engaging style me baat karo — robot ki tarah scripted dialogue mat phenko!
+  
+- **Common Sense in Casual & Conversational Chat**:
+  - Agar student kehta hai *"english sikhna hai"*, toh coding doubt ka template mat phenko! Unhe warmly motivate karo aur naturally poocho: *"English seekhna bohot badhiya faisla hai! Aapko mainly daily speaking improve karni hai, basic grammar se shuru karna hai ya job interview ki preparation karni hai? Batayein, hum bilkul simple tarike se practice shuru karte hain!"*
+  - Agar student kehta hai *"aaj padhne ka mann nahi hai"*, toh ek caring dost ki tarah baat karo, motivation aur empathy do.
+  - Agar student kehta hai *"kaise ho"*, toh naturally respond karo: *"Main bilkul badhiya hoon! Aap bataiye, aaj aapka din kaisa raha? Aaj kya seekhne ya discuss karne ka plan hai?"* Har baar ek hi dialogue mat dohrao!
+  - Agar student *"hi"*, *"hello"* bole, toh warm, friendly aur natural greeting do.
+  - Agar student casual baat kare, toh ussi tone aur context me naturally baat aage badhao.
+
+- **Dynamic Adaptability**:
+  - Simple doubt hai? Toh direct, concise aur crisp jawab do.
+  - Code ya project ka sawaal hai? Toh clean code aur practical logic samjhao.
+  - Complex theory hai? Tabhi step-by-step tod kar samjhao, par naturally aur interesting dhang se.
+  - Har sentence ke aakhir me zabardasti *"@coder se code dekhna hai ya @quiz se test lena hai"* chipkana BILKUL MANA HAI. Zaroorat ho tabhi naturally suggest karo.
 
 ## Student Profile:
 - Name: ${studentName}
