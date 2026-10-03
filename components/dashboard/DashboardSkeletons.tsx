@@ -104,49 +104,42 @@ export function QuickLinksSkeleton() {
 
 export function CurriculumSkeleton() {
   return (
-    <div className="max-w-5xl mx-auto space-y-6 pb-20 animate-pulse">
+    <div className="max-w-4xl mx-auto space-y-3 pb-20 animate-pulse">
       {/* Course Header Skeleton */}
-      <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-8">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <div className="h-9 w-48 bg-slate-200 rounded-lg" />
-            <div className="h-4 w-72 bg-slate-100 rounded-md" />
+      <div className="bg-white rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="space-y-1.5 flex-1">
+            <div className="h-5 w-32 bg-slate-200 rounded-md" />
+            <div className="h-3 w-44 bg-slate-100 rounded" />
           </div>
-          <div className="flex items-center gap-6">
-            <div className="text-right hidden sm:block space-y-2">
-              <div className="h-3 w-20 bg-slate-100 rounded ml-auto" />
-              <div className="h-7 w-24 bg-slate-200 rounded-lg" />
-            </div>
-            <div className="w-16 h-16 bg-slate-100 rounded-2xl border border-slate-50" />
-          </div>
+          <div className="h-6 w-24 bg-slate-100 rounded-full" />
         </div>
-        <div className="space-y-4">
-          <div className="flex justify-between items-end px-1">
-            <div className="space-y-2">
-              <div className="h-3 w-24 bg-slate-100 rounded" />
-              <div className="h-6 w-36 bg-slate-200 rounded" />
+        <div className="h-1.5 w-full bg-slate-100 rounded-full" />
+        <div className="grid grid-cols-4 divide-x divide-slate-100 bg-slate-50/70 rounded-xl border border-slate-200/60 py-2 px-1 text-center">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="px-1 flex flex-col items-center gap-1">
+              <div className="h-2.5 w-10 bg-slate-200 rounded" />
+              <div className="h-4 w-6 bg-slate-200 rounded" />
             </div>
-            <div className="h-5 w-28 bg-indigo-50 rounded-md border border-indigo-100" />
-          </div>
-          <div className="h-4 w-full bg-slate-50 rounded-full border border-slate-100" />
+          ))}
         </div>
       </div>
 
-      {/* Resume Learning Skeleton */}
-      <div className="h-20 bg-slate-100 rounded-2xl border border-slate-200" />
+      {/* Tabs Skeleton */}
+      <div className="h-9 bg-slate-100 rounded-xl" />
 
-      {/* Modules Skeleton */}
-      <div className="space-y-4">
-        {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="bg-white rounded-2xl border border-slate-100 p-5 flex items-center justify-between">
-            <div className="flex items-center gap-5">
-              <div className="w-14 h-14 bg-slate-100 rounded-2xl" />
-              <div className="space-y-2">
-                <div className="h-5 w-40 bg-slate-200 rounded" />
-                <div className="h-3 w-24 bg-slate-100 rounded" />
+      {/* Timeline/List Skeleton */}
+      <div className="space-y-2">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className="bg-white rounded-xl border border-slate-200/70 p-2.5 flex items-center justify-between">
+            <div className="flex items-center gap-3 flex-1">
+              <div className="w-7 h-7 bg-slate-100 rounded-lg shrink-0" />
+              <div className="space-y-1.5 flex-1">
+                <div className="h-3.5 w-1/2 bg-slate-200 rounded" />
+                <div className="h-2.5 w-1/4 bg-slate-100 rounded" />
               </div>
             </div>
-            <div className="w-10 h-10 bg-slate-50 rounded-full" />
+            <div className="w-14 h-6 bg-slate-100 rounded-lg" />
           </div>
         ))}
       </div>
