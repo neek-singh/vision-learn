@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { safeCopyToClipboard } from "@/lib/utils";
 
 const SyntaxHighlighter = dynamic(
   () => import("react-syntax-highlighter").then((mod) => mod.Prism),
@@ -1374,9 +1375,12 @@ export default function LMSChatPage() {
   /* Copy text */
   const copyText = (msg: Message) => {
     if (msg.text) {
-      navigator.clipboard.writeText(msg.text);
-      setCopiedMsgId(msg.id);
-      setTimeout(() => setCopiedMsgId(null), 2000);
+      safeCopyToClipboard(msg.text).then((ok) => {
+        if (ok) {
+          setCopiedMsgId(msg.id);
+          setTimeout(() => setCopiedMsgId(null), 2000);
+        }
+      });
     }
     setMenuTarget(null);
   };
@@ -1451,9 +1455,12 @@ export default function LMSChatPage() {
             type="button"
             onClick={e => {
               e.stopPropagation();
-              navigator.clipboard.writeText(code);
-              setCopiedCodeKey(key);
-              setTimeout(() => setCopiedCodeKey(null), 2000);
+              safeCopyToClipboard(code).then((ok) => {
+                if (ok) {
+                  setCopiedCodeKey(key);
+                  setTimeout(() => setCopiedCodeKey(null), 2000);
+                }
+              });
             }}
             className="text-[10px] text-slate-400 hover:text-white px-2 py-0.5 rounded-md hover:bg-slate-700/60 transition-all flex items-center gap-1"
           >

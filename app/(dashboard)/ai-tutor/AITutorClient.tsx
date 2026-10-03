@@ -43,6 +43,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { safeCopyToClipboard } from "@/lib/utils";
 
 const SyntaxHighlighter = dynamic(
   () => import("react-syntax-highlighter").then((mod) => mod.Prism),
@@ -306,9 +307,12 @@ function MarkdownMessage({
   }, [content]);
 
   const copyCode = (code: string, idx: number) => {
-    navigator.clipboard.writeText(code);
-    setCopiedIndex(idx);
-    setTimeout(() => setCopiedIndex(null), 2000);
+    safeCopyToClipboard(code).then((ok) => {
+      if (ok) {
+        setCopiedIndex(idx);
+        setTimeout(() => setCopiedIndex(null), 2000);
+      }
+    });
   };
 
   const parseInline = (text: string): ReactNode => {
@@ -1342,9 +1346,12 @@ export default function AITutorClient({ studentId, studentName, courses }: Props
   );
 
   const copyMessage = (id: string, content: string) => {
-    navigator.clipboard.writeText(content);
-    setCopiedMsgId(id);
-    setTimeout(() => setCopiedMsgId(null), 2000);
+    safeCopyToClipboard(content).then((ok) => {
+      if (ok) {
+        setCopiedMsgId(id);
+        setTimeout(() => setCopiedMsgId(null), 2000);
+      }
+    });
   };
 
   const activeSessionTitle = useMemo(() => {

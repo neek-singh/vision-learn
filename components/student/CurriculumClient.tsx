@@ -801,12 +801,36 @@ function SeriesView({
   }, [allLessons, currentSchedules, now, userProgress, displayModules]);
 
   const sortedLessons = useMemo(() => {
-    return enrichedLessons
+    // 1. Assign canonical chronological sequence number (1, 2, ... N)
+    const chronological = [...enrichedLessons]
       .filter((e: any) => e.schedule)
       .sort((a: any, b: any) => {
-        if (a.schedDate && b.schedDate) return a.schedDate.getTime() - b.schedDate.getTime();
-        return 0;
-      });
+        if (a.schedDate && b.schedDate) {
+          const diff = a.schedDate.getTime() - b.schedDate.getTime();
+          if (diff !== 0) return diff;
+        }
+        return (a.lesson.order_index ?? 0) - (b.lesson.order_index ?? 0);
+      })
+      .map((item: any, idx: number) => ({
+        ...item,
+        sessionNumber: idx + 1,
+      }));
+
+    // 2. Sort so Newest date is at the top (first), and Oldest date is at the bottom (last)
+    return chronological.sort((a: any, b: any) => {
+      if (a.schedDate && b.schedDate) {
+        // Compare calendar day (descending)
+        const aDay = new Date(a.schedDate.getFullYear(), a.schedDate.getMonth(), a.schedDate.getDate()).getTime();
+        const bDay = new Date(b.schedDate.getFullYear(), b.schedDate.getMonth(), b.schedDate.getDate()).getTime();
+        if (bDay !== aDay) {
+          return bDay - aDay; // Newest date first, oldest date last
+        }
+        // Within the same day: keep chronological session order (morning to evening, notes then quiz)
+        const timeDiff = a.schedDate.getTime() - b.schedDate.getTime();
+        if (timeDiff !== 0) return timeDiff;
+      }
+      return (a.lesson.order_index ?? 0) - (b.lesson.order_index ?? 0);
+    });
   }, [enrichedLessons]);
 
   const completedCount = sortedLessons.filter((e: any) => e.isCompleted).length;
@@ -862,7 +886,7 @@ function SeriesView({
             const isToday = schedDate ? schedDate.toDateString() === now.toDateString() : false;
             const isFuture = schedDate ? schedDate > now : false;
 
-            const sessionNumber = index + 1;
+            const sessionNumber = entry.sessionNumber ?? (index + 1);
 
             let TypeIcon: any = PlayCircle;
             let gradientClass = 'from-blue-500 to-blue-600';

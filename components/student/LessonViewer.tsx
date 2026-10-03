@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { X, Video, ExternalLink, FileText, BookOpen, Clock, Tv, CheckCircle2, HelpCircle, XCircle, Award, RotateCcw, Upload, Loader2, FileUp, Check, ChevronLeft, ChevronRight, ShieldAlert, ZoomIn, ZoomOut } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { safeCopyToClipboard, safeClearClipboard } from "@/lib/utils";
 
 interface MCQQuestion {
   id: string;
@@ -104,6 +105,7 @@ export default function LessonViewer({
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [isScreenShielded, setIsScreenShielded] = useState(false);
   const [showExitWarning, setShowExitWarning] = useState(false);
+  const [showReviewQuestions, setShowReviewQuestions] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const [submission, setSubmission] = useState<any>(null);
@@ -114,6 +116,7 @@ export default function LessonViewer({
   useEffect(() => {
     setSelectedAnswers({});
     setShowExitWarning(false);
+    setShowReviewQuestions(true);
   }, [lesson?.id]);
 
   const handleAttemptClose = () => {
@@ -159,7 +162,7 @@ export default function LessonViewer({
         ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'S' || e.key === 's' || e.key === '3' || e.key === '4' || e.key === '5'))
       ) {
         e.preventDefault();
-        try { navigator.clipboard.writeText(''); } catch (_) {}
+        safeClearClipboard();
         onClose();
       }
 
@@ -177,7 +180,7 @@ export default function LessonViewer({
 
     const handleKeyUp = (e: KeyboardEvent) => {
       if (e.key === 'PrintScreen' || e.code === 'PrintScreen') {
-        try { navigator.clipboard.writeText(''); } catch (_) {}
+        safeClearClipboard();
         onClose();
       }
     };
@@ -372,9 +375,12 @@ export default function LessonViewer({
         button.onclick = () => {
           const codeElement = pre.querySelector('code') as HTMLElement;
           const code = codeElement?.innerText || pre.innerText;
-          navigator.clipboard.writeText(code);
-          button.innerHTML = 'Copied!';
-          setTimeout(() => button.innerHTML = 'Copy', 2000);
+          safeCopyToClipboard(code).then((ok) => {
+            if (ok) {
+              button.innerHTML = 'Copied!';
+              setTimeout(() => button.innerHTML = 'Copy', 2000);
+            }
+          });
         };
         
         pre.appendChild(button);
@@ -418,6 +424,8 @@ export default function LessonViewer({
       <div className={`bg-white shadow-2xl animate-in zoom-in-95 duration-300 flex flex-col relative transition-all duration-500 ease-in-out overflow-hidden ${
         isFullScreen 
           ? 'w-full h-full rounded-none' 
+          : lessonType === 'mcq'
+          ? 'w-full max-w-2xl rounded-3xl max-h-[92vh]'
           : 'w-full max-w-5xl rounded-[3rem] max-h-[95vh]'
       }`}>
         
@@ -427,18 +435,20 @@ export default function LessonViewer({
           style={{ width: `${scrollProgress}%` }}
         />
 
-        <div className={`px-8 py-6 flex items-center justify-between bg-white border-b border-slate-50 shrink-0 ${isFullScreen ? 'rounded-none' : 'rounded-t-[3rem]'}`}>
-          <div className="flex flex-col">
-            <h3 className="text-2xl font-black text-slate-900 tracking-tight">{lesson.title}</h3>
-            <p className="text-xs font-bold text-slate-400 mt-0.5 uppercase tracking-wider">{lessonType === 'mcq' ? 'Interactive Quiz' : (lesson.lesson_type || lesson.type)} • {lesson.duration || '0'} Mins</p>
+        <div className={`px-4 py-3 sm:px-6 sm:py-3.5 flex items-center justify-between bg-white border-b border-slate-100 shrink-0 ${isFullScreen ? 'rounded-none' : 'rounded-t-2xl sm:rounded-t-[2.5rem]'}`}>
+          <div className="flex flex-col min-w-0 pr-2">
+            <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight truncate">{lesson.title}</h3>
+            <p className="text-[10px] sm:text-xs font-bold text-slate-400 mt-0.5 uppercase tracking-wider">
+              {lessonType === 'mcq' ? 'Interactive Quiz' : (lesson.lesson_type || lesson.type)} • {lesson.duration || '0'} Mins
+            </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button 
               onClick={handleAttemptClose} 
               aria-label="Close lesson viewer"
-              className="p-2 hover:bg-slate-50 rounded-full transition-all text-slate-400 hover:text-slate-900 cursor-pointer"
+              className="p-1.5 hover:bg-slate-100 rounded-full transition-all text-slate-400 hover:text-slate-900 cursor-pointer"
             >
-              <X size={24} />
+              <X size={20} />
             </button>
           </div>
         </div>
@@ -446,7 +456,7 @@ export default function LessonViewer({
         <div 
           ref={scrollRef}
           onScroll={handleScroll}
-          className={`flex-1 overflow-y-auto bg-white scrollbar-hide relative min-h-0 ${isFullScreen ? 'p-6 md:p-16' : 'p-8'}`}
+          className={`flex-1 overflow-y-auto bg-white scrollbar-hide relative min-h-0 ${isFullScreen ? 'p-3.5 sm:p-5' : 'p-3.5 sm:p-5'}`}
         >
           <div className="max-w-4xl mx-auto">
              {lessonType === 'video' ? (
@@ -513,74 +523,137 @@ export default function LessonViewer({
                       </span>
                     </div>
                   )}
-                  {submission ? (
-                    <div className="p-8 bg-gradient-to-br from-indigo-950 to-slate-900 text-white rounded-3xl border border-slate-800/80 shadow-xl flex flex-col md:flex-row justify-between items-center gap-6 animate-in zoom-in-95 duration-500">
-                      <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 bg-indigo-500/20 text-indigo-300 rounded-2xl flex items-center justify-center shadow-inner">
-                          <Award size={32} />
-                        </div>
-                        <div>
-                          <h4 className="text-lg font-black tracking-tight">Quiz Completed & Submitted!</h4>
-                          <p className="text-xs text-indigo-200 mt-1 font-semibold">
-                            Your submitted score is {submission.score || 'recorded'}.
-                          </p>
-                          <p className="text-[10px] font-bold text-slate-400 mt-1">
-                            Submitted on {new Date(submission.submitted_at).toLocaleString()}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-6 self-stretch md:self-auto justify-between md:justify-end">
-                        {submission.score && submission.score.includes('/') && (
-                          <div className="text-right">
-                            <span className="text-[10px] font-black text-indigo-300 uppercase tracking-widest block">Accuracy</span>
-                            <p className="text-3xl font-black text-white">
-                              {(() => {
-                                const parts = submission.score.split('/');
-                                const correct = parseInt(parts[0]);
-                                const total = parseInt(parts[1]);
-                                return total > 0 ? Math.round((correct / total) * 100) : 0;
-                              })()}%
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      {/* Quiz Introduction Banner */}
-                      <div className="px-5 py-3.5 bg-gradient-to-br from-indigo-50 to-indigo-100/50 rounded-2xl border border-indigo-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 shadow-sm">
+
+                  {submission && (
+                    <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs space-y-3.5 animate-in fade-in zoom-in-95 duration-300">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
                         <div className="flex items-center gap-3">
-                          <div className="p-2.5 bg-white text-indigo-600 rounded-xl shadow-sm border border-indigo-50">
-                            <HelpCircle size={22} className="animate-pulse" />
+                          <div className="w-10 h-10 bg-indigo-50 border border-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center shrink-0">
+                            <Award size={22} className="animate-in zoom-in-50 duration-300" />
                           </div>
                           <div>
-                            <h4 className="text-base font-extrabold text-slate-900 tracking-tight">Practice Quiz</h4>
-                            <p className="text-[11px] font-semibold text-slate-550">
-                              Select the best answer for each question.
+                            <div className="flex items-center gap-2">
+                              <h4 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">Quiz Completed & Submitted!</h4>
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+                                Verified ✓
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-500 mt-0.5 font-medium">
+                              Your submitted score is <span className="font-extrabold text-slate-900">{submission.score || 'Recorded'}</span>.
+                            </p>
+                            <p className="text-[10px] text-slate-400 mt-0.5">
+                              {submission.submitted_at 
+                                ? `Submitted on ${new Date(submission.submitted_at).toLocaleDateString(undefined, { month: 'numeric', day: 'numeric', year: 'numeric' })}, ${new Date(submission.submitted_at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', second: '2-digit' })}`
+                                : 'Recorded'}
                             </p>
                           </div>
                         </div>
-                        {questions.length > 0 && (
-                          <div className="px-4 py-2 bg-white border border-indigo-100 rounded-xl text-[11px] font-black uppercase tracking-widest text-indigo-600 shadow-sm self-stretch sm:self-auto flex items-center justify-center">
-                            {Object.keys(selectedAnswers).length} / {questions.length} Answered
-                          </div>
-                        )}
+
+                        <div className="flex items-center gap-4 self-stretch sm:self-auto justify-between sm:justify-end bg-slate-50/60 sm:bg-transparent p-2 sm:p-0 rounded-xl border border-slate-100 sm:border-0">
+                          {submission.score && submission.score.includes('/') && (
+                            <div className="text-left sm:text-right">
+                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Accuracy</span>
+                              <p className="text-2xl font-black text-slate-900 leading-none">
+                                {(() => {
+                                  const parts = submission.score.split('/');
+                                  const correct = parseInt(parts[0]);
+                                  const total = parseInt(parts[1]);
+                                  return total > 0 ? Math.round((correct / total) * 100) : 0;
+                                })()}%
+                              </p>
+                            </div>
+                          )}
+                        </div>
                       </div>
 
+                      {/* Smooth Animated Accuracy Bar */}
+                      {submission.score && submission.score.includes('/') && (
+                        <div className="space-y-1">
+                          <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-indigo-600 rounded-full transition-all duration-700 ease-out"
+                              style={{ 
+                                width: `${(() => {
+                                  const parts = submission.score.split('/');
+                                  const correct = parseInt(parts[0]);
+                                  const total = parseInt(parts[1]);
+                                  return total > 0 ? Math.round((correct / total) * 100) : 0;
+                                })()}%` 
+                              }}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Clean Action Row */}
+                      <div className="flex items-center justify-between pt-1">
+                        <button
+                          onClick={() => setShowReviewQuestions(!showReviewQuestions)}
+                          className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1.5 transition-colors cursor-pointer py-1"
+                        >
+                          <HelpCircle size={14} />
+                          {showReviewQuestions ? 'Hide Questions' : 'Review Questions & Answers'}
+                        </button>
+                        <button
+                          onClick={onClose}
+                          className="px-4 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all cursor-pointer active:scale-95"
+                        >
+                          Done
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {(!submission || showReviewQuestions) && (
+                    <>
+                      {/* Compact Progress Header */}
+                      {!submission && (
+                        <div className="bg-slate-50/80 rounded-2xl p-3 sm:p-3.5 border border-slate-200/70 space-y-2">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-2">
+                              <div className="w-6 h-6 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
+                                <HelpCircle size={13} />
+                              </div>
+                              <span className="text-xs font-bold text-slate-800">
+                                Question <span className="text-indigo-600 font-extrabold">{Math.min(currentQuestionIndex + 1, questions.length)}</span> of {questions.length}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-slate-500 tabular-nums">
+                                {Object.keys(selectedAnswers).length}/{questions.length} answered
+                              </span>
+                              {Object.keys(selectedAnswers).length > 0 && (
+                                <span className="text-[10px] font-black px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                  {Math.round((Object.keys(selectedAnswers).length / Math.max(questions.length, 1)) * 100)}%
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Animated Progress Bar */}
+                          <div className="w-full h-1.5 bg-slate-200/70 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-indigo-600 rounded-full transition-all duration-300 ease-out"
+                              style={{ width: `${(Object.keys(selectedAnswers).length / Math.max(questions.length, 1)) * 100}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
+
                       {/* Questions Container (One question at a time) */}
-                      <div className="space-y-6">
+                      <div className="space-y-3.5">
                         {questions.length === 0 ? (
-                          <div className="py-16 text-center border-2 border-dashed border-slate-200 rounded-3xl bg-slate-50/50">
-                            <HelpCircle size={32} className="mx-auto text-slate-350 mb-3" />
-                            <p className="text-sm font-semibold text-slate-500">No questions found for this quiz.</p>
+                          <div className="py-12 text-center border border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
+                            <HelpCircle size={24} className="mx-auto text-slate-350 mb-2" />
+                            <p className="text-xs font-semibold text-slate-500">No questions found for this quiz.</p>
                           </div>
                         ) : (
                           <>
                             {/* Question Selector Pills */}
-                            <div className="flex items-center gap-2 overflow-x-auto py-2 px-1 scrollbar-none">
+                            <div className="flex items-center gap-1.5 overflow-x-auto py-1 px-0.5 scrollbar-none">
                               {questions.map((item, idx) => {
-                                const isAns = selectedAnswers[item.id] !== undefined;
-                                const userAns = selectedAnswers[item.id];
+                                const isAns = selectedAnswers[item.id] !== undefined || Boolean(submission);
+                                const userAns = selectedAnswers[item.id] !== undefined ? selectedAnswers[item.id] : item.correctIndex;
                                 const isCorrect = userAns === item.correctIndex;
                                 const isCurrent = idx === currentQuestionIndex;
 
@@ -588,17 +661,18 @@ export default function LessonViewer({
                                   <button
                                     key={item.id}
                                     onClick={() => setCurrentQuestionIndex(idx)}
-                                    className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all shrink-0 cursor-pointer border ${
+                                    className={`w-8 h-8 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center justify-center border active:scale-90 ${
                                       isCurrent
-                                        ? 'bg-indigo-600 text-white border-indigo-700 shadow-md shadow-indigo-200 scale-105'
+                                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs ring-2 ring-indigo-200 scale-105'
                                         : isAns
                                         ? isCorrect
-                                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                          : 'bg-rose-50 text-rose-700 border-rose-200'
-                                        : 'bg-slate-50 text-slate-500 border-slate-200/80 hover:bg-slate-100'
+                                          ? 'bg-emerald-50 text-emerald-700 border-emerald-300 font-black'
+                                          : 'bg-rose-50 text-rose-700 border-rose-300 font-black'
+                                        : 'bg-white text-slate-600 border-slate-200/80 hover:bg-slate-100'
                                     }`}
+                                    title={`Go to Question ${idx + 1}`}
                                   >
-                                    Q{idx + 1}
+                                    {idx + 1}
                                   </button>
                                 );
                               })}
@@ -610,54 +684,48 @@ export default function LessonViewer({
                               const q = questions[safeIndex];
                               if (!q) return null;
 
-                              const answerSelected = selectedAnswers[q.id] !== undefined;
-                              const userAns = selectedAnswers[q.id];
+                              const answerSelected = selectedAnswers[q.id] !== undefined || Boolean(submission);
+                              const userAns = selectedAnswers[q.id] !== undefined ? selectedAnswers[q.id] : q.correctIndex;
 
                               return (
                                 <div 
                                   key={q.id}
-                                  className={`p-5 md:p-6 bg-white border rounded-2xl flex flex-col gap-4 shadow-sm transition-all duration-300 ${
-                                    answerSelected 
-                                      ? userAns === q.correctIndex
-                                        ? 'border-emerald-200 shadow-emerald-500/5 bg-emerald-50/10'
-                                        : 'border-rose-200 shadow-rose-500/5 bg-rose-50/10'
-                                      : 'border-slate-100 hover:border-indigo-200 hover:shadow-md'
-                                  }`}
+                                  className="p-4 sm:p-5 bg-white border border-slate-200/80 rounded-2xl flex flex-col gap-3.5 shadow-2xs transition-all duration-200 animate-in fade-in slide-in-from-right-2"
                                 >
-                                  <div className="flex justify-between items-start gap-4">
-                                    <p className="text-base font-extrabold text-slate-900 leading-snug">
-                                      <span className="text-indigo-600 font-black mr-2">Q{safeIndex + 1}.</span> 
+                                  <div className="flex justify-between items-start gap-3">
+                                    <p className="text-xs sm:text-sm font-black text-slate-900 leading-snug">
+                                      <span className="text-indigo-600 font-extrabold mr-1.5">Q{safeIndex + 1}.</span> 
                                       {q.question}
                                     </p>
                                     {answerSelected && (
-                                      <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider border shrink-0 ${
+                                      <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider border shrink-0 animate-in zoom-in-95 ${
                                         userAns === q.correctIndex 
                                           ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
                                           : 'bg-rose-50 text-rose-700 border-rose-200'
                                       }`}>
-                                        {userAns === q.correctIndex ? 'Correct' : 'Incorrect'}
+                                        {userAns === q.correctIndex ? '✓ Correct' : '✗ Incorrect'}
                                       </span>
                                     )}
                                   </div>
 
-                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                     {q.options.map((opt, optIdx) => {
                                       const letter = ['A', 'B', 'C', 'D'][optIdx];
                                       const isCorrect = optIdx === q.correctIndex;
                                       const isSelected = userAns === optIdx;
 
-                                      let optStyle = "bg-slate-50/80 hover:bg-slate-100 border-slate-200/80 text-slate-700 hover:text-slate-900";
+                                      let optStyle = "bg-slate-50/70 hover:bg-slate-100/80 border-slate-200/80 text-slate-800 hover:border-slate-300";
                                       let Icon = null;
 
                                       if (answerSelected) {
                                         if (isCorrect) {
-                                          optStyle = "bg-emerald-600 text-white border-emerald-600 font-extrabold shadow-sm";
-                                          Icon = <CheckCircle2 size={16} className="text-white shrink-0" />;
+                                          optStyle = "bg-emerald-50 text-emerald-900 border-emerald-400 font-bold shadow-2xs";
+                                          Icon = <CheckCircle2 size={15} className="text-emerald-600 shrink-0" />;
                                         } else if (isSelected) {
-                                          optStyle = "bg-rose-600 text-white border-rose-600 font-extrabold shadow-sm";
-                                          Icon = <XCircle size={16} className="text-white shrink-0" />;
+                                          optStyle = "bg-rose-50 text-rose-900 border-rose-400 font-bold shadow-2xs";
+                                          Icon = <XCircle size={15} className="text-rose-600 shrink-0" />;
                                         } else {
-                                          optStyle = "bg-slate-50/40 border-slate-100 text-slate-400 opacity-60";
+                                          optStyle = "bg-slate-50/40 border-slate-100 text-slate-400 opacity-50";
                                         }
                                       }
 
@@ -666,17 +734,21 @@ export default function LessonViewer({
                                           key={optIdx}
                                           disabled={answerSelected}
                                           onClick={() => setSelectedAnswers(prev => ({ ...prev, [q.id]: optIdx }))}
-                                          className={`px-4 py-3 border rounded-xl text-xs font-semibold flex items-center justify-between transition-all gap-3 text-left ${optStyle} ${!answerSelected ? 'cursor-pointer hover:-translate-y-0.5 active:translate-y-0 shadow-sm' : ''}`}
+                                          className={`p-3 rounded-xl border text-xs flex items-center justify-between transition-all gap-2.5 text-left ${optStyle} ${
+                                            !answerSelected ? 'cursor-pointer active:scale-[0.98]' : ''
+                                          }`}
                                         >
-                                          <div className="flex items-center gap-3">
-                                            <span className={`w-6 h-6 shrink-0 rounded-full flex items-center justify-center text-[10px] font-black ${
-                                              answerSelected && (isCorrect || isSelected)
-                                                ? 'bg-white/20 text-white'
-                                                : 'bg-white text-slate-650 border border-slate-200 shadow-sm'
+                                          <div className="flex items-center gap-2.5 min-w-0">
+                                            <span className={`w-5 h-5 shrink-0 rounded-md flex items-center justify-center text-[10px] font-black transition-all ${
+                                              answerSelected && isCorrect
+                                                ? 'bg-emerald-600 text-white'
+                                                : answerSelected && isSelected
+                                                ? 'bg-rose-600 text-white'
+                                                : 'bg-white text-slate-700 border border-slate-200 shadow-2xs'
                                             }`}>
                                               {letter}
                                             </span>
-                                            <span className="leading-tight">{opt}</span>
+                                            <span className="leading-snug text-xs font-semibold">{opt}</span>
                                           </div>
                                           {Icon}
                                         </button>
@@ -685,94 +757,97 @@ export default function LessonViewer({
                                   </div>
 
                                   {answerSelected && (
-                                    <div className={`p-5 rounded-2xl border text-xs leading-relaxed animate-in fade-in duration-300 ${
+                                    <div className={`p-3 rounded-xl border text-xs leading-relaxed animate-in fade-in zoom-in-95 duration-200 ${
                                       userAns === q.correctIndex 
-                                        ? 'bg-emerald-50/50 border-emerald-100 text-emerald-800' 
-                                        : 'bg-rose-50/50 border-rose-100 text-rose-800'
+                                        ? 'bg-emerald-50/50 border-emerald-200 text-emerald-900' 
+                                        : 'bg-rose-50/50 border-rose-200 text-rose-900'
                                     }`}>
-                                      <p className="font-extrabold text-sm mb-1.5">
+                                      <p className="font-extrabold text-xs flex items-center gap-1.5">
                                         {userAns === q.correctIndex 
                                           ? "🎉 Correct Answer!" 
                                           : `❌ Incorrect. The correct option is ${['A', 'B', 'C', 'D'][q.correctIndex]}.`
                                         }
                                       </p>
                                       {q.explanation && (
-                                        <p className="mt-2 font-medium"><span className="font-black uppercase tracking-wider text-[10px]">Explanation:</span> {q.explanation}</p>
+                                        <p className="mt-1 font-medium text-slate-600 text-[11px] leading-relaxed">
+                                          <span className="font-bold text-slate-700">Explanation:</span> {q.explanation}
+                                        </p>
                                       )}
                                     </div>
                                   )}
 
-                                  {/* Single Question Navigation Footer */}
-                                  <div className="flex items-center justify-between gap-4 pt-4 border-t border-slate-100 mt-2">
+                                  {/* Navigation Footer */}
+                                  <div className="flex items-center justify-between gap-3 pt-3 border-t border-slate-100 mt-1">
                                     <button
                                       disabled={safeIndex === 0}
                                       onClick={() => setCurrentQuestionIndex(prev => Math.max(0, prev - 1))}
-                                      className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed text-slate-700 font-extrabold text-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                                      className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed text-slate-700 font-bold text-xs flex items-center gap-1 transition-all cursor-pointer active:scale-95"
                                     >
-                                      <ChevronLeft size={16} /> Previous
+                                      <ChevronLeft size={14} /> Previous
                                     </button>
 
-                                    <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">
+                                    <span className="text-[11px] font-bold text-slate-400">
                                       {safeIndex + 1} / {questions.length}
                                     </span>
 
                                     {safeIndex < questions.length - 1 ? (
                                       <button
                                         onClick={() => setCurrentQuestionIndex(prev => Math.min(questions.length - 1, prev + 1))}
-                                        className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-indigo-100 cursor-pointer active:scale-95"
+                                        className="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-1 transition-all shadow-xs cursor-pointer active:scale-95"
                                       >
-                                        Next <ChevronRight size={16} />
+                                        Next <ChevronRight size={14} />
                                       </button>
                                     ) : !submission ? (
                                       <button
                                         onClick={submitQuizResult}
                                         disabled={submitting}
-                                        className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer shadow-md shadow-emerald-100 disabled:opacity-50 active:scale-95"
+                                        className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs disabled:opacity-50 active:scale-95"
                                       >
-                                        {submitting ? <Loader2 className="animate-spin" size={14} /> : <Upload size={14} />}
+                                        {submitting ? <Loader2 className="animate-spin" size={13} /> : <Upload size={13} />}
                                         Submit Quiz
                                       </button>
                                     ) : (
-                                      <span className="px-3.5 py-2 rounded-xl text-xs font-black text-emerald-700 bg-emerald-50 border border-emerald-200">
-                                        Submitted ✓
-                                      </span>
+                                      <button
+                                        onClick={onClose}
+                                        className="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-1 transition-all shadow-xs cursor-pointer active:scale-95"
+                                      >
+                                        Done <CheckCircle2 size={13} />
+                                      </button>
                                     )}
                                   </div>
                                 </div>
                               );
                             })()}
 
-                            {/* Score Summary Block (Appears when all questions answered or submitted) */}
-                            {(Object.keys(selectedAnswers).length === questions.length || submission) && (
-                              <div className="p-8 bg-gradient-to-br from-indigo-950 to-slate-900 text-white rounded-3xl border border-slate-800/80 shadow-xl flex flex-col md:flex-row justify-between items-center gap-6 animate-in zoom-in-95 duration-500">
-                                <div className="flex items-center gap-4">
-                                  <div className="w-14 h-14 bg-indigo-500/20 text-indigo-300 rounded-2xl flex items-center justify-center shadow-inner">
-                                    <Award size={32} />
+                            {/* Score Summary Block */}
+                            {!submission && Object.keys(selectedAnswers).length === questions.length && (
+                              <div className="p-4 sm:p-5 bg-white border border-slate-200/80 rounded-2xl shadow-xs flex flex-col sm:flex-row justify-between items-center gap-4 animate-in zoom-in-95 duration-300">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 bg-indigo-50 border border-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center shrink-0">
+                                    <Award size={22} />
                                   </div>
                                   <div>
-                                    <h4 className="text-lg font-black tracking-tight">Quiz Completed!</h4>
-                                    <p className="text-xs text-indigo-200 mt-1 font-semibold">
-                                      You scored {questions.filter(q => selectedAnswers[q.id] === q.correctIndex).length} out of {questions.length} questions.
+                                    <h4 className="text-sm font-bold text-slate-900 tracking-tight">All Questions Answered!</h4>
+                                    <p className="text-xs text-slate-500 font-medium">
+                                      You scored {questions.filter(q => selectedAnswers[q.id] === q.correctIndex).length} of {questions.length} questions.
                                     </p>
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-6 self-stretch md:self-auto justify-between md:justify-end">
+                                <div className="flex items-center gap-4 self-stretch sm:self-auto justify-between sm:justify-end">
                                   <div className="text-right">
-                                    <span className="text-[10px] font-black text-indigo-300 uppercase tracking-widest block">Accuracy</span>
-                                    <p className="text-3xl font-black text-white">
-                                      {Math.round((questions.filter(q => selectedAnswers[q.id] === q.correctIndex).length / questions.length) * 100)}%
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Score</span>
+                                    <p className="text-2xl font-black text-slate-900 leading-none">
+                                      {Math.round((questions.filter(q => selectedAnswers[q.id] === q.correctIndex).length / Math.max(questions.length, 1)) * 100)}%
                                     </p>
                                   </div>
-                                  {!submission && (
-                                    <button
-                                      onClick={submitQuizResult}
-                                      disabled={submitting}
-                                      className="px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-xs font-black uppercase tracking-widest flex items-center gap-2 transition-all cursor-pointer shadow-md border border-indigo-500 disabled:opacity-50"
-                                    >
-                                      {submitting ? <Loader2 className="animate-spin" size={14} /> : <Upload size={14} />}
-                                      Submit Score
-                                    </button>
-                                  )}
+                                  <button
+                                    onClick={submitQuizResult}
+                                    disabled={submitting}
+                                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95 disabled:opacity-50"
+                                  >
+                                    {submitting ? <Loader2 className="animate-spin" size={13} /> : <Upload size={13} />}
+                                    Submit Score
+                                  </button>
                                 </div>
                               </div>
                             )}
@@ -827,7 +902,8 @@ export default function LessonViewer({
                </div>
              )}
 
-             <div className="mt-16 pt-10 border-t border-slate-100 space-y-10">
+              {lessonType !== 'mcq' && lessonType !== 'quiz' && (
+                <div className="mt-16 pt-10 border-t border-slate-100 space-y-10">
                 {initialTests.filter(t => {
                    const hasTitle = t.title.toLowerCase().includes(lesson.title.toLowerCase());
                    if (!hasTitle) return false;
@@ -1014,8 +1090,9 @@ export default function LessonViewer({
                   <p className="text-xs text-slate-600 leading-relaxed font-medium">
                     This is a learning journey. You can study and review materials multiple times to master the concepts.
                   </p>
+                  </div>
                 </div>
-             </div>
+              )}
           </div>
         </div>
 
