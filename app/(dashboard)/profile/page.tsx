@@ -168,9 +168,7 @@ async function ProfileContent({ userId }: { userId: string }) {
         <UsernameCard userId={userId} initialUsername={student?.username || ""} />
 
         {/* Theme Settings Section */}
-        <div className="md:col-span-2">
-          <ThemePicker />
-        </div>
+        <ThemePicker />
       </div>
 
       {/* Logout Section at the Bottom */}

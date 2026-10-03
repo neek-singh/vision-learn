@@ -149,40 +149,47 @@ export function CurriculumSkeleton() {
 
 export function AttendanceSkeleton() {
   return (
-    <div className="space-y-8 animate-pulse">
-      {/* Stats Overview Skeleton */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="md:col-span-2 h-44 bg-slate-200 rounded-[2.5rem]" />
-        <div className="h-44 bg-white rounded-[2rem] border border-slate-100 p-6 space-y-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="flex justify-between items-center">
-              <div className="h-3 w-16 bg-slate-100 rounded" />
-              <div className="h-5 w-8 bg-slate-200 rounded" />
+    <div className="space-y-3.5 animate-pulse">
+      {/* Compact Overview Card Skeleton */}
+      <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="space-y-1.5">
+            <div className="h-3 w-28 bg-slate-200 rounded" />
+            <div className="h-8 w-20 bg-slate-200 rounded-md" />
+          </div>
+          <div className="w-12 h-12 rounded-full bg-slate-100" />
+        </div>
+        <div className="h-2 w-full bg-slate-100 rounded-full" />
+        <div className="grid grid-cols-4 divide-x divide-slate-100 bg-slate-50/70 rounded-xl border border-slate-200/60 py-2.5 px-1">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="flex flex-col items-center gap-1">
+              <div className="h-2.5 w-10 bg-slate-200 rounded" />
+              <div className="h-4 w-6 bg-slate-200 rounded" />
             </div>
           ))}
         </div>
-        <div className="h-44 bg-white rounded-[2rem] border border-slate-100 p-6 flex flex-col items-center justify-center gap-3">
-          <div className="w-12 h-12 bg-slate-100 rounded-2xl" />
-          <div className="h-6 w-12 bg-slate-200 rounded" />
-          <div className="h-3 w-24 bg-slate-100 rounded" />
-        </div>
       </div>
 
-      {/* History Table Skeleton */}
-      <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
-        <div className="px-8 py-6 border-b border-slate-50 flex justify-between">
-          <div className="h-6 w-40 bg-slate-200 rounded" />
-          <div className="h-4 w-24 bg-slate-100 rounded" />
+      {/* History List Skeleton */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
+        <div className="p-3 sm:px-4 border-b border-slate-100 flex items-center justify-between">
+          <div className="h-4 w-28 bg-slate-200 rounded" />
+          <div className="flex gap-1">
+            <div className="h-6 w-12 bg-slate-100 rounded-lg" />
+            <div className="h-6 w-14 bg-slate-100 rounded-lg" />
+          </div>
         </div>
-        <div className="p-8 space-y-6">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="flex items-center justify-between">
+        <div className="divide-y divide-slate-100">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="px-3.5 py-2.5 sm:px-4 sm:py-3 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 bg-slate-100 rounded-xl" />
-                <div className="h-4 w-32 bg-slate-200 rounded" />
+                <div className="space-y-1">
+                  <div className="h-3.5 w-24 bg-slate-200 rounded" />
+                  <div className="h-2.5 w-40 bg-slate-100 rounded" />
+                </div>
               </div>
-              <div className="h-4 w-40 bg-slate-100 rounded" />
-              <div className="h-8 w-24 bg-slate-50 rounded-full" />
+              <div className="h-6 w-16 bg-slate-100 rounded-full" />
             </div>
           ))}
         </div>

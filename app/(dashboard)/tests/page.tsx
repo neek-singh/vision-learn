@@ -73,11 +73,13 @@ export default async function TestsPage() {
     .eq("student_id", payload.id);
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <section>
-        <h1 className="text-2xl font-black text-slate-900 tracking-tight mb-1">Online Tests & Quizzes</h1>
-        <p className="text-sm text-slate-500 font-medium">Evaluate your progress and master your skills.</p>
-      </section>
+    <div className="max-w-4xl mx-auto space-y-3 animate-in fade-in duration-300 pb-16">
+      <div className="bg-white rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">Online Tests & Quizzes</h1>
+          <p className="text-xs text-slate-500 font-medium">Evaluate your progress and master your skills</p>
+        </div>
+      </div>
 
       <TestsClient 
         initialTests={tests || []} 

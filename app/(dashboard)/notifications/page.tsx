@@ -32,7 +32,7 @@ export default async function StudentNotificationsPage() {
     .order("created_at", { ascending: false });
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="max-w-3xl mx-auto space-y-3.5 animate-in fade-in duration-300">
       <StudentNotificationsClient 
         initialData={userNotifications || []} 
         studentId={payload.id} 

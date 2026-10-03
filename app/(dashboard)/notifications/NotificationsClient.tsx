@@ -1,23 +1,38 @@
 "use client";
 
-import { useState, useCallback, useMemo, memo } from "react";
+import { useState, useMemo, memo } from "react";
 import { 
   Bell, 
   Info, 
   CheckCircle, 
   AlertTriangle, 
   AlertCircle,
-  Clock,
-  Check,
-  Trash2,
-  MailOpen,
-  Loader2
+  Clock, 
+  Check, 
+  Trash2, 
+  MailOpen, 
+  Loader2,
+  CheckCheck
 } from "lucide-react";
 import { createClient } from "@/lib/supabase-browser";
 
-export default function StudentNotificationsClient({ initialData, studentId }: { initialData: any[], studentId: string }) {
-  const [notifications, setNotifications] = useState(initialData);
+interface UserNotification {
+  id: string;
+  is_read: boolean;
+  created_at: string;
+  notifications?: any;
+}
+
+export default function StudentNotificationsClient({
+  initialData = [],
+  studentId,
+}: {
+  initialData: any[];
+  studentId: string;
+}) {
+  const [notifications, setNotifications] = useState<UserNotification[]>(initialData);
   const [loading, setLoading] = useState<string | null>(null);
+  const [filter, setFilter] = useState<"all" | "unread">("all");
   const supabase = createClient();
 
   const markAsRead = async (id: string) => {
@@ -28,7 +43,9 @@ export default function StudentNotificationsClient({ initialData, studentId }: {
       .eq("id", id);
 
     if (!error) {
-      setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
+      );
     }
     setLoading(null);
   };
@@ -42,7 +59,7 @@ export default function StudentNotificationsClient({ initialData, studentId }: {
       .eq("id", id);
 
     if (!error) {
-      setNotifications(prev => prev.filter(n => n.id !== id));
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
     }
     setLoading(null);
   };
@@ -56,148 +73,213 @@ export default function StudentNotificationsClient({ initialData, studentId }: {
       .eq("is_read", false);
 
     if (!error) {
-      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
     }
     setLoading(null);
   };
 
-  const NOTIF_STYLES: any = {
-    info: { color: "text-blue-700", bg: "bg-blue-50", icon: Info, border: "border-blue-100" },
-    success: { color: "text-emerald-700", bg: "bg-emerald-50", icon: CheckCircle, border: "border-emerald-100" },
-    warning: { color: "text-amber-700", bg: "bg-amber-50", icon: AlertTriangle, border: "border-amber-100" },
-    alert: { color: "text-rose-700", bg: "bg-rose-50", icon: AlertCircle, border: "border-rose-100" },
+  const NOTIF_STYLES: Record<string, { color: string; bg: string; icon: any; border: string }> = {
+    info: { color: "text-blue-600", bg: "bg-blue-50", icon: Info, border: "border-blue-100" },
+    success: { color: "text-emerald-600", bg: "bg-emerald-50", icon: CheckCircle, border: "border-emerald-100" },
+    warning: { color: "text-amber-600", bg: "bg-amber-50", icon: AlertTriangle, border: "border-amber-100" },
+    alert: { color: "text-rose-600", bg: "bg-rose-50", icon: AlertCircle, border: "border-rose-100" },
   };
 
-  // Memoized Notification Item for better performance and reduced re-renders
-  const NotificationItem = memo(({ un, style, onRead, onDelete, isLoading }: any) => {
-    const Icon = style.icon;
-    return (
-      <div 
-        className={`group bg-white p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2rem] border transition-all duration-300 relative overflow-hidden ${
-          !un.is_read 
-          ? "border-indigo-100 shadow-lg shadow-indigo-500/5 ring-1 ring-indigo-50" 
-          : "border-slate-100 shadow-sm grayscale-[0.5] opacity-80 hover:grayscale-0 hover:opacity-100"
-        }`}
-      >
-         <div className="flex gap-3 sm:gap-4">
-            <div className={`w-11 h-11 sm:w-14 sm:h-14 ${style.bg} ${style.color} rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 shadow-sm`}>
-              <Icon size={18} className="shrink-0" />
-            </div>
-            <div className="flex-1 space-y-2 min-w-0">
-               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2">
-                  <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                    <span className={`text-[10px] font-black uppercase tracking-widest ${style.color}`}>
-                      {un.notifications?.type}
-                    </span>
-                    {!un.is_read && (
-                      <span className="flex items-center gap-1 text-[9px] font-black text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full uppercase tracking-tighter shrink-0">
-                         New Message
-                      </span>
-                    )}
-                  </div>
-                  <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1 shrink-0">
-                    <Clock size={10} className="shrink-0" />
-                    <span>
-                      {new Date(un.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}, {new Date(un.created_at).toLocaleDateString()}
-                    </span>
-                  </span>
-               </div>
-               
-               <h4 className={`text-lg sm:text-xl font-black leading-tight ${!un.is_read ? 'text-slate-900' : 'text-slate-600'}`}>
-                  {un.notifications?.title}
-               </h4>
-               <p className="text-xs sm:text-sm text-slate-500 font-medium leading-relaxed">
-                  {un.notifications?.message}
-               </p>
+  const unreadCount = useMemo(
+    () => notifications.filter((n) => !n.is_read).length,
+    [notifications]
+  );
 
-               <div className="flex items-center justify-between pt-4 mt-2 border-t border-slate-50">
-                  <div className="flex gap-2">
-                    {!un.is_read && (
-                      <button 
-                        onClick={() => onRead(un.id)}
-                        disabled={isLoading}
-                        aria-label="Mark notification as read"
-                        className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-[10px] font-black uppercase flex items-center gap-2 hover:bg-indigo-700 transition-all shadow-md shadow-indigo-100 active:scale-95"
-                      >
-                        {isLoading ? <Loader2 className="animate-spin" size={12}/> : <Check size={12}/>}
-                        Mark Read
-                      </button>
-                    )}
-                    {un.is_read && (
-                       <span className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 uppercase">
-                          <MailOpen size={12} className="shrink-0" /> Opened
-                       </span>
-                    )}
-                  </div>
-                  <button 
-                    onClick={() => onDelete(un.id)}
-                    aria-label="Delete notification"
-                    className="p-2 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all active:scale-90"
-                    title="Delete notification"
-                  >
-                    <Trash2 size={16} className="shrink-0" />
-                  </button>
-               </div>
-            </div>
-         </div>
-      </div>
-    );
-  });
+  const filteredNotifications = useMemo(() => {
+    if (filter === "unread") {
+      return notifications.filter((n) => !n.is_read);
+    }
+    return notifications;
+  }, [notifications, filter]);
 
-  const unreadCount = useMemo(() => notifications.filter(n => !n.is_read).length, [notifications]);
+  const formatTimestamp = (dateString: string) => {
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return dateString;
+    
+    const time = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const date = d.toLocaleDateString([], { month: "numeric", day: "numeric", year: "numeric" });
+    return `${time}, ${date}`;
+  };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in duration-500 pb-12">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-3.5">
+      {/* ── Compact Header ── */}
+      <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-            Notification Inbox
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+              Notification Inbox
+            </h1>
             {unreadCount > 0 && (
-              <span className="px-3 py-1 bg-rose-600 text-white text-xs font-black rounded-full shadow-sm">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-50 text-rose-600 border border-rose-200/60 animate-pulse">
                 {unreadCount} New
               </span>
             )}
-          </h1>
-          <p className="text-sm text-slate-500 font-medium mt-1">Official messages and updates from Vision Institute.</p>
+          </div>
+          <p className="text-xs text-slate-500 font-medium mt-0.5">
+            Official messages and updates from Vision Institute
+          </p>
         </div>
-        <div className="flex gap-2">
-          {unreadCount > 0 && (
-            <button 
-              onClick={markAllRead}
-              disabled={loading === "all"}
-              aria-label="Mark all notifications as read"
-              className="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-xl text-xs font-black flex items-center gap-2 hover:bg-indigo-100 transition-all border border-indigo-100 active:scale-95"
-            >
-              {loading === "all" ? <Loader2 className="animate-spin" size={14}/> : <MailOpen size={14}/>}
-              Mark all as Read
-            </button>
-          )}
-        </div>
+
+        {unreadCount > 0 && (
+          <button
+            onClick={markAllRead}
+            disabled={loading === "all"}
+            aria-label="Mark all notifications as read"
+            className="px-2.5 py-1.5 rounded-xl text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200/60 hover:bg-indigo-100 active:scale-95 transition-all flex items-center gap-1.5 shrink-0"
+          >
+            {loading === "all" ? (
+              <Loader2 className="animate-spin" size={13} />
+            ) : (
+              <CheckCheck size={14} />
+            )}
+            <span className="hidden sm:inline">Mark all read</span>
+            <span className="sm:hidden">All Read</span>
+          </button>
+        )}
       </div>
 
-      <div className="space-y-4">
-        {notifications.length === 0 ? (
-          <div className="p-24 text-center bg-white rounded-[2.5rem] border border-slate-100 shadow-sm">
-             <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Bell size={40} className="text-slate-200" />
-             </div>
-             <h3 className="text-lg font-black text-slate-900">Your inbox is empty</h3>
-             <p className="text-sm text-slate-500 max-w-xs mx-auto">No notifications found. We'll let you know when something comes up!</p>
+      {/* ── Filter Strip ── */}
+      <div className="flex items-center gap-1.5">
+        <button
+          onClick={() => setFilter("all")}
+          className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+            filter === "all"
+              ? "bg-slate-900 text-white shadow-2xs"
+              : "bg-slate-100 text-slate-600 hover:bg-slate-200/70"
+          }`}
+        >
+          All ({notifications.length})
+        </button>
+        <button
+          onClick={() => setFilter("unread")}
+          className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+            filter === "unread"
+              ? "bg-indigo-600 text-white shadow-2xs"
+              : "bg-slate-100 text-slate-600 hover:bg-slate-200/70"
+          }`}
+        >
+          Unread ({unreadCount})
+        </button>
+      </div>
+
+      {/* ── Compact Notification List ── */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
+        {filteredNotifications.length === 0 ? (
+          <div className="py-12 px-4 text-center">
+            <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-2">
+              <Bell size={18} />
+            </div>
+            <p className="text-xs font-bold text-slate-700">
+              {filter === "unread" ? "No unread notifications" : "Inbox is empty"}
+            </p>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              {filter === "unread"
+                ? "You are all caught up!"
+                : "We'll notify you when an update or announcement is posted."}
+            </p>
           </div>
         ) : (
-          notifications.map((un: any) => {
-            const style = NOTIF_STYLES[un.notifications?.type] || NOTIF_STYLES.info;
-            return (
-              <NotificationItem 
-                key={un.id} 
-                un={un} 
-                style={style} 
-                onRead={markAsRead} 
-                onDelete={deleteNotification}
-                isLoading={loading === un.id}
-              />
-            );
-          })
+          <div className="divide-y divide-slate-100">
+            {filteredNotifications.map((un) => {
+              const notif = Array.isArray(un.notifications) ? un.notifications[0] : un.notifications;
+              const notifType = (notif?.type || "info").toLowerCase();
+              const style = NOTIF_STYLES[notifType] || NOTIF_STYLES.info;
+              const Icon = style.icon;
+              const isLoading = loading === un.id;
+
+              return (
+                <div
+                  key={un.id}
+                  className={`p-3.5 sm:px-4 sm:py-3.5 flex items-start gap-3 transition-colors ${
+                    !un.is_read
+                      ? "bg-indigo-50/25 hover:bg-indigo-50/40"
+                      : "hover:bg-slate-50/70"
+                  }`}
+                >
+                  {/* Compact Icon */}
+                  <div
+                    className={`w-8 h-8 rounded-lg ${style.bg} ${style.color} border ${style.border} flex items-center justify-center shrink-0 mt-0.5`}
+                  >
+                    <Icon size={15} />
+                  </div>
+
+                  {/* Body Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span
+                          className={`text-[9px] font-black uppercase tracking-wider ${style.color}`}
+                        >
+                          {notif?.type || "Info"}
+                        </span>
+                        {!un.is_read && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 inline-block shrink-0" />
+                        )}
+                        <span className="text-[10px] text-slate-400 font-medium">
+                          {formatTimestamp(un.created_at)}
+                        </span>
+                      </div>
+
+                      {/* Top Right Quick Actions */}
+                      <div className="flex items-center gap-1 shrink-0">
+                        {!un.is_read ? (
+                          <button
+                            onClick={() => markAsRead(un.id)}
+                            disabled={isLoading}
+                            title="Mark as read"
+                            aria-label="Mark as read"
+                            className="p-1 rounded-md text-slate-400 hover:text-indigo-600 hover:bg-indigo-100/70 active:scale-90 transition-all"
+                          >
+                            {isLoading ? (
+                              <Loader2 size={13} className="animate-spin text-indigo-600" />
+                            ) : (
+                              <Check size={14} />
+                            )}
+                          </button>
+                        ) : (
+                          <span
+                            title="Opened"
+                            className="text-slate-300 p-1"
+                          >
+                            <MailOpen size={13} />
+                          </span>
+                        )}
+                        <button
+                          onClick={() => deleteNotification(un.id)}
+                          disabled={isLoading}
+                          title="Delete notification"
+                          aria-label="Delete notification"
+                          className="p-1 rounded-md text-slate-300 hover:text-rose-600 hover:bg-rose-50 active:scale-90 transition-all"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Notification Title */}
+                    <h3
+                      className={`text-xs sm:text-sm font-bold mt-1 ${
+                        !un.is_read ? "text-slate-900" : "text-slate-700"
+                      }`}
+                    >
+                      {notif?.title || "Notification"}
+                    </h3>
+
+                    {/* Notification Message */}
+                    <p className="text-xs text-slate-500 font-normal leading-relaxed mt-0.5">
+                      {notif?.message}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
     </div>

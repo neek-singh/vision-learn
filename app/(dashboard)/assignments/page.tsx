@@ -148,18 +148,26 @@ export default async function AssignmentsPage() {
   const allAssignments = [...traditionalWithSource];
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <section>
-        <h1 className="text-2xl font-black text-slate-900 tracking-tight mb-1">Active Projects</h1>
-        <p className="text-sm text-slate-500 font-medium">Manage your current tasks and deliverables.</p>
-      </section>
+    <div className="max-w-4xl mx-auto space-y-3 animate-in fade-in duration-300 pb-16">
+      <div className="bg-white rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">Active Projects</h1>
+          <p className="text-xs text-slate-500 font-medium">Manage tasks, assignments & deliverables</p>
+        </div>
+        <div className="shrink-0">
+          <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-150 px-2.5 py-1 rounded-full">
+            {allAssignments.length} {allAssignments.length === 1 ? "Project" : "Projects"}
+          </span>
+        </div>
+      </div>
 
       {allAssignments.length === 0 ? (
-        <div className="p-20 text-center bg-white rounded-[2.5rem] border border-slate-100 shadow-sm">
-          <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-200 mx-auto mb-4">
-            <BookOpen size={32} />
+        <div className="p-10 text-center bg-white rounded-2xl border border-slate-200/80 shadow-2xs">
+          <div className="w-11 h-11 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 mx-auto mb-2.5 border border-slate-100">
+            <BookOpen size={20} />
           </div>
-          <p className="text-slate-400 font-bold">No projects available yet. Check back when projects are scheduled.</p>
+          <h2 className="text-xs font-bold text-slate-700">No projects available yet</h2>
+          <p className="text-[11px] text-slate-400 max-w-sm mx-auto mt-0.5">Check back when projects are scheduled.</p>
         </div>
       ) : (
         <AssignmentsClient

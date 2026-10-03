@@ -16,10 +16,12 @@ export default async function StudentAttendancePage() {
   if (!payload) redirect("/login");
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div>
-        <h1 className="text-3xl font-black text-slate-900 tracking-tight">My Attendance</h1>
-        <p className="text-slate-500 font-medium text-sm mt-1">Monitor your presence and track your learning consistency.</p>
+    <div className="max-w-4xl mx-auto space-y-3.5 animate-in fade-in duration-300">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">My Attendance</h1>
+          <p className="text-xs text-slate-500 font-medium mt-0.5">Track your presence and learning consistency</p>
+        </div>
       </div>
 
       <Suspense fallback={<AttendanceSkeleton />}>

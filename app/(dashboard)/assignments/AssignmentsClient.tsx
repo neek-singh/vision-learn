@@ -16,33 +16,61 @@ import {
   FolderCode,
   ExternalLink,
   ArrowLeft,
-  FileText
+  FileText,
+  Search,
+  Target,
+  FileSpreadsheet,
+  Presentation
 } from "lucide-react";
 import { createClient as createPublicSupabaseClient } from "@/lib/supabase-browser";
 
-const getCategoryColor = (category: string) => {
-  switch (category?.toLowerCase()) {
-    case "word":
-      return "bg-blue-50 text-blue-650 border-blue-100 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-900/30";
+const getCategoryConfig = (category: string = "") => {
+  const cat = category.toLowerCase().trim();
+  switch (cat) {
     case "excel":
-      return "bg-emerald-50 text-emerald-650 border-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30";
+    case "sheets":
+      return {
+        label: "EXCEL",
+        Icon: FileSpreadsheet,
+        badgeCls: "bg-emerald-50 text-emerald-700 border-emerald-200/70",
+        iconCls: "bg-emerald-50 text-emerald-600 border-emerald-200/70",
+      };
+    case "word":
+    case "doc":
+    case "docx":
+      return {
+        label: "WORD",
+        Icon: FileText,
+        badgeCls: "bg-blue-50 text-blue-700 border-blue-200/70",
+        iconCls: "bg-blue-50 text-blue-600 border-blue-200/70",
+      };
     case "powerpoint":
-      return "bg-orange-50 text-orange-650 border-orange-100 dark:bg-orange-950/20 dark:text-orange-400 dark:border-orange-900/30";
+    case "ppt":
+      return {
+        label: "PPT",
+        Icon: Presentation,
+        badgeCls: "bg-orange-50 text-orange-700 border-orange-200/70",
+        iconCls: "bg-orange-50 text-orange-600 border-orange-200/70",
+      };
     case "onenote":
-      return "bg-purple-50 text-purple-650 border-purple-100 dark:bg-purple-950/20 dark:text-purple-400 dark:border-purple-900/30";
-    case "notion":
-      return "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-350 dark:border-slate-700";
-    case "chatgpt":
-    case "gemini":
-    case "claude":
-      return "bg-teal-50 text-teal-650 border-teal-100 dark:bg-teal-950/20 dark:text-teal-400 dark:border-teal-900/30";
-    case "web":
-      return "bg-indigo-50 text-indigo-650 border-indigo-100 dark:bg-indigo-950/20 dark:text-indigo-400 dark:border-indigo-900/30";
-    case "canva":
-      return "bg-pink-50 text-pink-650 border-pink-100 dark:bg-pink-950/20 dark:text-pink-400 dark:border-pink-900/30";
+      return {
+        label: "ONENOTE",
+        Icon: BookOpen,
+        badgeCls: "bg-purple-50 text-purple-700 border-purple-200/70",
+        iconCls: "bg-purple-50 text-purple-600 border-purple-200/70",
+      };
     default:
-      return "bg-slate-50 text-slate-650 border-slate-100 dark:bg-slate-800/20 dark:text-slate-400 dark:border-slate-800/30";
+      return {
+        label: cat.toUpperCase() || "PROJECT",
+        Icon: FolderCode,
+        badgeCls: "bg-indigo-50 text-indigo-700 border-indigo-200/70",
+        iconCls: "bg-indigo-50 text-indigo-600 border-indigo-200/70",
+      };
   }
+};
+
+const getCategoryColor = (category: string) => {
+  return getCategoryConfig(category).badgeCls;
 };
 
 const getProgress = (task: any, submission: any) => {
@@ -102,6 +130,7 @@ export default function AssignmentsClient({
   const [mounted, setMounted] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Custom states for Rich Submission
   const [submissionNotes, setSubmissionNotes] = useState("");
@@ -135,8 +164,32 @@ export default function AssignmentsClient({
     return Array.from(unique);
   }, [initialAssignments]);
 
+  const stats = useMemo(() => {
+    const total = initialAssignments.length;
+    let completed = 0;
+    initialAssignments.forEach(a => {
+      const sub = getSubmission(a);
+      if (sub?.status === "submitted" || sub?.status === "graded") completed++;
+    });
+    return {
+      total,
+      completed,
+      pending: total - completed
+    };
+  }, [initialAssignments, submissions]);
+
   const filteredAssignments = useMemo(() => {
     let result = [...initialAssignments];
+
+    // Filter by Search Query
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      result = result.filter(a => {
+        const titleMatch = (a.title || "").toLowerCase().includes(q);
+        const catMatch = (a.category || "").toLowerCase().includes(q);
+        return titleMatch || catMatch;
+      });
+    }
 
     // Filter by Category
     if (categoryFilter !== "all") {
@@ -168,7 +221,7 @@ export default function AssignmentsClient({
       if (!isSubA && isSubB) return -1;
       return 0;
     });
-  }, [initialAssignments, submissions, statusFilter, categoryFilter]);
+  }, [initialAssignments, submissions, statusFilter, categoryFilter, searchQuery]);
 
   if (!mounted) {
     return (
@@ -340,16 +393,68 @@ export default function AssignmentsClient({
   const coursesList = Array.from(new Set(initialAssignments.map(a => getCourseName(a)))).filter(Boolean);
 
   return (
-    <div className="space-y-8">
-      {/* Filters Section */}
-      <div className="flex flex-col sm:flex-row gap-4 bg-white p-4 rounded-2xl border border-slate-200/60 shadow-sm">
-        <div className="flex-1 flex flex-col gap-1.5 text-left">
-          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-            Project Status
-          </label>
-          <div className="flex flex-wrap gap-1.5">
+    <div className="space-y-3">
+      {/* 3-Column Compact Stat Bar */}
+      <div className="grid grid-cols-3 gap-2">
+        <div className="bg-white rounded-xl p-2.5 sm:p-3 border border-slate-200/80 shadow-2xs flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100/60 flex items-center justify-center shrink-0">
+            <Target size={16} />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider leading-none">Total</p>
+            <p className="text-base sm:text-lg font-bold text-slate-800 leading-tight mt-0.5">{stats.total}</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-2.5 sm:p-3 border border-slate-200/80 shadow-2xs flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100/60 flex items-center justify-center shrink-0">
+            <CheckCircle2 size={16} />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider leading-none">Completed</p>
+            <p className="text-base sm:text-lg font-bold text-slate-800 leading-tight mt-0.5">{stats.completed}</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-2.5 sm:p-3 border border-slate-200/80 shadow-2xs flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 border border-amber-100/60 flex items-center justify-center shrink-0">
+            <Clock size={16} />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider leading-none">Pending</p>
+            <p className="text-base sm:text-lg font-bold text-slate-800 leading-tight mt-0.5">{stats.pending}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Search & Filters */}
+      <div className="space-y-2">
+        <div className="relative">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search projects and tasks..."
+            className="w-full pl-8.5 pr-8 py-2 text-xs bg-white rounded-xl border border-slate-200/80 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 text-slate-800 placeholder-slate-400 transition-all shadow-2xs"
+          />
+          {searchQuery && (
+            <button 
+              onClick={() => setSearchQuery("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+              aria-label="Clear search"
+            >
+              <X size={13} />
+            </button>
+          )}
+        </div>
+
+        {/* Filter Pills */}
+        <div className="flex flex-col gap-1.5">
+          {/* Status Pills */}
+          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide py-0.5">
             {[
-              { id: "all", label: "All" },
+              { id: "all", label: `All (${initialAssignments.length})` },
               { id: "pending", label: "Pending" },
               { id: "draft", label: "Draft" },
               { id: "submitted", label: "Submitted" },
@@ -358,215 +463,166 @@ export default function AssignmentsClient({
               <button
                 key={status.id}
                 onClick={() => setStatusFilter(status.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                className={`shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
                   statusFilter === status.id
-                    ? "bg-blue-600 text-white shadow-sm shadow-blue-100"
-                    : "bg-slate-50 hover:bg-slate-100 text-slate-600"
+                    ? "bg-slate-900 text-white shadow-2xs"
+                    : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200/70"
                 }`}
               >
                 {status.label}
               </button>
             ))}
           </div>
-        </div>
 
-        {categoriesList.length > 0 && (
-          <div className="flex-1 flex flex-col gap-1.5 text-left">
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-              Category
-            </label>
-            <div className="flex flex-wrap gap-1.5">
+          {/* Category Pills (if categories exist) */}
+          {categoriesList.length > 0 && (
+            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide py-0.5">
               <button
                 onClick={() => setCategoryFilter("all")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                className={`shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
                   categoryFilter === "all"
-                    ? "bg-blue-600 text-white shadow-sm shadow-blue-100"
-                    : "bg-slate-50 hover:bg-slate-100 text-slate-600"
+                    ? "bg-indigo-600 text-white shadow-2xs"
+                    : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200/70"
                 }`}
               >
-                All
+                All Categories
               </button>
               {categoriesList.map(cat => (
                 <button
                   key={cat}
                   onClick={() => setCategoryFilter(cat)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  className={`shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
                     categoryFilter === cat
-                      ? "bg-blue-600 text-white shadow-sm shadow-blue-100"
-                      : "bg-slate-50 hover:bg-slate-100 text-slate-600"
+                      ? "bg-indigo-600 text-white shadow-2xs"
+                      : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200/70"
                   }`}
                 >
                   {cat}
                 </button>
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
-
+      {/* Projects List */}
       {!filteredAssignments || filteredAssignments.length === 0 ? (
-        <div className="p-20 text-center bg-white rounded-[2.5rem] border border-slate-100 shadow-sm">
-          <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-200 mx-auto mb-4">
-            <BookOpen size={32} />
+        <div className="p-10 text-center bg-white rounded-2xl border border-slate-200/70 shadow-2xs">
+          <div className="w-11 h-11 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 mx-auto mb-2.5 border border-slate-100">
+            <BookOpen size={20} />
           </div>
-          <p className="text-slate-400 font-bold">No projects found for this course.</p>
+          <p className="text-xs font-bold text-slate-700">No projects found</p>
+          <p className="text-[11px] text-slate-400 mt-0.5">
+            {searchQuery || statusFilter !== "all" || categoryFilter !== "all"
+              ? "Try changing your search or filter options"
+              : "No projects available for your enrolled courses."}
+          </p>
+          {(searchQuery || statusFilter !== "all" || categoryFilter !== "all") && (
+            <button
+              onClick={() => { setSearchQuery(""); setStatusFilter("all"); setCategoryFilter("all"); }}
+              className="mt-3 text-xs font-semibold text-indigo-600 hover:text-indigo-700"
+            >
+              Clear filters
+            </button>
+          )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in duration-500">
+        <div className="space-y-1.5 sm:space-y-2">
           {filteredAssignments.map((task: any) => {
             const submission = getSubmission(task);
             const dueDate = getDueDate(task);
-            const live = isLiveNow(task);
             const isProject = (task.lesson_type || task.type || "").toLowerCase() === "project";
 
-            // Start date calculation
-            const startDateStr = task.schedule?.date
-              ? new Date(`${task.schedule.date}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-              : new Date(task.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-
-            // Due date calculation
             const dueDateStr = dueDate
-              ? dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+              ? dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
               : "No deadline";
 
-            // Progress and risk calculation
             const progress = getProgress(task, submission);
             const atRisk = checkAtRisk(task, submission, dueDate);
-
-            // Category/Tag
             const categoryLabel = task.category || (isProject ? "Project" : "Assignment");
-
+            const config = getCategoryConfig(categoryLabel);
+            const { Icon } = config;
             const hasExternalLink = task.description && (task.description.startsWith("http://") || task.description.startsWith("https://"));
 
+            const isSubmitted = submission?.status === "submitted";
+            const isGraded = submission?.status === "graded";
+            const isDraft = submission?.status === "draft";
+
             return (
-              <div key={task.id} className="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-4 relative overflow-hidden">
-                
-                {/* Top content wrapper */}
-                <div className="space-y-3.5">
-                  {/* Header: Title and Badge */}
-                  <div className="flex items-start justify-between gap-4">
-                    <h4 className="font-extrabold text-slate-900 text-base leading-snug break-words flex-1">
-                      {task.title}
-                    </h4>
-                    <span className="px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider shrink-0 border bg-blue-50 text-blue-600 border-blue-100/50">
-                      {categoryLabel}
-                    </span>
-                  </div>
-
-                  {/* Dates Section */}
-                  <div className="space-y-2 text-slate-500 text-xs">
-                    <div className="flex items-center gap-2">
-                      <Calendar size={14} className="text-slate-400 shrink-0" />
-                      <span className="font-medium text-slate-500">
-                        Due Date: <span className={`font-semibold ${atRisk ? 'text-rose-600' : 'text-slate-700'}`}>{dueDateStr}</span>
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Progress Section */}
-                  <div className="space-y-1.5 pt-0.5">
-                    <div className="flex items-center justify-between text-xs font-semibold">
-                      <span className={atRisk ? "text-rose-650 font-bold animate-pulse" : "text-slate-505"}>
-                        {atRisk ? "Progress - At Risk" : "Progress"}
-                      </span>
-                      <span className={atRisk ? "text-rose-650 font-bold" : "text-slate-800"}>
-                        {progress}%
-                      </span>
-                    </div>
-                    <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all duration-500 ${atRisk ? "bg-rose-500" : "bg-blue-600"}`}
-                        style={{ width: `${progress}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Extra details (live/submitted badges, grade/feedback) */}
-                  <div className="flex flex-wrap gap-2 items-center">
-                    {live && !submission && (
-                      <span className="flex items-center gap-1 px-2 py-0.5 bg-rose-50 text-rose-600 rounded-full text-[8px] font-black uppercase tracking-widest border border-rose-100 w-fit shrink-0">
-                        <Zap size={8} fill="currentColor" /> Live Now
-                      </span>
-                    )}
-                    {submission && (
-                      <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border w-fit shrink-0 ${
-                        submission.status === "submitted" || submission.status === "graded"
-                          ? "bg-emerald-50 text-emerald-600 border-emerald-100"
-                          : "bg-amber-50 text-amber-605 border-amber-100"
-                      }`}>
-                        {submission.status === "graded" ? (
-                          <>
-                            <CheckCircle2 size={8} /> Graded
-                          </>
-                        ) : submission.status === "submitted" ? (
-                          <>
-                            <CheckCircle2 size={8} /> Submitted
-                          </>
-                        ) : (
-                          <>
-                            <Clock size={8} /> Draft Saved
-                          </>
-                        )}
-                      </span>
-                    )}
-                    {submission?.score && (
-                      <span className="flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-650 rounded-full text-[8px] font-black uppercase tracking-widest border border-indigo-100 w-fit shrink-0">
-                        Grade: {submission.score}
-                      </span>
-                    )}
-                  </div>
-
-
-
-                  {submission?.feedback && (
-                    <div className="text-[10px] text-slate-500 font-bold bg-amber-50/50 border border-amber-100/50 rounded-xl p-2.5 mt-2">
-                      <span className="text-[8px] font-black uppercase tracking-wider text-amber-800 block mb-0.5">Feedback:</span>
-                      "{submission.feedback}"
-                    </div>
-                  )}
+              <div 
+                key={task.id} 
+                onClick={() => handleOpenSubmission(task)}
+                className="w-full min-w-0 bg-white rounded-xl border border-slate-200/75 hover:border-indigo-300 hover:shadow-2xs active:scale-[0.99] transition-all p-2.5 sm:p-3 flex items-center justify-between gap-2.5 cursor-pointer group"
+              >
+                {/* Left: Compact Icon */}
+                <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center border transition-transform group-hover:scale-105 ${config.iconCls}`}>
+                  <Icon size={16} />
                 </div>
 
-                {/* Buttons Section (Bottom) */}
-                <div className="flex gap-2.5 pt-2.5 border-t border-slate-100 mt-auto shrink-0">
-                  {hasExternalLink ? (
+                {/* Middle: Title & Metadata */}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <h4 className="text-xs sm:text-[13px] font-bold text-slate-800 truncate leading-snug group-hover:text-indigo-600 transition-colors">
+                      {task.title}
+                    </h4>
+                    {(isSubmitted || isGraded) && (
+                      <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200/70 shrink-0">
+                        <CheckCircle2 size={9} />
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-1.5 mt-0.5 text-[10px] text-slate-400 font-medium leading-none">
+                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide border leading-none ${config.badgeCls}`}>
+                      {config.label}
+                    </span>
+                    <span className="text-slate-300">•</span>
+                    <span className={`flex items-center gap-0.5 ${atRisk ? 'text-rose-600 font-bold' : 'text-slate-500'}`}>
+                      <Calendar size={9} /> {dueDateStr}
+                    </span>
+                    <span className="text-slate-300">•</span>
+                    <span className="font-semibold text-slate-600">{progress}%</span>
+                    {(isGraded || isSubmitted || isDraft) && (
+                      <>
+                        <span className="text-slate-300">•</span>
+                        <span className={`font-bold ${isGraded ? 'text-indigo-600' : isSubmitted ? 'text-emerald-600' : 'text-amber-600'}`}>
+                          {isGraded ? `Graded (${submission.score || 'Done'})` : isSubmitted ? 'Submitted' : 'Draft'}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right: Actions */}
+                <div 
+                  className="shrink-0 flex items-center gap-1.5" 
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {hasExternalLink && (
                     <a
                       href={task.description}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex-1 py-2 text-center border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-[0.98]"
+                      className="h-7 px-2 rounded-lg border border-slate-200/80 text-slate-600 hover:bg-slate-50 flex items-center justify-center transition-all shadow-2xs"
+                      title="Open Resource"
                     >
-                      Open
+                      <ExternalLink size={11} />
                     </a>
-                  ) : (
-                    <button
-                      onClick={() => handleOpenSubmission(task)}
-                      className="flex-1 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-[0.98]"
-                    >
-                      Open
-                    </button>
                   )}
 
                   <button
                     onClick={() => handleOpenSubmission(task)}
-                    className={`flex-1 py-2 text-sm font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-[0.98] ${
-                      submission?.status === "submitted" || submission?.status === "graded"
-                        ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-250"
-                        : submission?.status === "draft"
-                          ? "bg-amber-500 hover:bg-amber-600 text-white shadow-amber-100"
-                          : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-100 hover:shadow-md"
+                    className={`h-7 px-2.5 min-w-[58px] sm:min-w-[64px] rounded-lg text-[11px] font-bold flex items-center justify-center active:scale-95 transition-all shadow-2xs ${
+                      isGraded || isSubmitted
+                        ? "bg-slate-900 hover:bg-slate-800 text-white"
+                        : isDraft
+                          ? "bg-amber-500 hover:bg-amber-600 text-white"
+                          : "bg-indigo-600 hover:bg-indigo-700 text-white"
                     }`}
                   >
-                    {submission?.status === "graded" 
-                      ? "Graded (Review)" 
-                      : submission?.status === "submitted" 
-                        ? "Submitted (Review)" 
-                        : submission?.status === "draft" 
-                          ? "Edit Draft" 
-                          : "Submit"}
+                    {isGraded ? "Graded" : isSubmitted ? "Review" : isDraft ? "Draft" : "Submit"}
                   </button>
                 </div>
-
               </div>
             );
           })}

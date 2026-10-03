@@ -919,7 +919,7 @@ function SeriesView({
             return (
               <div key={lesson.id}>
                 {dateSeparator}
-                <div className="relative flex items-center gap-3 mb-1">
+                <div className="relative flex items-center gap-3 mb-1 w-full">
                   {/* Timeline dot centered on rail */}
                   <div className={`absolute -left-[27px] sm:-left-[29px] top-1/2 -translate-y-1/2 w-5 h-5 rounded-full ring-2 ring-slate-50 flex items-center justify-center shrink-0 ${dotBg} shadow-2xs`}>
                     {isCompleted ? (
@@ -933,10 +933,10 @@ function SeriesView({
                     )}
                   </div>
 
-                  {/* Card */}
+                  {/* Card with strictly bounded width and min-w-0 */}
                   <div 
                     onClick={() => !isLocked && openLesson(lesson)}
-                    className={`flex-1 flex items-center justify-between px-3 py-2 rounded-xl border transition-all duration-200 ${
+                    className={`flex-1 min-w-0 w-full flex items-center justify-between px-3 py-2 rounded-xl border transition-all duration-200 ${
                       !isLocked ? 'cursor-pointer hover:border-indigo-200' : 'cursor-default'
                     } ${
                       isToday && isInProgress

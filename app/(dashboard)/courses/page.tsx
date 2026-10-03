@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { BookOpen, Clock, Users, Play } from "lucide-react";
+import { BookOpen, Play } from "lucide-react";
 import { verifyToken } from "@/lib/auth-custom";
 import { createPublicSupabaseClient } from "@/lib/supabase-server";
 
@@ -21,6 +21,7 @@ export default async function CoursesPage() {
     .from("enrollments")
     .select(`
       id,
+      course_id,
       progress_percentage,
       enrolled_at,
       courses(title, course_code, description)
@@ -28,76 +29,100 @@ export default async function CoursesPage() {
     .eq("student_id", payload.id);
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <section>
-        <h1 className="text-2xl font-black text-slate-900 tracking-tight mb-1">My Courses</h1>
-        <p className="text-sm text-slate-500 font-medium">Manage your enrolled courses and track progress.</p>
-      </section>
+    <div className="max-w-4xl mx-auto space-y-3 animate-in fade-in duration-300 pb-16">
+      {/* Compact Header */}
+      <div className="bg-white rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">My Courses</h1>
+          <p className="text-xs text-slate-500 font-medium">Manage enrolled courses & track learning progress</p>
+        </div>
+        <div className="shrink-0">
+          <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-150 px-2.5 py-1 rounded-full">
+            {enrollments?.length || 0} {enrollments?.length === 1 ? "Course" : "Courses"}
+          </span>
+        </div>
+      </div>
 
       {!enrollments || enrollments.length === 0 ? (
-        <div className="p-16 text-center bg-white rounded-3xl border border-slate-100 shadow-sm">
-          <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 mx-auto mb-4">
-            <BookOpen size={32} />
+        <div className="p-10 text-center bg-white rounded-2xl border border-slate-200/80 shadow-2xs">
+          <div className="w-11 h-11 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 mx-auto mb-2.5 border border-slate-100">
+            <BookOpen size={20} />
           </div>
-          <h2 className="text-xl font-black text-slate-900 mb-2">No courses assigned yet</h2>
-          <p className="text-sm text-slate-500 max-w-sm mx-auto">Please contact the administration to assign your course modules.</p>
+          <h2 className="text-xs font-bold text-slate-700">No courses assigned yet</h2>
+          <p className="text-[11px] text-slate-400 max-w-sm mx-auto mt-0.5">
+            Please contact the administration to assign your course modules.
+          </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {enrollments.map((enrollment: any) => (
-            <div key={enrollment.id} className="group bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden hover:shadow-lg transition-all duration-500">
-              <div className="p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 transition-transform group-hover:scale-110">
-                    <BookOpen size={20} />
+        <div className="space-y-2.5">
+          {enrollments.map((enrollment: any) => {
+            const course = enrollment.courses as any;
+            const progress = enrollment.progress_percentage || 0;
+            const enrolledDate = enrollment.enrolled_at 
+              ? new Date(enrollment.enrolled_at).toLocaleDateString("en-US", { month: "short", year: "numeric" })
+              : null;
+
+            return (
+              <div 
+                key={enrollment.id} 
+                className="group bg-white rounded-2xl border border-slate-200/80 hover:border-indigo-300 hover:shadow-2xs transition-all p-3.5 sm:p-4 space-y-2.5"
+              >
+                {/* Top Row: Icon + Course Code + Title + Active Badge */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100/60 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                      <BookOpen size={18} />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="text-[9px] font-bold text-indigo-600 uppercase tracking-wider bg-indigo-50/70 border border-indigo-100/50 px-1.5 py-0.2 rounded truncate max-w-[180px] sm:max-w-none">
+                          {course?.course_code || "COURSE"}
+                        </span>
+                        {enrolledDate && (
+                          <span className="text-[10px] text-slate-400 font-medium hidden sm:inline">
+                            • Enrolled {enrolledDate}
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="text-sm sm:text-base font-bold text-slate-900 truncate leading-snug group-hover:text-indigo-600 transition-colors mt-0.5">
+                        {course?.title || "Enrolled Course"}
+                      </h3>
+                    </div>
                   </div>
-                  <span className="bg-emerald-50 text-emerald-700 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border border-emerald-100">
+
+                  <span className="shrink-0 bg-emerald-50 text-emerald-700 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-emerald-200/60">
                     Active
                   </span>
                 </div>
 
-                <div className="space-y-1 mb-6">
-                  <p className="text-[9px] font-black text-indigo-600 uppercase tracking-widest">
-                    {(enrollment.courses as any)?.course_code || "LMS"}
-                  </p>
-                  <h3 className="text-lg font-black text-slate-900 line-clamp-1 leading-tight">
-                    {(enrollment.courses as any)?.title}
-                  </h3>
-                  <p className="text-slate-500 text-xs line-clamp-2 leading-relaxed mt-1">
-                    {(enrollment.courses as any)?.description || "Access your course materials, videos, and assignments for this module."}
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-4 mb-6 py-3 border-y border-slate-50">
-                  <div className="flex items-center gap-2 text-slate-400">
-                    <Clock size={14} />
-                    <span className="text-[10px] font-bold">Self-paced</span>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="flex justify-between items-end mb-1">
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Progress</span>
-                    <span className="text-sm font-black text-indigo-600">{enrollment.progress_percentage}%</span>
-                  </div>
-                  <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-indigo-600 rounded-full transition-all duration-1000"
-                      style={{ width: `${enrollment.progress_percentage}%` }}
-                    />
+                {/* Bottom Row: Progress Bar + Action Button */}
+                <div className="pt-2 border-t border-slate-100/80 flex items-center justify-between gap-4">
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <div className="flex justify-between items-center text-[10px] font-semibold text-slate-400">
+                      <span className="uppercase tracking-wider">Progress</span>
+                      <span className="font-bold text-indigo-600">{progress}%</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-indigo-600 rounded-full transition-all duration-700"
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
                   </div>
 
-                  <Link 
-                    href="/curriculum"
-                    className="w-full py-3 mt-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 shadow-md shadow-indigo-100"
-                  >
-                    <Play size={14} fill="currentColor" />
-                    Start Learn
-                  </Link>
+                  <div className="shrink-0">
+                    <Link 
+                      href="/curriculum"
+                      className="h-8 px-3.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs"
+                    >
+                      <Play size={11} fill="currentColor" />
+                      <span>{progress > 0 ? "Continue" : "Start Learn"}</span>
+                    </Link>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
