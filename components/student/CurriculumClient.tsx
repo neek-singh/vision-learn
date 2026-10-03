@@ -536,19 +536,7 @@ export function CurriculumClient({
         {/* Top: Title & Completion Status */}
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">My Classes</h1>
-              {activeBatch && (
-                <span className="text-[10px] font-semibold text-indigo-700 bg-indigo-50 border border-indigo-150 px-2 py-0.5 rounded-full truncate max-w-[130px] sm:max-w-none">
-                  {activeBatch}
-                </span>
-              )}
-            </div>
-            {batchTiming && (
-              <p className="text-[11px] font-medium text-slate-400 mt-0.5 flex items-center gap-1">
-                <Clock size={11} /> {batchTiming}
-              </p>
-            )}
+            <h1 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">My Classes</h1>
           </div>
           
           <div className="flex items-center gap-1.5 shrink-0 bg-slate-50 border border-slate-200/70 px-2.5 py-1 rounded-full">
@@ -970,23 +958,22 @@ function SeriesView({
 
                       {/* Info */}
                       <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <h5 className={`font-semibold text-xs sm:text-sm leading-snug truncate ${
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <h5 className={`font-semibold text-xs sm:text-sm leading-snug truncate min-w-0 flex-1 ${
                             isCompleted ? 'text-slate-600' : isLocked && !isNextLocked ? 'text-slate-400' : 'text-slate-900'
                           }`}>
                             {lesson.title}
                           </h5>
-                          {isCompleted && <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">✓ Done</span>}
-                          {isNextLocked && <span className="text-[9px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100">Next</span>}
-                          {isToday && isInProgress && <span className="text-[9px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 animate-pulse">● Today</span>}
+                          {isNextLocked && <span className="text-[9px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100 shrink-0">Next</span>}
+                          {isToday && isInProgress && <span className="text-[9px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 shrink-0 animate-pulse">● Today</span>}
                         </div>
                         <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                          <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${bgLight} ${accentColor} border ${borderLight}`}>
+                          <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0 ${bgLight} ${accentColor} border ${borderLight}`}>
                             {lessonType === 'notes' ? 'Notes' : lessonType === 'mcq' ? 'Quiz' : lessonType === 'assignment' ? 'Assignment' : lessonType === 'project' ? 'Project' : lessonType === 'document' ? 'Doc' : 'Video'}
                           </span>
-                          {lesson.duration && <span className="text-[10px] font-medium text-slate-400">{lesson.duration}m</span>}
+                          {lesson.duration && <span className="text-[10px] font-medium text-slate-400 shrink-0">{lesson.duration}m</span>}
                           {schedule?.start_time && (
-                            <span className="text-[10px] font-medium text-slate-500 bg-slate-50 border border-slate-200/60 px-1.5 py-0.5 rounded flex items-center gap-1">
+                            <span className="text-[10px] font-medium text-slate-500 bg-slate-50 border border-slate-200/60 px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0">
                               <Clock size={9} />{formatTime(schedule.start_time)}
                             </span>
                           )}
@@ -995,8 +982,8 @@ function SeriesView({
                       </div>
                     </div>
 
-                    {/* Action */}
-                    <div className="shrink-0 ml-2">
+                    {/* Action - Aligned in one consistent column */}
+                    <div className="shrink-0 ml-2 w-[58px] flex justify-end items-center">
                       {isLocked && !isNextLocked ? (
                         <div className="w-7 h-7 rounded-lg bg-slate-50 flex items-center justify-center text-slate-300">
                           <Lock size={12} />
@@ -1011,7 +998,7 @@ function SeriesView({
                             e.stopPropagation();
                             openLesson(lesson);
                           }}
-                          className={`px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 cursor-pointer ${
+                          className={`w-full py-1 text-center rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 cursor-pointer ${
                             isCompleted ? 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200/60' :
                             isInProgress ? `bg-indigo-600 text-white shadow-2xs hover:bg-indigo-700` :
                             'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -1331,28 +1318,27 @@ function LessonItem({
           {(isLocked || isNextLocked) ? <Lock size={12} /> : <TypeIcon size={13} />}
         </div>
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <h5 className={`font-semibold text-xs sm:text-sm leading-snug truncate ${isCompleted ? 'text-slate-600' : 'text-slate-900'}`}>
+          <div className="flex items-center gap-1.5 min-w-0">
+            <h5 className={`font-semibold text-xs sm:text-sm leading-snug truncate min-w-0 flex-1 ${isCompleted ? 'text-slate-600' : 'text-slate-900'}`}>
               {lesson.classIndex ? `Class ${lesson.classIndex}: ${lesson.title}` :
                (lesson.lesson_type || lesson.type)?.toLowerCase() === 'mcq' ? `Quiz: ${lesson.title}` :
                (lesson.lesson_type || lesson.type)?.toLowerCase() === 'assignment' ? `Assignment: ${lesson.title}` :
                (lesson.lesson_type || lesson.type)?.toLowerCase() === 'project' ? `Project: ${lesson.title}` :
                `${lesson.title}`}
             </h5>
-            {isCompleted && <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">✓ Done</span>}
             {isInProgress && (
-              <span className="text-[9px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100">
+              <span className="text-[9px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100 shrink-0">
                 In Progress
               </span>
             )}
-            {isNextLocked && <span className="text-[9px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100">Next</span>}
+            {isNextLocked && <span className="text-[9px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100 shrink-0">Next</span>}
           </div>
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-            <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
+            <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 shrink-0">
               {(lesson.lesson_type || lesson.type || 'Class')} {lesson.duration ? `• ${lesson.duration}m` : ''}
             </span>
             {schedule && (
-              <span className="text-[9px] font-medium text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200/60 flex items-center gap-1">
+              <span className="text-[9px] font-medium text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200/60 flex items-center gap-1 shrink-0">
                 <Calendar size={9} /> 
                 <span>
                   {new Date(schedule.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
@@ -1364,7 +1350,7 @@ function LessonItem({
         </div>
       </div>
 
-      <div className="shrink-0 ml-2">
+      <div className="shrink-0 ml-2 w-[58px] flex justify-end items-center">
         {isNextLocked ? (
           <div className="w-7 h-7 rounded-lg bg-indigo-50/80 border border-indigo-150 flex items-center justify-center text-indigo-500">
             <Lock size={12} />
@@ -1379,7 +1365,7 @@ function LessonItem({
               e.stopPropagation();
               openLesson(lesson);
             }}
-            className={`px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 cursor-pointer ${
+            className={`w-full py-1 text-center rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 cursor-pointer ${
               isCompleted ? 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200/60' :
               isInProgress ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-2xs' :
               'bg-slate-100 text-slate-600 hover:bg-slate-200'
