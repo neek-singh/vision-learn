@@ -93,10 +93,10 @@ body {
   color: #0f172a !important; /* slate-900 / dark text for light theme */
 }
 
-/* Headings */
+/* Headings (normal weight by default so they do not automatically become bold; bold is applied via B/<strong>) */
 .rich-content h1 {
   font-size: 1.5rem !important;
-  font-weight: 800 !important;
+  font-weight: normal !important;
   color: #0f172a !important;
   margin-top: 1.5rem !important;
   margin-bottom: 0.75rem !important;
@@ -105,7 +105,7 @@ body {
 
 .rich-content h2 {
   font-size: 1.25rem !important;
-  font-weight: 700 !important;
+  font-weight: normal !important;
   color: #0f172a !important;
   margin-top: 1.25rem !important;
   margin-bottom: 0.5rem !important;
@@ -114,11 +114,20 @@ body {
 
 .rich-content h3 {
   font-size: 1.125rem !important;
-  font-weight: 700 !important;
+  font-weight: normal !important;
   color: #0f172a !important;
   margin-top: 1rem !important;
   margin-bottom: 0.5rem !important;
   display: block !important;
+}
+
+.rich-content h1 strong,
+.rich-content h1 b,
+.rich-content h2 strong,
+.rich-content h2 b,
+.rich-content h3 strong,
+.rich-content h3 b {
+  font-weight: 700 !important;
 }
 
 /* Paragraphs */
