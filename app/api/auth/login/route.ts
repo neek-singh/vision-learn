@@ -47,20 +47,36 @@ export async function POST(request: Request) {
 
     const supabase = createPublicSupabaseClient();
 
-    const { data: student, error: dbError } = await supabase
-      .from("students")
-      .select("id, student_id, password, name")
-      .eq("student_id", studentId)
-      .single();
+    // 1. Fetch student via SECURITY DEFINER RPC to bypass RLS safely
+    const { data: students, error: rpcError } = await supabase.rpc(
+      "get_student_for_auth",
+      { p_student_id: studentId.trim() }
+    );
 
-    if (dbError || !student) {
+    const student = students && students.length > 0 ? students[0] : null;
+
+    if (rpcError || !student || student.is_deleted || student.is_blocked) {
       return NextResponse.json(
         { error: "Invalid Student ID or Password." },
         { status: 401 }
       );
     }
 
-    const isMatch = await bcrypt.compare(password, student.password);
+    if (student.status && student.status !== "active") {
+      return NextResponse.json(
+        { error: "Your account is currently inactive. Please contact administrator." },
+        { status: 403 }
+      );
+    }
+
+    if (!student.password_hash) {
+      return NextResponse.json(
+        { error: "Invalid Student ID or Password." },
+        { status: 401 }
+      );
+    }
+
+    const isMatch = await bcrypt.compare(password, student.password_hash);
 
     if (!isMatch) {
       return NextResponse.json(
