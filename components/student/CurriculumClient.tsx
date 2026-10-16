@@ -801,8 +801,8 @@ function SeriesView({
   }, [allLessons, currentSchedules, now, userProgress, displayModules]);
 
   const sortedLessons = useMemo(() => {
-    // 1. Assign canonical chronological sequence number (1, 2, ... N)
-    const chronological = [...enrichedLessons]
+    // Chronological order from Day 1 / earliest date at top to latest at bottom (1, 2, ... N)
+    return [...enrichedLessons]
       .filter((e: any) => e.schedule)
       .sort((a: any, b: any) => {
         if (a.schedDate && b.schedDate) {
@@ -815,22 +815,6 @@ function SeriesView({
         ...item,
         sessionNumber: idx + 1,
       }));
-
-    // 2. Sort so Newest date is at the top (first), and Oldest date is at the bottom (last)
-    return chronological.sort((a: any, b: any) => {
-      if (a.schedDate && b.schedDate) {
-        // Compare calendar day (descending)
-        const aDay = new Date(a.schedDate.getFullYear(), a.schedDate.getMonth(), a.schedDate.getDate()).getTime();
-        const bDay = new Date(b.schedDate.getFullYear(), b.schedDate.getMonth(), b.schedDate.getDate()).getTime();
-        if (bDay !== aDay) {
-          return bDay - aDay; // Newest date first, oldest date last
-        }
-        // Within the same day: keep chronological session order (morning to evening, notes then quiz)
-        const timeDiff = a.schedDate.getTime() - b.schedDate.getTime();
-        if (timeDiff !== 0) return timeDiff;
-      }
-      return (a.lesson.order_index ?? 0) - (b.lesson.order_index ?? 0);
-    });
   }, [enrichedLessons]);
 
   const completedCount = sortedLessons.filter((e: any) => e.isCompleted).length;
