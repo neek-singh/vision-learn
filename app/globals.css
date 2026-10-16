@@ -199,6 +199,76 @@ body {
   display: block !important;
 }
 
+/* Tables (Comparison / Content Tables) */
+.rich-content table,
+article table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  margin: 1.5rem 0 !important;
+  font-size: 0.875rem !important;
+  line-height: 1.6 !important;
+  border: 1px solid #cbd5e1 !important; /* slate-300 */
+  border-radius: 0.75rem !important;
+  overflow: hidden !important;
+  background-color: #ffffff !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+.table-responsive-wrapper {
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  margin: 1.5rem 0 !important;
+  border-radius: 0.75rem !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+.table-responsive-wrapper table {
+  margin: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.rich-content thead,
+article thead {
+  background-color: #f1f5f9 !important; /* slate-100 */
+  border-bottom: 2px solid #94a3b8 !important; /* slate-400 */
+}
+
+.rich-content th,
+article th {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important; /* slate-900 */
+  font-weight: 700 !important;
+  text-align: left !important;
+  padding: 0.75rem 1rem !important;
+  border: 1px solid #cbd5e1 !important;
+  font-size: 0.875rem !important;
+  letter-spacing: 0.01em !important;
+}
+
+.rich-content td,
+article td {
+  padding: 0.75rem 1rem !important;
+  color: #334155 !important; /* slate-700 */
+  border: 1px solid #e2e8f0 !important;
+  vertical-align: top !important;
+  font-size: 0.875rem !important;
+  line-height: 1.6 !important;
+}
+
+.rich-content tr:nth-child(even) td,
+article tr:nth-child(even) td {
+  background-color: #f8fafc !important;
+}
+
+.rich-content tr:hover td,
+article tr:hover td {
+  background-color: #f1f5f9 !important;
+  transition: background-color 0.15s ease !important;
+}
+
 /* Scoped zoom rules for Theory / Lesson Notes content */
 article[style*="--notes-font-size"] .rich-content,
 article[style*="--notes-font-size"] .rich-content p,
@@ -209,7 +279,10 @@ article[style*="--notes-font-size"] .rich-content ul,
 article[style*="--notes-font-size"] p,
 article[style*="--notes-font-size"] li,
 article[style*="--notes-font-size"] ul,
-article[style*="--notes-font-size"] ol {
+article[style*="--notes-font-size"] ol,
+article[style*="--notes-font-size"] table,
+article[style*="--notes-font-size"] th,
+article[style*="--notes-font-size"] td {
   font-size: var(--notes-font-size) !important;
 }
 

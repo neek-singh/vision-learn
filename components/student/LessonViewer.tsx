@@ -357,7 +357,7 @@ export default function LessonViewer({
 
   const questions = getQuestions();
 
-  // Add Copy buttons to code blocks
+  // Add Copy buttons to code blocks and responsive wrappers to tables
   useEffect(() => {
     const timer = setTimeout(() => {
       const preBlocks = document.querySelectorAll('.rich-content pre');
@@ -384,6 +384,16 @@ export default function LessonViewer({
         };
         
         pre.appendChild(button);
+      });
+
+      // Wrap tables for responsive horizontal scrolling on small screens
+      const tables = document.querySelectorAll('.rich-content table');
+      tables.forEach((tbl) => {
+        if (tbl.parentElement?.classList.contains('table-responsive-wrapper')) return;
+        const wrapper = document.createElement('div');
+        wrapper.className = 'table-responsive-wrapper';
+        tbl.parentNode?.insertBefore(wrapper, tbl);
+        wrapper.appendChild(tbl);
       });
     }, 500);
     return () => clearTimeout(timer);
