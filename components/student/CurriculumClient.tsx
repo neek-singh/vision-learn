@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import Link from "next/link";
 import { 
   BookOpen, 
   ChevronDown, 
@@ -24,7 +25,14 @@ import {
   Video,
   ListOrdered,
   LayoutList,
-  ArrowUpDown
+  ArrowUpDown,
+  Home,
+  ChevronRight,
+  Monitor,
+  Circle,
+  Download,
+  Users,
+  Bell
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import dynamic from "next/dynamic";
@@ -81,7 +89,10 @@ export function CurriculumClient({
   initialBatch = null,
   initialCourseId = null,
   availableBatches = [],
-  initialChapters = []
+  initialChapters = [],
+  courseInfo = null,
+  assignmentsCount = 0,
+  completedAssignmentsCount = 0
 }: { 
   initialModules: any[], 
   initialProgress: string[], 
@@ -93,7 +104,10 @@ export function CurriculumClient({
   initialBatch?: string | null,
   initialCourseId?: string | null,
   availableBatches?: any[],
-  initialChapters?: any[]
+  initialChapters?: any[],
+  courseInfo?: any,
+  assignmentsCount?: number,
+  completedAssignmentsCount?: number
 }) {
   const [courseId] = useState<string | null>(initialCourseId || initialModules[0]?.course_id || null);
   const [chapters] = useState<any[]>(initialChapters);
@@ -101,7 +115,9 @@ export function CurriculumClient({
   // Use cached data
   const { modules: cachedModules, progress: cachedProgress } = useCachedCurriculum(courseId || "", studentId);
 
-  const [expandedModules, setExpandedModules] = useState<string[]>([]);
+  const [expandedModules, setExpandedModules] = useState<string[]>(
+    initialModules[0] ? [initialModules[0].id] : []
+  );
   
   // Use local state for immediate feedback, synced with cachedProgress
   const [userProgress, setUserProgress] = useState<string[]>(initialProgress);
@@ -289,6 +305,13 @@ export function CurriculumClient({
     if (classLessons.length === 0) return 0;
     return Math.round((completedClasses.length / classLessons.length) * 100);
   }, [classLessons, completedClasses]);
+
+  const completedModulesCount = useMemo(() => {
+    return batchModules.filter(m => {
+      const lessons = m.lessons || [];
+      return lessons.length > 0 && lessons.every((l: any) => userProgress.includes(l.id));
+    }).length;
+  }, [batchModules, userProgress]);
 
   const [liveActiveSeconds, setLiveActiveSeconds] = useState(0);
   const [isLiveTracking, setIsLiveTracking] = useState(false);
@@ -523,214 +546,432 @@ export function CurriculumClient({
     setIsFullScreen(true);
   };
 
+  const courseTitle = courseInfo?.title || "DCA (Diploma in Computer Application)";
+  const courseDescription = courseInfo?.description || "Learn essential computer skills from basics to advanced with practical projects.";
+  const courseTitleShort = courseTitle.split('(')[0].trim() || "DCA";
+
   return (
-    <div className="max-w-4xl mx-auto space-y-3 pb-20">
-      {/* Sleek Minimal Header Card */}
-      <div className="bg-white rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs space-y-3">
-        {/* Top: Title & Completion Status */}
-        <div className="flex items-center justify-between gap-2">
+    <div className="max-w-7xl mx-auto space-y-6 pb-20">
+      {/* 1. Breadcrumb */}
+      <nav className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+        <Link href="/dashboard" className="text-slate-400 hover:text-slate-700 transition-colors flex items-center gap-1">
+          <Home size={15} />
+        </Link>
+        <span>My Courses</span>
+        <ChevronRight size={13} className="text-slate-300" />
+        <span className="text-slate-600 font-medium">{courseTitleShort}</span>
+        <ChevronRight size={13} className="text-slate-300" />
+        <span className="text-slate-900 font-bold">Syllabus</span>
+      </nav>
+
+      {/* 2. Hero Course Banner */}
+      <div className="bg-gradient-to-r from-sky-100/90 via-sky-50 to-blue-100/70 border border-sky-200/60 rounded-3xl p-5 sm:p-7 relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-xs">
+        <div className="flex items-start sm:items-center gap-4 relative z-10 min-w-0">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-sky-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-sky-500/20">
+            <Monitor size={32} className="stroke-[1.75]" />
+          </div>
           <div className="min-w-0">
-            <h1 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">My Classes</h1>
-          </div>
-          
-          <div className="flex items-center gap-1.5 shrink-0 bg-slate-50 border border-slate-200/70 px-2.5 py-1 rounded-full">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            <span className="text-[11px] font-bold text-slate-700">
-              {completedClasses.length}/{classLessons.length}
-            </span>
-            <span className="text-[10px] font-semibold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">
-              {totalProgress}%
-            </span>
+            <h1 className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight leading-snug">
+              {courseTitle}
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-600 font-medium mt-1 max-w-xl line-clamp-2">
+              {courseDescription}
+            </p>
+            <div className="flex items-center gap-2 sm:gap-2.5 mt-3 flex-wrap">
+              <span className="flex items-center gap-1.5 text-xs font-bold text-slate-700 bg-white/80 backdrop-blur-xs px-2.5 py-1 rounded-lg border border-slate-200/60 shadow-2xs">
+                <Clock size={13} className="text-emerald-600" />
+                <span>6 Months</span>
+              </span>
+              <span className="flex items-center gap-1.5 text-xs font-bold text-slate-700 bg-white/80 backdrop-blur-xs px-2.5 py-1 rounded-lg border border-slate-200/60 shadow-2xs">
+                <Layers size={13} className="text-sky-600" />
+                <span>{batchModules.length} Modules</span>
+              </span>
+              <span className="flex items-center gap-1.5 text-xs font-bold text-slate-700 bg-white/80 backdrop-blur-xs px-2.5 py-1 rounded-lg border border-slate-200/60 shadow-2xs">
+                <BookOpen size={13} className="text-indigo-600" />
+                <span>{classLessons.length}+ Lessons</span>
+              </span>
+              <span className="flex items-center gap-1.5 text-xs font-bold text-slate-700 bg-white/80 backdrop-blur-xs px-2.5 py-1 rounded-lg border border-slate-200/60 shadow-2xs">
+                <Award size={13} className="text-emerald-600" />
+                <span>Certificate</span>
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Clean, Thin Progress Bar */}
-        <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-          <div 
-            className="h-full bg-indigo-600 rounded-full transition-all duration-700 ease-out" 
-            style={{ width: `${totalProgress}%` }} 
+        {/* Desk illustration on right */}
+        <div className="hidden md:block relative shrink-0 w-64 lg:w-72 h-36 rounded-2xl overflow-hidden shadow-xs border border-white/60">
+          <img 
+            src="/images/course_banner_desk.jpg" 
+            alt="Course Study Desk" 
+            className="w-full h-full object-cover"
           />
-        </div>
-
-        {/* Minimal 4-Stats Bar (Single Row) */}
-        <div className="grid grid-cols-4 divide-x divide-slate-150 bg-slate-50/70 rounded-xl border border-slate-200/60 py-2 px-1 text-center">
-          <div className="px-1 flex flex-col items-center">
-            <div className="flex items-center gap-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-              <BookOpen size={11} className="text-indigo-500" />
-              <span>Total</span>
-            </div>
-            <p className="text-xs sm:text-sm font-bold text-slate-900 mt-0.5 leading-none">{classLessons.length}</p>
-          </div>
-
-          <div className="px-1 flex flex-col items-center">
-            <div className="flex items-center gap-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-              <CheckCircle2 size={11} className="text-emerald-500" />
-              <span>Done</span>
-            </div>
-            <p className="text-xs sm:text-sm font-bold text-emerald-600 mt-0.5 leading-none">{completedClasses.length}</p>
-          </div>
-
-          <div className="px-1 flex flex-col items-center">
-            <div className="flex items-center gap-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-              <Clock size={11} className="text-amber-500" />
-              <span>Learnt</span>
-              {isLiveTracking && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />}
-            </div>
-            <p className="text-xs sm:text-sm font-bold text-slate-900 mt-0.5 leading-none">{totalMinutes}m</p>
-          </div>
-
-          <div className="px-1 flex flex-col items-center">
-            <div className="flex items-center gap-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-              <Calendar size={11} className="text-purple-500" />
-              <span>Upcoming</span>
-            </div>
-            <p className="text-xs sm:text-sm font-bold text-slate-900 mt-0.5 leading-none">{upcomingCount}</p>
-          </div>
+          <div className="absolute inset-0 bg-gradient-to-r from-sky-50/60 via-transparent to-transparent pointer-events-none" />
         </div>
       </div>
 
-      {/* Sleek Minimal Tab Switcher */}
-      <div className="bg-slate-100/90 p-1 rounded-xl flex gap-1 border border-slate-200/50">
-        <button
-          onClick={() => {
-            setActiveTab('series');
-            router.replace('/curriculum?tab=series', { scroll: false });
-          }}
-          className={`flex-1 flex items-center justify-center gap-2 py-1.5 px-3 rounded-lg font-bold text-xs transition-all cursor-pointer ${
-            activeTab === 'series'
-              ? 'bg-white text-slate-900 shadow-2xs font-extrabold'
-              : 'text-slate-500 hover:text-slate-800'
-          }`}
-        >
-          <ListOrdered size={14} />
-          <span>Series (Timeline)</span>
-        </button>
+      {/* 3. Horizontal Navigation Tabs */}
+      <div className="border-b border-slate-200 flex items-center gap-6 sm:gap-8 overflow-x-auto text-sm font-semibold text-slate-500">
         <button
           onClick={() => {
             setActiveTab('syllabus');
             router.replace('/curriculum?tab=syllabus', { scroll: false });
           }}
-          className={`flex-1 flex items-center justify-center gap-2 py-1.5 px-3 rounded-lg font-bold text-xs transition-all cursor-pointer ${
+          className={`pb-3 -mb-[2px] transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
             activeTab === 'syllabus'
-              ? 'bg-white text-slate-900 shadow-2xs font-extrabold'
-              : 'text-slate-500 hover:text-slate-800'
+              ? 'text-sky-600 font-bold border-b-2 border-sky-600'
+              : 'hover:text-slate-900 border-b-2 border-transparent'
           }`}
         >
-          <LayoutList size={14} />
-          <span>Syllabus (Modules)</span>
+          <LayoutList size={16} />
+          <span>Syllabus</span>
         </button>
+
+        <button
+          onClick={() => {
+            setActiveTab('series');
+            router.replace('/curriculum?tab=series', { scroll: false });
+          }}
+          className={`pb-3 -mb-[2px] transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
+            activeTab === 'series'
+              ? 'text-sky-600 font-bold border-b-2 border-sky-600'
+              : 'hover:text-slate-900 border-b-2 border-transparent'
+          }`}
+        >
+          <ListOrdered size={16} />
+          <span>Series (Timeline)</span>
+        </button>
+
+        <Link
+          href="/dashboard"
+          className="pb-3 -mb-[2px] hover:text-slate-900 border-b-2 border-transparent transition-all whitespace-nowrap hidden sm:inline-block"
+        >
+          Overview
+        </Link>
+
+        <Link
+          href="/assignments"
+          className="pb-3 -mb-[2px] hover:text-slate-900 border-b-2 border-transparent transition-all whitespace-nowrap hidden sm:inline-block"
+        >
+          Assignments
+        </Link>
+
+        <Link
+          href="/assignments"
+          className="pb-3 -mb-[2px] hover:text-slate-900 border-b-2 border-transparent transition-all whitespace-nowrap hidden sm:inline-block"
+        >
+          Projects
+        </Link>
+
+        <Link
+          href="/materials"
+          className="pb-3 -mb-[2px] hover:text-slate-900 border-b-2 border-transparent transition-all whitespace-nowrap hidden sm:inline-block"
+        >
+          Resources
+        </Link>
       </div>
 
-      {activeTab === 'syllabus' ? (
-        <>
-          {/* Search and Filters Bar */}
-          <div className="bg-white rounded-xl p-2.5 sm:p-3 border border-slate-200/80 shadow-2xs space-y-2.5">
-            <div className="flex flex-col sm:flex-row gap-2 justify-between items-center">
-              <div className="relative w-full sm:flex-1">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                  <Search size={14} />
+      {/* 4. Two-Column Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Left Column (Main Content): 8 cols */}
+        <div className="lg:col-span-8 space-y-4">
+          {activeTab === 'syllabus' ? (
+            <>
+              {/* Search and Filters Bar */}
+              <div className="bg-white rounded-2xl p-3 sm:p-3.5 border border-slate-200/80 shadow-2xs flex flex-col sm:flex-row gap-2.5 justify-between items-center">
+                <div className="relative w-full sm:flex-1">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <Search size={14} />
+                  </div>
+                  <input 
+                    type="text"
+                    placeholder="Search lessons, topics or anything..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200/70 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 text-xs font-semibold text-slate-700"
+                  />
                 </div>
-                <input 
-                  type="text"
-                  placeholder="Search classes..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200/70 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-xs font-semibold text-slate-700"
-                />
+
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end shrink-0">
+                  <div className="flex rounded-xl bg-slate-50 p-0.5 border border-slate-200/60 text-[11px] font-semibold text-slate-500">
+                    <button 
+                      onClick={() => setFilterStatus('all')}
+                      className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${filterStatus === 'all' ? 'bg-white text-sky-600 shadow-2xs font-bold' : 'hover:text-slate-900'}`}
+                    >
+                      All
+                    </button>
+                    <button 
+                      onClick={() => setFilterStatus('completed')}
+                      className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${filterStatus === 'completed' ? 'bg-white text-emerald-600 shadow-2xs font-bold' : 'hover:text-slate-900'}`}
+                    >
+                      Completed
+                    </button>
+                    <button 
+                      onClick={() => setFilterStatus('in_progress')}
+                      className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${filterStatus === 'in_progress' ? 'bg-white text-sky-600 shadow-2xs font-bold' : 'hover:text-slate-900'}`}
+                    >
+                      In Progress
+                    </button>
+                    <button 
+                      onClick={() => setFilterStatus('locked')}
+                      className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${filterStatus === 'locked' ? 'bg-white text-rose-600 shadow-2xs font-bold' : 'hover:text-slate-900'}`}
+                    >
+                      Locked
+                    </button>
+                  </div>
+
+                  <select
+                    value={filterType}
+                    onChange={(e) => setFilterType(e.target.value)}
+                    className="px-2.5 py-1 rounded-xl bg-slate-50 border border-slate-200/60 focus:outline-none focus:ring-2 focus:ring-sky-500/20 text-[11px] font-semibold text-slate-600 cursor-pointer shrink-0"
+                  >
+                    <option value="all">All Types</option>
+                    <option value="video">Videos</option>
+                    <option value="mcq">Quizzes</option>
+                    <option value="assignment">Practical</option>
+                    <option value="notes">Notes</option>
+                  </select>
+                </div>
               </div>
 
-              <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end overflow-x-auto pb-0.5 sm:pb-0">
-                {/* Filter Status Selector */}
-                <div className="flex rounded-lg bg-slate-50 p-0.5 border border-slate-200/60 text-[11px] font-semibold text-slate-500 shrink-0">
-                  <button 
-                    onClick={() => setFilterStatus('all')}
-                    className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${filterStatus === 'all' ? 'bg-white text-indigo-600 shadow-2xs font-bold' : 'hover:text-slate-900'}`}
-                  >
-                    All
-                  </button>
-                  <button 
-                    onClick={() => setFilterStatus('completed')}
-                    className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${filterStatus === 'completed' ? 'bg-white text-emerald-600 shadow-2xs font-bold' : 'hover:text-slate-900'}`}
-                  >
-                    Completed
-                  </button>
-                  <button 
-                    onClick={() => setFilterStatus('in_progress')}
-                    className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${filterStatus === 'in_progress' ? 'bg-white text-indigo-600 shadow-2xs font-bold' : 'hover:text-slate-900'}`}
-                  >
-                    In Progress
-                  </button>
-                  <button 
-                    onClick={() => setFilterStatus('locked')}
-                    className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${filterStatus === 'locked' ? 'bg-white text-rose-600 shadow-2xs font-bold' : 'hover:text-slate-900'}`}
-                  >
-                    Locked
-                  </button>
+              {/* Modules List */}
+              <div className="space-y-3">
+                {filteredModules.length === 0 ? (
+                  <div className="bg-white p-12 rounded-2xl border border-slate-200/70 text-center">
+                    <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 mx-auto mb-3">
+                      <BookOpen size={24} />
+                    </div>
+                    <h3 className="text-sm font-bold text-slate-900 mb-1">No Classes Found</h3>
+                    <p className="text-xs text-slate-500 max-w-xs mx-auto">Try adjusting your search terms or filters to find what you are looking for.</p>
+                  </div>
+                ) : filteredModules.sort((a: any, b: any) => a.order_index - b.order_index).map((module: any, mIdx: number) => (
+                  <ModuleItem 
+                    key={module.id}
+                    module={module}
+                    mIdx={mIdx}
+                    isExpanded={expandedModules.includes(module.id)}
+                    toggleModule={toggleModule}
+                    progress={calculateModuleProgress(module.lessons)}
+                    userProgress={userProgress}
+                    currentSchedules={currentSchedules}
+                    now={now}
+                    formatTime={formatTime}
+                    isUpdating={isUpdating}
+                    toggleLessonCompletion={toggleLessonCompletion}
+                    openLesson={openLesson}
+                    availableBatches={availableBatches}
+                    chapters={chapters}
+                    nextLockedLessonId={nextLockedLessonId}
+                  />
+                ))}
+              </div>
+            </>
+          ) : (
+            /* Series View */
+            <SeriesView
+              allLessons={allLessons}
+              userProgress={userProgress}
+              currentSchedules={currentSchedules}
+              now={now}
+              formatTime={formatTime}
+              isUpdating={isUpdating}
+              toggleLessonCompletion={toggleLessonCompletion}
+              openLesson={openLesson}
+              nextLockedLessonId={nextLockedLessonId}
+              displayModules={displayModules}
+            />
+          )}
+        </div>
+
+        {/* Right Column (Widgets): 4 cols */}
+        <div className="lg:col-span-4 space-y-5">
+          {/* Card 1: Your Progress */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-4">
+            <h3 className="text-sm font-bold text-slate-900">Your Progress</h3>
+            
+            <div className="flex items-center gap-5">
+              {/* Radial gauge */}
+              <div className="relative w-24 h-24 shrink-0 flex items-center justify-center">
+                <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="40"
+                    className="text-slate-100"
+                    strokeWidth="9"
+                    stroke="currentColor"
+                    fill="transparent"
+                  />
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="40"
+                    className="text-sky-500 transition-all duration-700 ease-out"
+                    strokeWidth="9"
+                    strokeDasharray={251.2}
+                    strokeDashoffset={251.2 - (251.2 * totalProgress) / 100}
+                    strokeLinecap="round"
+                    stroke="currentColor"
+                    fill="transparent"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-xl font-black text-slate-900">{totalProgress}%</span>
+                </div>
+              </div>
+
+              {/* Metric lines */}
+              <div className="space-y-2.5 min-w-0 flex-1 text-xs">
+                <div className="flex items-center gap-2 text-slate-600">
+                  <BookOpen size={14} className="text-sky-600 shrink-0" />
+                  <span className="truncate">
+                    <strong className="text-slate-900 font-bold">{completedClasses.length} / {classLessons.length}</strong> Lessons Completed
+                  </span>
                 </div>
 
-                {/* Filter Type Selector */}
-                <select
-                  value={filterType}
-                  onChange={(e) => setFilterType(e.target.value)}
-                  className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200/60 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-[11px] font-semibold text-slate-600 cursor-pointer shrink-0"
-                >
-                  <option value="all">All Types</option>
-                  <option value="video">Videos</option>
-                  <option value="article">Articles</option>
-                  <option value="document">Documents</option>
-                  <option value="offline">Assignments</option>
-                </select>
+                <div className="flex items-center gap-2 text-slate-600">
+                  <Layers size={14} className="text-emerald-600 shrink-0" />
+                  <span className="truncate">
+                    <strong className="text-slate-900 font-bold">{completedModulesCount} / {batchModules.length}</strong> Modules Completed
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2 text-slate-600">
+                  <FileText size={14} className="text-indigo-600 shrink-0" />
+                  <span className="truncate">
+                    <strong className="text-slate-900 font-bold">{completedAssignmentsCount} / {assignmentsCount || 10}</strong> Assignments Done
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                if (nextUpLesson) {
+                  openLesson(nextUpLesson);
+                } else if (allLessons.length > 0) {
+                  openLesson(allLessons[0]);
+                }
+              }}
+              className="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-bold py-2.5 px-4 rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 text-sm cursor-pointer"
+            >
+              <span>Continue Learning</span>
+              <ChevronRight size={16} />
+            </button>
+          </div>
+
+          {/* Card 2: Course Information */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-4">
+            <h3 className="text-sm font-bold text-slate-900">Course Information</h3>
+            
+            <div className="space-y-3.5 text-xs">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center shrink-0">
+                  <Clock size={16} />
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Duration</p>
+                  <p className="font-bold text-slate-800">6 Months</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center shrink-0">
+                  <Layers size={16} />
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Total Modules</p>
+                  <p className="font-bold text-slate-800">{batchModules.length} Modules</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center shrink-0">
+                  <BookOpen size={16} />
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Total Lessons</p>
+                  <p className="font-bold text-slate-800">{classLessons.length}+ Lessons</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center shrink-0">
+                  <Monitor size={16} />
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Mode</p>
+                  <p className="font-bold text-slate-800">Online + Practical</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center shrink-0">
+                  <Award size={16} />
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Certificate</p>
+                  <p className="font-bold text-slate-800">On Completion</p>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Modules List */}
-          <div className="space-y-2.5">
-            {filteredModules.length === 0 ? (
-              <div className="bg-white p-12 rounded-2xl border border-slate-200/70 text-center">
-                <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 mx-auto mb-3">
-                   <BookOpen size={24} />
+          {/* Card 3: Quick Links */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-3">
+            <h3 className="text-sm font-bold text-slate-900">Quick Links</h3>
+            
+            <div className="space-y-1 text-xs">
+              <div className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 transition-colors group cursor-pointer">
+                <div className="flex items-center gap-2.5 text-slate-700 font-semibold group-hover:text-sky-600 transition-colors">
+                  <Download size={15} className="text-slate-400 group-hover:text-sky-600" />
+                  <span>Download Syllabus (PDF)</span>
                 </div>
-                <h3 className="text-sm font-bold text-slate-900 mb-1">No Classes Found</h3>
-                <p className="text-xs text-slate-500 max-w-xs mx-auto">Try adjusting your search terms or filters to find what you are looking for.</p>
+                <DownloadButton
+                  courseId={courseId || ""}
+                  courseTitle={courseTitle}
+                />
               </div>
-            ) : filteredModules.sort((a: any, b: any) => a.order_index - b.order_index).map((module: any, mIdx: number) => (
-              <ModuleItem 
-                key={module.id}
-                module={module}
-                mIdx={mIdx}
-                isExpanded={expandedModules.includes(module.id)}
-                toggleModule={toggleModule}
-                progress={calculateModuleProgress(module.lessons)}
-                userProgress={userProgress}
-                currentSchedules={currentSchedules}
-                now={now}
-                formatTime={formatTime}
-                isUpdating={isUpdating}
-                toggleLessonCompletion={toggleLessonCompletion}
-                openLesson={openLesson}
-                availableBatches={availableBatches}
-                chapters={chapters}
-                nextLockedLessonId={nextLockedLessonId}
-              />
-            ))}
+
+              <Link 
+                href="/notifications"
+                className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-slate-50 transition-colors text-slate-700 font-semibold hover:text-sky-600 group"
+              >
+                <HelpCircle size={15} className="text-slate-400 group-hover:text-sky-600" />
+                <span>Ask a Doubt</span>
+              </Link>
+
+              <Link 
+                href="/dashboard"
+                className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-slate-50 transition-colors text-slate-700 font-semibold hover:text-sky-600 group"
+              >
+                <Users size={15} className="text-slate-400 group-hover:text-sky-600" />
+                <span>Join Discussion</span>
+              </Link>
+
+              <Link 
+                href="/notifications"
+                className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-slate-50 transition-colors text-slate-700 font-semibold hover:text-sky-600 group"
+              >
+                <Bell size={15} className="text-slate-400 group-hover:text-sky-600" />
+                <span>View Announcements</span>
+              </Link>
+            </div>
           </div>
-        </>
-      ) : (
-        /* Series View */
-        <SeriesView
-          allLessons={allLessons}
-          userProgress={userProgress}
-          currentSchedules={currentSchedules}
-          now={now}
-          formatTime={formatTime}
-          isUpdating={isUpdating}
-          toggleLessonCompletion={toggleLessonCompletion}
-          openLesson={openLesson}
-          nextLockedLessonId={nextLockedLessonId}
-          displayModules={displayModules}
-        />
-      )}
+
+          {/* Card 4: Quote Card */}
+          <div className="bg-emerald-50/70 border border-emerald-100 rounded-2xl p-4.5 text-xs text-slate-700 space-y-2">
+            <div className="flex items-start gap-2">
+              <span className="text-2xl font-serif text-emerald-600 leading-none select-none">“</span>
+              <p className="font-semibold text-slate-800 leading-relaxed italic">
+                Practice is the bridge between learning and success.
+              </p>
+            </div>
+            <p className="text-[11px] font-bold text-emerald-700 text-right">
+              — Vision Learn
+            </p>
+          </div>
+        </div>
+      </div>
 
       {/* Lesson Viewer Modal */}
       {activeLesson && (
@@ -1099,42 +1340,60 @@ function ModuleItem({
     );
   };
 
+  const moduleColorStyles = [
+    'bg-sky-600 text-white',
+    'bg-indigo-600 text-white',
+    'bg-emerald-600 text-white',
+    'bg-amber-600 text-white',
+    'bg-rose-600 text-white',
+    'bg-purple-600 text-white',
+  ];
+
+  const completedInModule = useMemo(() => {
+    return lessons.filter((l: any) => userProgress.includes(l.id)).length;
+  }, [lessons, userProgress]);
+
   return (
-    <div className={`bg-white rounded-xl border transition-all duration-300 ${
-      isExpanded ? 'border-indigo-200 shadow-2xs' : 'border-slate-200/80 shadow-2xs hover:border-slate-300'
+    <div className={`bg-white rounded-2xl border transition-all duration-300 overflow-hidden ${
+      isExpanded ? 'border-sky-200 shadow-sm' : 'border-slate-200/80 shadow-2xs hover:border-slate-300'
     }`}>
       <button 
         onClick={() => toggleModule(module.id)}
-        className="w-full px-3.5 py-3 flex items-center justify-between text-left group cursor-pointer"
+        className="w-full px-4 sm:px-5 py-3.5 sm:py-4 flex items-center justify-between text-left group cursor-pointer hover:bg-slate-50/50 transition-colors"
       >
-        <div className="flex items-center gap-3 min-w-0">
-          <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 transition-colors ${
-            isExpanded ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 group-hover:bg-slate-200'
+        <div className="flex items-center gap-3.5 min-w-0">
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 shadow-xs ${
+            moduleColorStyles[mIdx % moduleColorStyles.length]
           }`}>
             {mIdx + 1}
           </div>
           <div className="min-w-0">
-            <h3 className="text-xs sm:text-sm font-bold text-slate-900 leading-tight truncate">{module.title}</h3>
-            <div className="flex items-center gap-2.5 mt-0.5">
-              <span className="text-[10px] font-semibold text-slate-400 flex items-center gap-1 shrink-0">
-                <BookOpen size={11} /> {lessons.length} Classes
-              </span>
-              <div className="flex items-center gap-1.5 shrink-0">
-                <div className="w-14 sm:w-20 h-1 bg-slate-100 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-indigo-600 rounded-full transition-all duration-500" 
-                    style={{ width: `${progress}%` }} 
-                  />
-                </div>
-                <span className="text-[10px] font-bold text-indigo-600">{progress}%</span>
-              </div>
-            </div>
+            <h3 className="text-xs sm:text-sm font-bold text-slate-900 leading-tight truncate">
+              {module.title?.toLowerCase().startsWith("module") ? module.title : `Module ${mIdx + 1}: ${module.title}`}
+            </h3>
+            <p className="text-[11px] text-slate-500 font-medium mt-0.5 line-clamp-1">
+              {module.description || "Foundational concepts, practice tasks, and exercises."}
+            </p>
           </div>
         </div>
-        <div className={`w-6 h-6 rounded-md flex items-center justify-center transition-transform duration-200 shrink-0 ${
-          isExpanded ? 'text-indigo-600 rotate-180' : 'text-slate-400'
-        }`}>
-          <ChevronDown size={15} />
+
+        <div className="flex items-center gap-3 sm:gap-4 shrink-0 ml-3">
+          <div className="text-right hidden sm:block">
+            <span className="text-xs font-semibold text-slate-500">
+              {completedInModule} / {lessons.length} lessons
+            </span>
+            <div className="w-24 sm:w-28 h-1.5 bg-slate-100 rounded-full overflow-hidden mt-1">
+              <div 
+                className="h-full bg-emerald-500 rounded-full transition-all duration-500" 
+                style={{ width: `${progress}%` }} 
+              />
+            </div>
+          </div>
+          <div className={`w-6 h-6 rounded-md flex items-center justify-center transition-transform duration-200 shrink-0 ${
+            isExpanded ? 'text-sky-600 rotate-180' : 'text-slate-400'
+          }`}>
+            <ChevronDown size={18} />
+          </div>
         </div>
       </button>
 
@@ -1323,77 +1582,77 @@ function LessonItem({
   return (
     <div 
       onClick={() => !isLocked && openLesson(lesson)}
-      className={`flex items-center justify-between p-2 sm:p-2.5 rounded-xl border transition-all duration-200 group ${
-        !isLocked ? 'cursor-pointer hover:border-indigo-200' : 'cursor-default'
+      className={`flex items-center justify-between p-3 sm:px-4 sm:py-3.5 rounded-xl transition-all duration-200 group border ${
+        !isLocked ? 'cursor-pointer hover:bg-slate-50/70 border-slate-100 hover:border-slate-200' : 'cursor-default opacity-80 border-slate-100/70 bg-slate-50/40'
       } ${
-        isNextLocked
-          ? 'bg-white border-indigo-200 shadow-2xs'
-          : isLocked ? 'bg-slate-50/50 border-slate-100 opacity-80' :
-            isCompleted ? 'bg-emerald-50/20 border-emerald-100 hover:border-emerald-200' :
-            isInProgress ? 'bg-white border-indigo-100 shadow-2xs' :
-            'bg-white border-slate-200/70 hover:border-slate-300'
+        isInProgress ? 'bg-sky-50/20 border-sky-100' : isCompleted ? 'bg-emerald-50/10 border-slate-100' : 'bg-white'
       }`}
     >
-      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
-        <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all shrink-0 ${typeColorClasses}`}>
-          {(isLocked || isNextLocked) ? <Lock size={12} /> : <TypeIcon size={13} />}
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <h5 className={`font-semibold text-xs sm:text-sm leading-snug truncate min-w-0 flex-1 ${isCompleted ? 'text-slate-600' : 'text-slate-900'}`}>
-              {lesson.classIndex ? `Class ${lesson.classIndex}: ${lesson.title}` :
-               (lesson.lesson_type || lesson.type)?.toLowerCase() === 'mcq' ? `Quiz: ${lesson.title}` :
-               (lesson.lesson_type || lesson.type)?.toLowerCase() === 'assignment' ? `Assignment: ${lesson.title}` :
-               (lesson.lesson_type || lesson.type)?.toLowerCase() === 'project' ? `Project: ${lesson.title}` :
-               `${lesson.title}`}
-            </h5>
-            {isInProgress && (
-              <span className="text-[9px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100 shrink-0">
-                In Progress
-              </span>
-            )}
-            {isNextLocked && <span className="text-[9px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100 shrink-0">Next</span>}
-          </div>
-          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-            <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 shrink-0">
-              {(lesson.lesson_type || lesson.type || 'Class')} {lesson.duration ? `• ${lesson.duration}m` : ''}
-            </span>
-            {schedule && (
-              <span className="text-[9px] font-medium text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200/60 flex items-center gap-1 shrink-0">
-                <Calendar size={9} /> 
-                <span>
-                  {new Date(schedule.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                  {schedule.start_time ? ` • ${formatTime(schedule.start_time)}` : ''}
-                </span>
-              </span>
-            )}
-          </div>
-        </div>
+      <div className="flex items-center gap-3 min-w-0 flex-1">
+        {/* Status Icon */}
+        {isCompleted ? (
+          <CheckCircle2 size={18} className="text-emerald-500 shrink-0" />
+        ) : isInProgress ? (
+          <PlayCircle size={18} className="text-sky-600 shrink-0" />
+        ) : isLocked && !isNextLocked ? (
+          <Circle size={18} className="text-slate-300 shrink-0" />
+        ) : isNextLocked ? (
+          <Lock size={16} className="text-sky-600 shrink-0" />
+        ) : (
+          <Circle size={18} className="text-slate-300 shrink-0" />
+        )}
+
+        {/* Index */}
+        <span className="text-xs font-bold text-slate-400 shrink-0">
+          {lesson.classIndex ? `1.${lesson.classIndex}` : `1.${lIdx + 1}`}
+        </span>
+
+        {/* Title */}
+        <span className={`text-xs sm:text-sm font-semibold truncate min-w-0 ${
+          isCompleted ? 'text-slate-700' : isLocked ? 'text-slate-500' : 'text-slate-900'
+        }`}>
+          {lesson.title}
+        </span>
       </div>
 
-      <div className="shrink-0 ml-2 w-[58px] flex justify-end items-center">
-        {isNextLocked ? (
-          <div className="w-7 h-7 rounded-lg bg-indigo-50/80 border border-indigo-150 flex items-center justify-center text-indigo-500">
-            <Lock size={12} />
-          </div>
-        ) : isLocked ? (
-          <div className="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200/60 flex items-center justify-center text-slate-400">
-            <Lock size={12} />
-          </div>
+      {/* Badges on right */}
+      <div className="flex items-center gap-2 shrink-0 ml-3">
+        {/* Status Pill */}
+        {isCompleted ? (
+          <span className="bg-emerald-50 text-emerald-600 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+            Completed
+          </span>
+        ) : isInProgress ? (
+          <span className="bg-sky-50 text-sky-600 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+            In Progress
+          </span>
+        ) : isNextLocked ? (
+          <span className="bg-sky-50 text-sky-600 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+            Next
+          </span>
         ) : (
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              openLesson(lesson);
-            }}
-            className={`w-full py-1 text-center rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 cursor-pointer ${
-              isCompleted ? 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200/60' :
-              isInProgress ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-2xs' :
-              'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            }`}
-          >
-            {isCompleted ? 'Review' : 'Start'}
-          </button>
+          <span className="bg-slate-100 text-slate-500 text-xs font-medium px-2.5 py-0.5 rounded-full">
+            Not Started
+          </span>
+        )}
+
+        {/* Type Pill */}
+        {lessonType === 'video' ? (
+          <span className="bg-sky-50 text-sky-600 text-xs font-semibold px-2.5 py-0.5 rounded-full flex items-center gap-1">
+            <Play size={10} className="fill-current" /> Video
+          </span>
+        ) : lessonType === 'mcq' ? (
+          <span className="bg-purple-50 text-purple-600 text-xs font-semibold px-2.5 py-0.5 rounded-full flex items-center gap-1">
+            <HelpCircle size={10} /> MCQ Test
+          </span>
+        ) : lessonType === 'assignment' || lessonType === 'project' ? (
+          <span className="bg-amber-50 text-amber-600 text-xs font-semibold px-2.5 py-0.5 rounded-full flex items-center gap-1">
+            <PenTool size={10} /> Practical
+          </span>
+        ) : (
+          <span className="bg-slate-100 text-slate-600 text-xs font-semibold px-2.5 py-0.5 rounded-full flex items-center gap-1">
+            <FileText size={10} /> Notes
+          </span>
         )}
       </div>
     </div>

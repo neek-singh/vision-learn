@@ -53,17 +53,32 @@ async function CurriculumContent({ userId }: { userId: string }) {
   const courseId = enrollmentData[0].course_id;
   const activeBatch = student?.batch || enrollmentData[0].batch;
 
-  // 2. Fetch Modules, Progress, Schedules, Tests, Materials, Batches, and Chapters in parallel
-  const [modulesRes, progressRes, schedulesRes, testsRes, materialsRes, batchesRes, chaptersRes] = await Promise.all([
+  // 2. Fetch Course, Modules, Progress, Schedules, Tests, Materials, Batches, Chapters, and Assignments in parallel
+  const [
+    courseRes,
+    modulesRes, 
+    progressRes, 
+    schedulesRes, 
+    testsRes, 
+    materialsRes, 
+    batchesRes, 
+    chaptersRes,
+    assignmentsRes,
+    submissionsRes
+  ] = await Promise.all([
+    supabase.from("courses").select("id, title, description, category").eq("id", courseId).single(),
     supabase.from("lms_modules").select(`id, title, order_index, lessons (*)`).eq("course_id", courseId).order("order_index"),
     supabase.from("user_progress").select("lesson_id").eq("user_id", userId).eq("completed", true),
     supabase.from("schedules").select("title, batch, type, date, start_time").eq("course_id", courseId),
     supabase.from("tests").select("*").eq("course_id", courseId).eq("is_published", true),
     supabase.from("materials").select("*").eq("course_id", courseId).eq("is_published", true),
     supabase.from("batches").select("*").eq("course_id", courseId),
-    supabase.from("lms_chapters").select("*").order("order_index")
+    supabase.from("lms_chapters").select("*").order("order_index"),
+    supabase.from("assignments").select("id").eq("course_id", courseId),
+    supabase.from("submissions").select("assignment_id").eq("student_id", userId)
   ]);
 
+  const courseData = courseRes.data;
   const modulesData = modulesRes.data || [];
   const initialProgress = progressRes.data?.map(p => p.lesson_id) || [];
   const rawSchedules = schedulesRes.data || [];
@@ -71,6 +86,8 @@ async function CurriculumContent({ userId }: { userId: string }) {
   const materialsData = materialsRes.data || [];
   const batchesData = batchesRes.data || [];
   const chaptersData = chaptersRes.data || [];
+  const assignmentsCount = assignmentsRes.data?.length || 0;
+  const completedAssignmentsCount = submissionsRes.data?.length || 0;
 
   // Filter schedules in JS
   const normalizedActiveBatch = activeBatch?.trim().toLowerCase();
@@ -101,6 +118,9 @@ async function CurriculumContent({ userId }: { userId: string }) {
       initialCourseId={courseId}
       availableBatches={batchesData}
       initialChapters={chaptersData}
+      courseInfo={courseData}
+      assignmentsCount={assignmentsCount}
+      completedAssignmentsCount={completedAssignmentsCount}
     />
   );
 }
