@@ -195,12 +195,14 @@ export function GlobalSearch() {
   if (!isOpen) return (
     <button 
       onClick={() => setIsOpen(true)}
-      className="flex items-center gap-2 p-2 md:px-3 md:py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-400 hover:bg-slate-100 transition-all hover:border-slate-300 group shadow-sm active:scale-95"
+      className="flex items-center gap-2.5 px-3 py-1.5 md:w-80 lg:w-96 bg-slate-50/80 hover:bg-slate-100/90 border border-slate-200/80 rounded-xl text-slate-400 hover:border-slate-300 transition-all text-left shadow-2xs group cursor-pointer"
     >
-      <Search size={18} className="md:w-4 md:h-4 group-hover:text-indigo-600 transition-colors" />
-      <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">Search...</span>
-      <kbd className="hidden lg:flex items-center gap-1 px-1.5 py-0.5 bg-white border border-slate-200 rounded text-[9px] font-black text-slate-400">
-        <Command size={10} /> K
+      <Search size={15} className="text-slate-400 group-hover:text-blue-600 shrink-0 transition-colors" />
+      <span className="text-xs text-slate-400 font-medium truncate flex-1">
+        Search lessons, topics or anything...
+      </span>
+      <kbd className="hidden lg:flex items-center gap-0.5 px-1.5 py-0.5 bg-white border border-slate-200/90 rounded text-[9px] font-bold text-slate-400 shrink-0 shadow-2xs">
+        <Command size={9} /> K
       </kbd>
     </button>
   );

@@ -19,7 +19,7 @@ export default async function CurriculumPage() {
   if (!payload) redirect("/login");
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
+    <div className="animate-in fade-in duration-500">
       <Suspense fallback={<CurriculumSkeleton />}>
         <CurriculumContent userId={payload.id} />
       </Suspense>
@@ -66,7 +66,7 @@ async function CurriculumContent({ userId }: { userId: string }) {
     assignmentsRes,
     submissionsRes
   ] = await Promise.all([
-    supabase.from("courses").select("id, title, description, category").eq("id", courseId).single(),
+    supabase.from("courses").select("*").eq("id", courseId).single(),
     supabase.from("lms_modules").select(`id, title, order_index, lessons (*)`).eq("course_id", courseId).order("order_index"),
     supabase.from("user_progress").select("lesson_id").eq("user_id", userId).eq("completed", true),
     supabase.from("schedules").select("title, batch, type, date, start_time").eq("course_id", courseId),

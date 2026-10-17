@@ -466,21 +466,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Top Navbar */}
-        <header className="h-16 bg-white border-b border-slate-100 flex items-center justify-between px-4 sm:px-6 lg:px-8 sticky top-0 z-30">
+        {/* Top Navbar - Compact height */}
+        <header className="h-13 bg-white border-b border-slate-100 flex items-center justify-between px-4 sm:px-6 lg:px-8 sticky top-0 z-30">
           <button 
             onClick={() => setIsMobileMenuOpen(true)}
             aria-label="Open mobile menu"
-            className="p-2 -ml-2 text-slate-400 hover:text-slate-900 lg:hidden"
+            className="p-1.5 -ml-1 text-slate-400 hover:text-slate-900 lg:hidden"
           >
-            <Menu size={20} />
+            <Menu size={18} />
           </button>
 
-          <div className="flex items-center gap-4">
-            <div className="hidden lg:block">
-              <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Student Portal</h2>
-              <p className="text-[8px] font-black text-indigo-600 uppercase tracking-wider">Vision IT Academy</p>
-            </div>
+          <div className="flex items-center gap-3">
             <GlobalSearch />
           </div>
 
@@ -488,26 +484,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Link 
               href="/notifications"
               aria-label={`View notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}
-              className="p-2 text-slate-400 hover:text-slate-900 relative"
+              className="p-1.5 text-slate-400 hover:text-slate-900 relative"
             >
-              <Bell size={18} />
+              <Bell size={17} />
               {unreadCount > 0 && (
-                <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-rose-500 rounded-full border-2 border-white" />
+                <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-rose-500 rounded-full border-2 border-white" />
               )}
             </Link>
             
-            <div className="h-6 w-[1px] bg-slate-100 mx-1" />
+            <div className="h-5 w-[1px] bg-slate-100 mx-0.5" />
             
             <div className="flex items-center gap-2">
               <Link href="/profile" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                 <div className="text-right hidden sm:block">
-                  <p className="text-xs font-black text-slate-900 leading-none">{student?.name || "Loading..."}</p>
+                  <p className="text-xs font-bold text-slate-900 leading-tight">{student?.name || "Loading..."}</p>
+                  <p className="text-[10px] text-slate-400 font-medium leading-none">Student</p>
                 </div>
-                <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden">
+                <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs uppercase overflow-hidden shadow-2xs">
                   {student?.photo_url ? (
                     <img src={student.photo_url} alt="Profile" className="w-full h-full object-cover" />
+                  ) : student?.name ? (
+                    student.name.substring(0, 2)
                   ) : (
-                    <User size={16} className="text-slate-400" />
+                    <User size={15} className="text-white" />
                   )}
                 </div>
               </Link>
@@ -515,7 +514,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        <main className="p-4 lg:p-6 max-w-7xl pb-24 lg:pb-6">
+        <main className="p-3.5 lg:p-4 max-w-7xl pb-24 lg:pb-6">
           {children}
         </main>
 
