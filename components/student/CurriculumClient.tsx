@@ -23,7 +23,8 @@ import {
   FolderCode,
   Video,
   ListOrdered,
-  LayoutList
+  LayoutList,
+  ArrowUpDown
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import dynamic from "next/dynamic";
@@ -50,6 +51,23 @@ const isScheduleTypeMatch = (s: any, l: any) => {
   if (lType === 'assignment') return sType === 'assignment';
   if (lType === 'project') return sType === 'project';
   return sType === 'class' || sType === 'lecture' || sType === 'event';
+};
+
+const getLatestScheduleForLesson = (currentSchedules: any[], lesson: any) => {
+  if (!lesson || !currentSchedules || currentSchedules.length === 0) return null;
+  const matching = currentSchedules.filter((st: any) => {
+    const sTitle = st.title || '';
+    const parts = sTitle.split(':');
+    const lessonPart = parts[parts.length - 1].trim();
+    return normalize(lessonPart) === normalize(lesson.title) && isScheduleTypeMatch(st, lesson);
+  });
+  if (matching.length === 0) return null;
+  if (matching.length === 1) return matching[0];
+  return [...matching].sort((a: any, b: any) => {
+    const timeA = new Date(`${a.date}T${a.start_time || '00:00'}`).getTime();
+    const timeB = new Date(`${b.date}T${b.start_time || '00:00'}`).getTime();
+    return timeB - timeA;
+  })[0];
 };
 
 export function CurriculumClient({ 
@@ -312,12 +330,7 @@ export function CurriculumClient({
     const incompleteLessons = allLessons.filter(lesson => !userProgress.includes(lesson.id));
 
     const lessonsWithSchedules = incompleteLessons.map(lesson => {
-      const schedule = currentSchedules.find((st: any) => {
-        const sTitle = st.title || '';
-        const parts = sTitle.split(':');
-        const lessonPart = parts[parts.length - 1].trim();
-        return normalize(lessonPart) === normalize(lesson.title) && isScheduleTypeMatch(st, lesson);
-      });
+      const schedule = getLatestScheduleForLesson(currentSchedules, lesson);
 
       let isScheduled = false;
       let isTimeReached = false;
@@ -357,12 +370,7 @@ export function CurriculumClient({
     for (const lesson of allLessons) {
       if (userProgress.includes(lesson.id)) continue; // skip completed
       // Only consider lessons that have an explicit schedule
-      const schedule = currentSchedules.find((st: any) => {
-        const sTitle = st.title || '';
-        const parts = sTitle.split(':');
-        const lessonPart = parts[parts.length - 1].trim();
-        return normalize(lessonPart) === normalize(lesson.title) && isScheduleTypeMatch(st, lesson);
-      });
+      const schedule = getLatestScheduleForLesson(currentSchedules, lesson);
       if (!schedule) continue; // self-paced = skip, not a "Coming Next" candidate
       // Check if the schedule is in the future (still locked)
       const schedDate = new Date(schedule.date);
@@ -379,25 +387,14 @@ export function CurriculumClient({
     const normalize = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
     const lesson = allLessons.find(l => l.id === nextLockedLessonId);
     if (!lesson) return null;
-    const schedule = currentSchedules.find((st: any) => {
-      const sTitle = st.title || '';
-      const parts = sTitle.split(':');
-      const lessonPart = parts[parts.length - 1].trim();
-      return normalize(lessonPart) === normalize(lesson.title) && isScheduleTypeMatch(st, lesson);
-    });
+    const schedule = getLatestScheduleForLesson(currentSchedules, lesson);
     return schedule ? { lesson, schedule } : null;
   }, [nextLockedLessonId, allLessons, currentSchedules]);
 
   // Check if nextUpLesson is actually a scheduled class (not just a self-paced fallback)
   const nextUpLessonHasSchedule = useMemo(() => {
     if (!nextUpLesson) return false;
-    const normalize = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
-    return currentSchedules.some((st: any) => {
-      const sTitle = st.title || '';
-      const parts = sTitle.split(':');
-      const lessonPart = parts[parts.length - 1].trim();
-      return normalize(lessonPart) === normalize(nextUpLesson.title) && isScheduleTypeMatch(st, nextUpLesson);
-    });
+    return !!getLatestScheduleForLesson(currentSchedules, nextUpLesson);
   }, [nextUpLesson, currentSchedules]);
 
   // Filter displayModules down to matching search/filter constraints
@@ -424,12 +421,7 @@ export function CurriculumClient({
 
         // Status filter
         const isCompleted = userProgress.includes(lesson.id);
-        const schedule = currentSchedules.find((st: any) => {
-          const sTitle = st.title || '';
-          const parts = sTitle.split(':');
-          const lessonPart = parts[parts.length - 1].trim();
-          return normalize(lessonPart) === normalize(lesson.title) && isScheduleTypeMatch(st, lesson);
-        });
+        const schedule = getLatestScheduleForLesson(currentSchedules, lesson);
         
         let isScheduled = false;
         let isTimeReached = false;
@@ -463,12 +455,7 @@ export function CurriculumClient({
       const lessonToOpen = allLessons.find(l => l.id === lessonIdParam);
       if (lessonToOpen) {
         // Check if locked before auto-opening
-        const schedule = currentSchedules.find((st: any) => {
-          const sTitle = st.title || '';
-          const parts = sTitle.split(':');
-          const lessonPart = parts[parts.length - 1].trim();
-          return normalize(lessonPart) === normalize(lessonToOpen.title) && isScheduleTypeMatch(st, lessonToOpen);
-        });
+        const schedule = getLatestScheduleForLesson(currentSchedules, lessonToOpen);
         
         let isScheduled = false;
         let isTimeReached = false;
@@ -775,16 +762,11 @@ function SeriesView({
   nextLockedLessonId,
   displayModules
 }: any) {
-  const normalize = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
 
   const enrichedLessons = useMemo(() => {
     return allLessons.map((lesson: any) => {
-      const schedule = currentSchedules.find((st: any) => {
-        const sTitle = st.title || '';
-        const parts = sTitle.split(':');
-        const lessonPart = parts[parts.length - 1].trim();
-        return normalize(lessonPart) === normalize(lesson.title) && isScheduleTypeMatch(st, lesson);
-      });
+      const schedule = getLatestScheduleForLesson(currentSchedules, lesson);
       let schedDate: Date | null = null;
       let isTimeReached = false;
       if (schedule) {
@@ -801,8 +783,8 @@ function SeriesView({
   }, [allLessons, currentSchedules, now, userProgress, displayModules]);
 
   const sortedLessons = useMemo(() => {
-    // Chronological order from Day 1 / earliest date at top to latest at bottom (1, 2, ... N)
-    return [...enrichedLessons]
+    // 1. Assign chronological session numbers (1 ... N from oldest to newest)
+    const chronological = [...enrichedLessons]
       .filter((e: any) => e.schedule)
       .sort((a: any, b: any) => {
         if (a.schedDate && b.schedDate) {
@@ -815,7 +797,20 @@ function SeriesView({
         ...item,
         sessionNumber: idx + 1,
       }));
-  }, [enrichedLessons]);
+
+    if (sortOrder === 'oldest') {
+      return chronological;
+    }
+
+    // Default: Newest first (the last scheduled content appears first at the top)
+    return [...chronological].sort((a: any, b: any) => {
+      if (a.schedDate && b.schedDate) {
+        const diff = b.schedDate.getTime() - a.schedDate.getTime();
+        if (diff !== 0) return diff;
+      }
+      return (b.lesson.order_index ?? 0) - (a.lesson.order_index ?? 0);
+    });
+  }, [enrichedLessons, sortOrder]);
 
   const completedCount = sortedLessons.filter((e: any) => e.isCompleted).length;
   const progressPct = sortedLessons.length > 0 ? Math.round((completedCount / sortedLessons.length) * 100) : 0;
@@ -839,9 +834,18 @@ function SeriesView({
     <div className="space-y-3">
       {/* Timeline Status Header */}
       <div className="flex items-center justify-between px-1">
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           <span className="text-xs font-bold text-slate-800">Timeline Sessions</span>
           <span className="text-[10px] font-semibold text-slate-400">• {sortedLessons.length} classes</span>
+          <button
+            type="button"
+            onClick={() => setSortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 transition-all cursor-pointer"
+            title="Toggle sort order"
+          >
+            <ArrowUpDown size={10} />
+            <span>{sortOrder === 'newest' ? 'Newest First' : 'Oldest First'}</span>
+          </button>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-16 sm:w-20 h-1.5 bg-slate-100 rounded-full overflow-hidden">
@@ -1028,7 +1032,9 @@ function SeriesView({
           <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
             <CheckCircle2 size={11} className="text-slate-300" />
           </div>
-          <p className="text-[9px] font-bold text-slate-300 uppercase tracking-wider">End of Classes</p>
+          <p className="text-[9px] font-bold text-slate-300 uppercase tracking-wider">
+            {sortOrder === 'newest' ? 'Beginning of Classes' : 'End of Classes'}
+          </p>
         </div>
       </div>
     </div>
@@ -1241,13 +1247,7 @@ function LessonItem({
   isNextLocked = false
 }: any) {
   const isCompleted = userProgress.includes(lesson.id);
-  
-  const schedule = currentSchedules.find((st: any) => {
-    const sTitle = st.title || '';
-    const parts = sTitle.split(':');
-    const lessonPart = parts[parts.length - 1].trim();
-    return normalize(lessonPart) === normalize(lesson.title) && isScheduleTypeMatch(st, lesson);
-  });
+  const schedule = getLatestScheduleForLesson(currentSchedules, lesson);
   
   let isScheduled = false;
   let isTimeReached = false;
