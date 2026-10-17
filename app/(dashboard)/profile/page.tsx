@@ -20,7 +20,6 @@ import { createPublicSupabaseClient } from "@/lib/supabase-server";
 import { ProfilePageSkeleton } from "@/components/dashboard/DashboardSkeletons";
 import { ThemePicker } from "@/components/student/ThemePicker";
 import { ProfilePhotoViewer } from "@/components/student/ProfilePhotoViewer";
-import { UsernameCard } from "@/components/student/UsernameCard";
 
 export default async function ProfilePage() {
   const cookieStore = await cookies();
@@ -164,8 +163,6 @@ async function ProfileContent({ userId }: { userId: string }) {
           </div>
         </div>
 
-        {/* Username / Chat Handle */}
-        <UsernameCard userId={userId} initialUsername={student?.username || ""} />
 
         {/* Theme Settings Section */}
         <ThemePicker />

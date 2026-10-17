@@ -123,11 +123,9 @@ Authentication does not use Supabase's native auth module. Instead, it uses cust
 │   ├── (auth)/
 │   │   └── login/                 # User Login Form
 │   ├── (dashboard)/               # Main student workspace container
-│   │   ├── ai-tutor/              # AI study assistant & doubt solver
 │   │   ├── assignments/           # View course homework assignments
 │   │   ├── attendance/            # View daily attendance history
 │   │   ├── calendar/              # View events timeline
-│   │   ├── chats/                 # Realtime student/teacher direct messaging
 │   │   ├── courses/               # Enrolled courses viewer
 │   │   ├── curriculum/            # Syllabus module details
 │   │   ├── dashboard/             # Main welcome view and status overview
@@ -139,19 +137,17 @@ Authentication does not use Supabase's native auth module. Instead, it uses cust
 │   │   ├── tests/                 # Interactive exam center
 │   │   └── layout.tsx             # Sidebar layout & realtime notifications
 │   ├── api/                       # REST handlers
-│   │   ├── ai-tutor/              # Multi-tier AI tutor streaming & inference
 │   │   ├── auth/                  # login and profile controllers
-│   │   ├── chat/                  # DM messages and realtime threads
 │   │   ├── logout/                # clears session cookie
 │   │   ├── progress/              # handles updates for offline sync
-│   │   └── user/                  # active-time tracking and username endpoints
+│   │   └── user/                  # active-time tracking endpoints
 │   ├── globals.css                # Base stylesheet
 │   ├── layout.tsx                 # Root metadata provider
 │   ├── offline/                   # PWA fallback disconnect page
 │   └── page.tsx                   # Redirects to login
 ├── components/                    # General re-usable UI
 │   ├── dashboard/                 # Student metrics and skeletons
-│   ├── student/                   # Client-heavy elements (LessonViewer, UsernameCard, ThemePicker)
+│   ├── student/                   # Client-heavy elements (LessonViewer, ThemePicker, ProfilePhotoViewer)
 │   ├── SyncStatus.tsx             # Offline status detector badge
 │   ├── GlobalSearch.tsx           # Global project indexing
 │   ├── DownloadButton.tsx         # Asset downloader
@@ -230,3 +226,4 @@ Use this section to record all changes made to the codebase. When introducing fe
 | 2026-09-18 | Antigravity | [route.ts](file:///c:/Users/as007/vision-learn/app/api/ai-tutor/route.ts) [NEW], [page.tsx](file:///c:/Users/as007/vision-learn/app/(dashboard)/ai-tutor/page.tsx) [NEW], [AITutorClient.tsx](file:///c:/Users/as007/vision-learn/app/(dashboard)/ai-tutor/AITutorClient.tsx) [NEW], [layout.tsx](file:///c:/Users/as007/vision-learn/app/(dashboard)/layout.tsx), [.env.local](file:///c:/Users/as007/vision-learn/.env.local) | Added **AI Tutor** feature powered by Google Gemini 2.0 Flash. Features include: (1) **Doubt Solver** — students can ask any question in Hinglish and get detailed AI responses, (2) **Course-aware context** — AI knows student's enrolled courses and tailors answers accordingly, (3) **Notes/Material context** — students can select a specific study material for focused Q&A, (4) **Markdown rendering** — AI responses render with code blocks, bullet points, bold text, (5) **Typing animation** and smooth chat bubbles UI, (6) **Quick suggestion chips** on welcome screen, (7) **Copy response** button per AI message. Added `GEMINI_API_KEY` to `.env.local`. AI Tutor added to sidebar and mobile bottom nav. |
 | 2026-10-01 | Antigravity | [AITutorClient.tsx](file:///c:/Users/as007/vision-learn/app/(dashboard)/ai-tutor/AITutorClient.tsx), [route.ts](file:///c:/Users/as007/vision-learn/app/api/ai-tutor/route.ts), [page.tsx](file:///c:/Users/as007/vision-learn/app/(dashboard)/chats/page.tsx), [route.ts](file:///c:/Users/as007/vision-learn/app/api/chat/dm/route.ts), [UsernameCard.tsx](file:///c:/Users/as007/vision-learn/components/student/UsernameCard.tsx) | Upgraded AI Tutor with: (1) strict link parsing allowing only institutional URLs (`learn.visionitinstitute.com` and `visionitinstitute.com`), (2) interactive MCQ answer submission animations with pop effect, spinning loader, and green completion badge, (3) chat session management including inline rename via dropdown arrow and hover rename in sidebar, delete chat, and auto-opening a fresh chat session on page visit, (4) centered, compact mobile-friendly welcome screen, (5) multi-tier model fallback prioritizing fast response models (`gemini-2.0-flash-lite`, `gemini-1.5-flash`), (6) Real-time Direct Messaging (`/chats`) with Supabase channels and unique `@username` registration. |
 | 2026-10-02 | Antigravity | [page.tsx](file:///c:/Users/as007/vision-learn/app/(dashboard)/profile/page.tsx), [ProfilePhotoViewer.tsx](file:///c:/Users/as007/vision-learn/components/student/ProfilePhotoViewer.tsx), [ThemePicker.tsx](file:///c:/Users/as007/vision-learn/components/student/ThemePicker.tsx), [UsernameCard.tsx](file:///c:/Users/as007/vision-learn/components/student/UsernameCard.tsx), [DashboardSkeletons.tsx](file:///c:/Users/as007/vision-learn/components/dashboard/DashboardSkeletons.tsx), [layout.tsx](file:///c:/Users/as007/vision-learn/app/(dashboard)/layout.tsx), [route.ts](file:///c:/Users/as007/vision-learn/app/api/user/active-time/route.ts), [PWARegistration.tsx](file:///c:/Users/as007/vision-learn/components/PWARegistration.tsx) | Redesigned Student Profile to be compact and minimal: removed background blob, scaled avatar to `w-16 h-16 sm:w-20 sm:h-20` (expandable), reduced card padding to `p-4 sm:p-5 rounded-2xl`, condensed icon containers to `w-7 h-7`, converted education/category blocks into clean pills, and added a sleek minimal logout button. Optimized active-time background tracking: increased DB sync interval from 10s to 60s with concurrency lock (`isSyncing`) and fail-safe local accumulator, added 6s timeout race to `/api/user/active-time` route, bypassed redundant PWA profile check in development, resolving `Failed to fetch` connection overload and dropping page response times from 7.7s to ~400ms. |
+| 2026-10-17 | Antigravity | [layout.tsx](file:///c:/Users/as007/vision-learn/app/(dashboard)/layout.tsx), [page.tsx](file:///c:/Users/as007/vision-learn/app/(dashboard)/profile/page.tsx), [route.ts](file:///c:/Users/as007/vision-learn/app/api/auth/profile/route.ts), [.env.local](file:///c:/Users/as007/vision-learn/.env.local), [package.json](file:///c:/Users/as007/vision-learn/package.json) | Completely removed AI Tutor and Chat features from vision-learn. Deleted `/ai-tutor`, `/chats`, `/api/ai-tutor`, `/api/chat`, `/api/user/username`, and `UsernameCard.tsx`. Removed links, icons (`Bot`, `MessageSquare`), and custom viewport wrappers from `layout.tsx`. Removed `username` field query from profile route. Removed `GEMINI_API_KEY` from `.env.local`. Uninstalled unused `react-syntax-highlighter` packages. Zero compiler errors (`tsc --noEmit`). |
