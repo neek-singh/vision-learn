@@ -144,6 +144,13 @@ export function CurriculumClient({
   const searchParams = useSearchParams();
   const router = useRouter();
   const lessonIdParam = searchParams.get('lessonId');
+  const tabParam = searchParams.get('tab');
+
+  useEffect(() => {
+    if (tabParam === 'syllabus' || tabParam === 'series') {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
 
   // Use cached modules if available, otherwise fallback to initial
   const displayModules = cachedModules && cachedModules.length > 0 ? cachedModules : initialModules;
@@ -585,7 +592,10 @@ export function CurriculumClient({
       {/* Sleek Minimal Tab Switcher */}
       <div className="bg-slate-100/90 p-1 rounded-xl flex gap-1 border border-slate-200/50">
         <button
-          onClick={() => setActiveTab('series')}
+          onClick={() => {
+            setActiveTab('series');
+            router.replace('/curriculum?tab=series', { scroll: false });
+          }}
           className={`flex-1 flex items-center justify-center gap-2 py-1.5 px-3 rounded-lg font-bold text-xs transition-all cursor-pointer ${
             activeTab === 'series'
               ? 'bg-white text-slate-900 shadow-2xs font-extrabold'
@@ -596,7 +606,10 @@ export function CurriculumClient({
           <span>Series (Timeline)</span>
         </button>
         <button
-          onClick={() => setActiveTab('syllabus')}
+          onClick={() => {
+            setActiveTab('syllabus');
+            router.replace('/curriculum?tab=syllabus', { scroll: false });
+          }}
           className={`flex-1 flex items-center justify-center gap-2 py-1.5 px-3 rounded-lg font-bold text-xs transition-all cursor-pointer ${
             activeTab === 'syllabus'
               ? 'bg-white text-slate-900 shadow-2xs font-extrabold'

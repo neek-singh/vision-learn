@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback, memo } from "react";
+import { useEffect, useState, useCallback, memo, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import packageJson from "@/package.json";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase-browser";
 import { 
   LayoutDashboard, 
@@ -18,7 +18,10 @@ import {
   Bell,
   Calendar,
   CheckCircle2,
-  Wallet
+  Wallet,
+  Plus,
+  ListOrdered,
+  LayoutList
 } from "lucide-react";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { SyncStatus } from "@/components/SyncStatus";
@@ -38,25 +41,105 @@ const sidebarLinks = [
   { name: "Profile", href: "/profile", icon: User },
 ];
 
-const NavLink = memo(({ href, icon: Icon, name, isActive, unreadCount, onClick }: any) => (
-  <Link
-    href={href}
-    prefetch={true}
-    onClick={onClick}
-    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group active:scale-95 ${
+const NavLink = memo(({ 
+  href, 
+  icon: Icon, 
+  name, 
+  isActive, 
+  unreadCount, 
+  onClick,
+  hasSubmenu,
+  isSubmenuOpen,
+  onToggleSubmenu
+}: any) => (
+  <div
+    className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 group ${
       isActive 
         ? "bg-indigo-50 text-indigo-700 font-bold" 
         : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
     }`}
   >
-    <Icon size={18} className={isActive ? "text-indigo-600" : "text-slate-400 group-hover:text-slate-600"} />
-    <span className="text-sm flex-1">{name}</span>
+    <Link
+      href={href}
+      prefetch={true}
+      onClick={onClick}
+      className="flex items-center gap-3 flex-1 min-w-0"
+    >
+      <Icon size={18} className={isActive ? "text-indigo-600" : "text-slate-400 group-hover:text-slate-600"} />
+      <span className="text-sm truncate">{name}</span>
+    </Link>
     {name === "Notifications" && unreadCount > 0 && (
-      <span className="bg-rose-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+      <span className="bg-rose-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0">
         {unreadCount}
       </span>
     )}
-  </Link>
+    {hasSubmenu && (
+      <button
+        type="button"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onToggleSubmenu?.();
+        }}
+        title={isSubmenuOpen ? "Close list" : "Open Series and Syllabus"}
+        aria-label={isSubmenuOpen ? "Close list" : "Open Series and Syllabus"}
+        className={`p-1 -mr-1 rounded-lg transition-transform duration-200 hover:bg-indigo-100/70 shrink-0 cursor-pointer ${
+          isActive 
+            ? "text-indigo-600 hover:text-indigo-800" 
+            : "text-slate-400 hover:text-slate-700"
+        } ${isSubmenuOpen ? "rotate-45" : ""}`}
+      >
+        <Plus size={16} className="stroke-[2.5]" />
+      </button>
+    )}
+  </div>
+));
+
+function ClassesSubmenuContent({ onSubLinkClick }: { onSubLinkClick?: () => void }) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const isOnCurriculum = pathname === "/curriculum";
+  const currentTab = searchParams.get("tab") || "series";
+
+  const isSeriesActive = isOnCurriculum && currentTab === "series";
+  const isSyllabusActive = isOnCurriculum && currentTab === "syllabus";
+
+  return (
+    <div className="pl-4 pr-1 py-1 space-y-1 border-l-2 border-indigo-100 ml-4 my-1 animate-in fade-in slide-in-from-top-1 duration-150">
+      <Link
+        href="/curriculum?tab=series"
+        prefetch={true}
+        onClick={onSubLinkClick}
+        className={`flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all group ${
+          isSeriesActive
+            ? "bg-indigo-50 text-indigo-700 font-bold shadow-2xs"
+            : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+        }`}
+      >
+        <ListOrdered size={14} className={isSeriesActive ? "text-indigo-600" : "text-slate-400 group-hover:text-slate-600"} />
+        <span className="flex-1">Series</span>
+      </Link>
+      <Link
+        href="/curriculum?tab=syllabus"
+        prefetch={true}
+        onClick={onSubLinkClick}
+        className={`flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all group ${
+          isSyllabusActive
+            ? "bg-indigo-50 text-indigo-700 font-bold shadow-2xs"
+            : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+        }`}
+      >
+        <LayoutList size={14} className={isSyllabusActive ? "text-indigo-600" : "text-slate-400 group-hover:text-slate-600"} />
+        <span className="flex-1">Syllabus</span>
+      </Link>
+    </div>
+  );
+}
+
+const ClassesSubmenu = memo(({ onSubLinkClick }: { onSubLinkClick?: () => void }) => (
+  <Suspense fallback={null}>
+    <ClassesSubmenuContent onSubLinkClick={onSubLinkClick} />
+  </Suspense>
 ));
 
 const MobileBottomLink = memo(({ href, icon: Icon, name, isActive }: any) => (
@@ -74,6 +157,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isClassesSubmenuOpen, setIsClassesSubmenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [student, setStudent] = useState<any>(null);
   const supabase = createClient();
@@ -272,14 +356,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         <nav className="flex-1 px-3 py-2 space-y-1">
-          {sidebarLinks.map((link) => (
-            <NavLink 
-              key={link.href} 
-              {...link} 
-              isActive={pathname === link.href} 
-              unreadCount={unreadCount} 
-            />
-          ))}
+          {sidebarLinks.map((link) => {
+            const isClasses = link.name === "My Classes";
+            return (
+              <div key={link.href}>
+                <NavLink 
+                  {...link} 
+                  isActive={pathname === link.href} 
+                  unreadCount={unreadCount}
+                  hasSubmenu={isClasses}
+                  isSubmenuOpen={isClassesSubmenuOpen}
+                  onToggleSubmenu={() => setIsClassesSubmenuOpen((prev) => !prev)}
+                  onClick={isClasses ? () => setIsClassesSubmenuOpen(true) : undefined}
+                />
+                {isClasses && isClassesSubmenuOpen && (
+                  <ClassesSubmenu />
+                )}
+              </div>
+            );
+          })}
         </nav>
 
         <div className="p-3 border-t border-slate-50">
@@ -333,15 +428,28 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </button>
         </div>
         <nav className="px-4 space-y-2 flex-1 overflow-y-auto custom-scrollbar pb-4">
-          {sidebarLinks.map((link) => (
-            <NavLink 
-              key={link.href} 
-              {...link} 
-              isActive={pathname === link.href} 
-              unreadCount={unreadCount} 
-              onClick={() => setIsMobileMenuOpen(false)}
-            />
-          ))}
+          {sidebarLinks.map((link) => {
+            const isClasses = link.name === "My Classes";
+            return (
+              <div key={link.href}>
+                <NavLink 
+                  {...link} 
+                  isActive={pathname === link.href} 
+                  unreadCount={unreadCount} 
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    if (isClasses) setIsClassesSubmenuOpen(true);
+                  }}
+                  hasSubmenu={isClasses}
+                  isSubmenuOpen={isClassesSubmenuOpen}
+                  onToggleSubmenu={() => setIsClassesSubmenuOpen((prev) => !prev)}
+                />
+                {isClasses && isClassesSubmenuOpen && (
+                  <ClassesSubmenu onSubLinkClick={() => setIsMobileMenuOpen(false)} />
+                )}
+              </div>
+            );
+          })}
         </nav>
         <div className="p-4 border-t border-slate-50 shrink-0">
           <form action="/api/logout" method="POST">
