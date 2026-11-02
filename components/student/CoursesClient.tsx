@@ -42,15 +42,17 @@ export function CoursesClient({
 
   // Prepare Enrolled Courses data
   const enrolledCourses = useMemo(() => {
-    return (initialEnrollments || []).map((enrollment, idx) => {
+    return (initialEnrollments || []).map((enrollment) => {
       const course = enrollment.courses || {};
       const courseId = enrollment.course_id;
-      const progress = enrollment.progress_percentage || (idx === 0 ? 15 : idx === 1 ? 40 : 100);
+      const progress = typeof enrollment.progress_percentage === "number"
+        ? Math.min(Math.max(enrollment.progress_percentage, 0), 100)
+        : 0;
       const isCompleted = progress >= 100;
       
-      const modulesCount = modulesCountMap[courseId] || (idx === 0 ? 5 : idx === 1 ? 4 : 4);
-      const lessonsCount = lessonsCountMap[courseId] || (idx === 0 ? 54 : idx === 1 ? 35 : 40);
-      const duration = course.duration || (idx === 0 ? "6 Months" : "3 Months");
+      const modulesCount = modulesCountMap[courseId] ?? (course.curriculum?.length || 0);
+      const lessonsCount = lessonsCountMap[courseId] ?? 0;
+      const duration = course.duration || "Self-Paced";
 
       // Custom icon and color based on title/code
       const titleLower = (course.title || "").toLowerCase();
@@ -60,13 +62,13 @@ export function CoursesClient({
       if (titleLower.includes("dca") || titleLower.includes("computer")) {
         icon = <Layers size={22} />;
         iconBg = "bg-sky-500 text-white";
-      } else if (titleLower.includes("excel") || titleLower.includes("office")) {
+      } else if (titleLower.includes("excel") || titleLower.includes("office") || titleLower.includes("tally")) {
         icon = <FileSpreadsheet size={22} />;
         iconBg = "bg-emerald-600 text-white";
-      } else if (titleLower.includes("ai") || titleLower.includes("prompt")) {
+      } else if (titleLower.includes("ai") || titleLower.includes("prompt") || titleLower.includes("machine")) {
         icon = <Cpu size={22} />;
         iconBg = "bg-rose-500 text-white";
-      } else if (titleLower.includes("python") || titleLower.includes("programming") || titleLower.includes("web")) {
+      } else if (titleLower.includes("python") || titleLower.includes("programming") || titleLower.includes("web") || titleLower.includes("code")) {
         icon = <Code2 size={22} />;
         iconBg = "bg-blue-600 text-white";
       }
@@ -75,7 +77,8 @@ export function CoursesClient({
         id: enrollment.id,
         courseId,
         title: course.title || "Course Title",
-        subtitle: course.description || (idx === 0 ? "Diploma in Computer Application" : idx === 1 ? "Data Analysis & Visualization" : "Learn AI Tools for Real Work"),
+        subtitle: course.description || "Comprehensive institute verified curriculum",
+        batch: enrollment.batch || null,
         progress,
         isCompleted,
         duration,
@@ -191,33 +194,57 @@ export function CoursesClient({
         let iconBg = "bg-purple-100 text-purple-600";
         let iconType = "cap";
 
-        if (titleLower.includes("web") || titleLower.includes("html")) {
+        if (titleLower.includes("web") || titleLower.includes("html") || titleLower.includes("css")) {
           iconBg = "bg-orange-100 text-orange-600";
           iconType = "html";
-        } else if (titleLower.includes("python")) {
+        } else if (titleLower.includes("python") || titleLower.includes("programming") || titleLower.includes("code")) {
           iconBg = "bg-sky-100 text-sky-600";
           iconType = "python";
-        } else if (titleLower.includes("security") || titleLower.includes("cyber")) {
+        } else if (titleLower.includes("security") || titleLower.includes("cyber") || titleLower.includes("ethical")) {
           iconBg = "bg-slate-100 text-slate-700";
           iconType = "shield";
+        } else if (titleLower.includes("excel") || titleLower.includes("office") || titleLower.includes("tally")) {
+          iconBg = "bg-emerald-100 text-emerald-700";
+          iconType = "cap";
         }
+
+        // Proper fee calculation from DB columns (fee & discount_fee)
+        const fee = typeof c.fee === "number" ? c.fee : (typeof c.price === "number" ? c.price : 0);
+        const discountFee = typeof c.discount_fee === "number" ? c.discount_fee : 0;
+        
+        let priceStr = "Free";
+        let origPriceStr = "";
+        let discountStr = "";
+        const isPaid = (fee > 0 || discountFee > 0);
+
+        if (discountFee > 0 && fee > discountFee) {
+          priceStr = `₹${discountFee.toLocaleString("en-IN")}`;
+          origPriceStr = `₹${fee.toLocaleString("en-IN")}`;
+          discountStr = `${Math.round(((fee - discountFee) / fee) * 100)}% OFF`;
+        } else if (fee > 0) {
+          priceStr = `₹${fee.toLocaleString("en-IN")}`;
+        } else if (discountFee > 0) {
+          priceStr = `₹${discountFee.toLocaleString("en-IN")}`;
+        }
+
+        const features = (c.key_features && Array.isArray(c.key_features) && c.key_features.length > 0)
+          ? c.key_features.slice(0, 3)
+          : ["Practical Projects", "Certificate on Completion", "Expert Mentorship"];
 
         return {
           id: c.id,
           title: c.title || "Course",
           subtitle: c.description || "Comprehensive institute verified curriculum",
-          duration: c.duration || "6 Months",
-          modules: modulesCountMap[c.id] || 6,
-          lessons: lessonsCountMap[c.id] || 60,
-          price: c.price ? `₹${c.price}` : "₹3,999",
-          originalPrice: c.original_price ? `₹${c.original_price}` : "₹5,499",
-          discount: "25% OFF",
-          isPopular: idx === 0,
-          isNew: idx === 3,
-          isPaid: true,
-          features: c.key_features && Array.isArray(c.key_features) && c.key_features.length > 0 
-            ? c.key_features.slice(0, 3) 
-            : ["Structured Curriculum", "Practical Projects", "Certificate on Completion"],
+          duration: c.duration || "Self-Paced",
+          modules: modulesCountMap[c.id] ?? (c.curriculum?.length || 0),
+          lessons: lessonsCountMap[c.id] ?? 0,
+          price: priceStr,
+          originalPrice: origPriceStr,
+          discount: discountStr,
+          isPopular: Boolean(c.is_featured || idx === 0),
+          isNew: idx < 3,
+          isPaid,
+          features,
           iconBg,
           iconType
         };
@@ -335,107 +362,129 @@ export function CoursesClient({
             </Link>
           </div>
 
-          {/* Enrolled Courses Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
-            {enrolledCourses.map((course) => (
-              <div 
-                key={course.id}
-                className="bg-white rounded-xl border border-slate-200/80 hover:border-slate-300 p-3.5 space-y-3 shadow-2xs transition-all hover:shadow-xs flex flex-col justify-between"
+          {/* Enrolled Courses Cards Grid or Empty State */}
+          {enrolledCourses.length === 0 ? (
+            <div className="text-center py-10 px-4 border border-dashed border-slate-200 rounded-xl bg-slate-50/50 space-y-2">
+              <BookOpen size={36} className="mx-auto text-slate-300" />
+              <h3 className="text-xs sm:text-sm font-bold text-slate-700">No Enrolled Courses Yet</h3>
+              <p className="text-[11px] text-slate-400 max-w-sm mx-auto leading-relaxed">
+                You have not been assigned to any course yet. Explore our course catalog below or contact the institute admin to enroll.
+              </p>
+              <button
+                onClick={() => setActiveTab("available")}
+                className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-2xs transition-all cursor-pointer"
               >
-                {/* Header: Icon + Title + Status Badge + Dot menu */}
-                <div className="space-y-2.5">
-                  <div className="flex items-start justify-between gap-2.5">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-xs font-bold text-xs ${course.iconBg}`}>
-                        {course.icon}
+                <span>Browse Available Courses</span>
+                <ArrowRight size={12} />
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+              {enrolledCourses.map((course) => (
+                <div 
+                  key={course.id}
+                  className="bg-white rounded-xl border border-slate-200/80 hover:border-slate-300 p-3.5 space-y-3 shadow-2xs transition-all hover:shadow-xs flex flex-col justify-between"
+                >
+                  {/* Header: Icon + Title + Status Badge + Dot menu */}
+                  <div className="space-y-2.5">
+                    <div className="flex items-start justify-between gap-2.5">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-xs font-bold text-xs ${course.iconBg}`}>
+                          {course.icon}
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="text-xs sm:text-sm font-bold text-slate-900 truncate leading-snug">
+                            {course.title}
+                          </h3>
+                          <p className="text-[10px] text-slate-400 font-medium truncate mt-0.5">
+                            {course.subtitle}
+                          </p>
+                        </div>
                       </div>
-                      <div className="min-w-0">
-                        <h3 className="text-xs sm:text-sm font-bold text-slate-900 truncate leading-snug">
-                          {course.title}
-                        </h3>
-                        <p className="text-[10px] text-slate-400 font-medium truncate mt-0.5">
-                          {course.subtitle}
-                        </p>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {course.batch && (
+                          <span 
+                            className="text-[9px] font-bold text-blue-700 bg-blue-50 border border-blue-200/80 px-1.5 py-0.5 rounded-md truncate max-w-[120px]"
+                            title={`Batch: ${course.batch}`}
+                          >
+                            {course.batch}
+                          </span>
+                        )}
+                        {course.isCompleted ? (
+                          <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-md">
+                            Completed
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-md">
+                            In Progress
+                          </span>
+                        )}
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1 shrink-0">
-                      {course.isCompleted ? (
-                        <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-md">
-                          Completed
+                    {/* Progress Bar & Percentage */}
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-[11px] font-bold">
+                        <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden mr-2">
+                          <div 
+                            className="h-full bg-blue-600 rounded-full transition-all duration-700" 
+                            style={{ width: `${course.progress}%` }} 
+                          />
+                        </div>
+                        <span className="text-slate-700 text-[10px] shrink-0 min-w-[24px] text-right">
+                          {course.progress}%
                         </span>
-                      ) : (
-                        <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-md">
-                          In Progress
-                        </span>
-                      )}
-                      <button className="text-slate-400 hover:text-slate-600 p-0.5 rounded">
-                        <MoreVertical size={14} />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Progress Bar & Percentage */}
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between text-[11px] font-bold">
-                      <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden mr-2">
-                        <div 
-                          className="h-full bg-blue-600 rounded-full transition-all duration-700" 
-                          style={{ width: `${course.progress}%` }} 
-                        />
                       </div>
-                      <span className="text-slate-700 text-[10px] shrink-0 min-w-[24px] text-right">
-                        {course.progress}%
+                    </div>
+
+                    {/* Meta items: Duration, Modules, Lessons */}
+                    <div className="flex items-center justify-between text-[10px] font-semibold text-slate-500 pt-1 border-t border-slate-100/80">
+                      <span className="flex items-center gap-1">
+                        <Clock size={11} className="text-blue-600" />
+                        <span>{course.duration}</span>
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <BookOpen size={11} className="text-blue-600" />
+                        <span>{course.modulesCount} Modules</span>
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <FileText size={11} className="text-blue-600" />
+                        <span>{course.lessonsCount}+ Lessons</span>
                       </span>
                     </div>
                   </div>
 
-                  {/* Meta items: Duration, Modules, Lessons */}
-                  <div className="flex items-center justify-between text-[10px] font-semibold text-slate-500 pt-1 border-t border-slate-100/80">
-                    <span className="flex items-center gap-1">
-                      <Clock size={11} className="text-blue-600" />
-                      <span>{course.duration}</span>
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <BookOpen size={11} className="text-blue-600" />
-                      <span>{course.modulesCount} Modules</span>
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <FileText size={11} className="text-blue-600" />
-                      <span>{course.lessonsCount}+ Lessons</span>
-                    </span>
+                  {/* Action Buttons: Continue Learning & View Syllabus */}
+                  <div className="grid grid-cols-2 gap-2 pt-2">
+                    <Link
+                      href={`/curriculum?course=${course.courseId}`}
+                      className="w-full bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold py-1.5 px-2 rounded-lg text-xs transition-all flex items-center justify-center gap-1 shadow-2xs"
+                    >
+                      {course.isCompleted ? (
+                        <>
+                          <RotateCcw size={11} />
+                          <span>Review Course</span>
+                        </>
+                      ) : (
+                        <>
+                          <Play size={10} className="fill-current" />
+                          <span>Continue Learning</span>
+                        </>
+                      )}
+                    </Link>
+
+                    <Link
+                      href={`/curriculum?course=${course.courseId}&tab=syllabus`}
+                      className="w-full bg-slate-50 hover:bg-slate-100 active:scale-95 text-slate-700 border border-slate-200/80 font-bold py-1.5 px-2 rounded-lg text-xs transition-all flex items-center justify-center text-center"
+                    >
+                      <span>View Syllabus</span>
+                    </Link>
                   </div>
                 </div>
-
-                {/* Action Buttons: Continue Learning & View Syllabus */}
-                <div className="grid grid-cols-2 gap-2 pt-2">
-                  <Link
-                    href={`/curriculum?course=${course.courseId}`}
-                    className="w-full bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold py-1.5 px-2 rounded-lg text-xs transition-all flex items-center justify-center gap-1 shadow-2xs"
-                  >
-                    {course.isCompleted ? (
-                      <>
-                        <RotateCcw size={11} />
-                        <span>Review Course</span>
-                      </>
-                    ) : (
-                      <>
-                        <Play size={10} className="fill-current" />
-                        <span>Continue Learning</span>
-                      </>
-                    )}
-                  </Link>
-
-                  <Link
-                    href={`/curriculum?course=${course.courseId}&tab=syllabus`}
-                    className="w-full bg-slate-50 hover:bg-slate-100 active:scale-95 text-slate-700 border border-slate-200/80 font-bold py-1.5 px-2 rounded-lg text-xs transition-all flex items-center justify-center text-center"
-                  >
-                    <span>View Syllabus</span>
-                  </Link>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </section>
       )}
 

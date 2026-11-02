@@ -50,3 +50,14 @@ next-env.d.ts
 /public/fallback-*.js
 /public/fallback-*.js.map
 .gsd-graph/
+
+# Scratch scripts & temporary test files
+scratch/
+supabase/.temp/
+
+# Internal plans, agent notes, prompts & documentation
+*.md
+!README.md
+.agents/
+.planning/
+*.log

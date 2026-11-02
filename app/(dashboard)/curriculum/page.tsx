@@ -9,7 +9,11 @@ import { CurriculumSkeleton } from "@/components/dashboard/DashboardSkeletons";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export default async function CurriculumPage() {
+export default async function CurriculumPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ course?: string; tab?: string }>;
+}) {
   const cookieStore = await cookies();
   const token = cookieStore.get("vision_learn_session")?.value;
 
@@ -18,28 +22,43 @@ export default async function CurriculumPage() {
   const payload = await verifyToken(token);
   if (!payload) redirect("/login");
 
+  const params = await searchParams;
+
   return (
     <div className="animate-in fade-in duration-500">
       <Suspense fallback={<CurriculumSkeleton />}>
-        <CurriculumContent userId={payload.id} />
+        <CurriculumContent userId={payload.id} requestedCourseId={params.course} />
       </Suspense>
     </div>
   );
 }
 
-async function CurriculumContent({ userId }: { userId: string }) {
+async function CurriculumContent({ 
+  userId, 
+  requestedCourseId 
+}: { 
+  userId: string; 
+  requestedCourseId?: string;
+}) {
   const supabase = createPublicSupabaseClient();
 
   // 1. Fetch Student & Enrollments in parallel
-  const [studentRes, enrollmentRes] = await Promise.all([
+  const [studentRes, enrollmentsRes] = await Promise.all([
     supabase.from("students").select("batch").eq("id", userId).single(),
-    supabase.from("enrollments").select("course_id, batch").eq("student_id", userId).limit(1)
+    supabase.from("enrollments").select("course_id, batch").eq("student_id", userId)
   ]);
 
   const student = studentRes.data;
-  const enrollmentData = enrollmentRes.data;
+  const enrollments = enrollmentsRes.data || [];
 
-  if (!enrollmentData || enrollmentData.length === 0) {
+  // Match requested course or default to first enrollment
+  const selectedEnrollment = requestedCourseId
+    ? enrollments.find((e: any) => e.course_id === requestedCourseId)
+    : enrollments[0];
+
+  const courseId = selectedEnrollment?.course_id || requestedCourseId || enrollments[0]?.course_id;
+
+  if (!courseId) {
     return (
       <div className="space-y-6">
         <section>
@@ -50,8 +69,7 @@ async function CurriculumContent({ userId }: { userId: string }) {
     );
   }
 
-  const courseId = enrollmentData[0].course_id;
-  const activeBatch = student?.batch || enrollmentData[0].batch;
+  const activeBatch = selectedEnrollment?.batch || student?.batch;
 
   // 2. Fetch Course, Modules, Progress, Schedules, Tests, Materials, Batches, Chapters, and Assignments in parallel
   const [

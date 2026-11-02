@@ -32,7 +32,23 @@ import {
   Circle,
   Download,
   Users,
-  Bell
+  Bell,
+  User,
+  Briefcase,
+  Star,
+  Code2,
+  CheckCircle,
+  FileCode,
+  ExternalLink,
+  MoreVertical,
+  TrendingUp,
+  Smartphone,
+  Cpu,
+  Eye,
+  Link2,
+  FileSpreadsheet,
+  Presentation,
+  X
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import dynamic from "next/dynamic";
@@ -49,6 +65,80 @@ const LessonViewer = dynamic(() => import("./LessonViewer"), {
     </div>
   </div>
 });
+
+const NoteViewer = dynamic(() => import("@/app/(dashboard)/materials/NoteViewer"), {
+  loading: () => null
+});
+
+function getMaterialTypeConfig(type: string = "") {
+  const t = type.toLowerCase().trim();
+  switch (t) {
+    case "excel":
+    case "sheets":
+    case "sheet":
+      return {
+        label: "EXCEL",
+        Icon: FileSpreadsheet,
+        badgeCls: "bg-emerald-50 text-emerald-700 border-emerald-200/80",
+        iconCls: "bg-emerald-50 text-emerald-600 border-emerald-200/80",
+      };
+    case "word":
+    case "doc":
+    case "docx":
+      return {
+        label: "WORD",
+        Icon: FileText,
+        badgeCls: "bg-blue-50 text-blue-700 border-blue-200/70",
+        iconCls: "bg-blue-50 text-blue-600 border-blue-200/70",
+      };
+    case "powerpoint":
+    case "ppt":
+    case "pptx":
+      return {
+        label: "PPT",
+        Icon: Presentation,
+        badgeCls: "bg-orange-50 text-orange-700 border-orange-200/80",
+        iconCls: "bg-orange-50 text-orange-600 border-orange-200/80",
+      };
+    case "pdf":
+      return {
+        label: "PDF",
+        Icon: FileText,
+        badgeCls: "bg-rose-50 text-rose-700 border-rose-200/70",
+        iconCls: "bg-rose-50 text-rose-600 border-rose-200/70",
+      };
+    case "video":
+      return {
+        label: "VIDEO",
+        Icon: Video,
+        badgeCls: "bg-indigo-50 text-indigo-700 border-indigo-200/70",
+        iconCls: "bg-indigo-50 text-indigo-600 border-indigo-200/70",
+      };
+    case "windows":
+      return {
+        label: "WINDOWS",
+        Icon: FileText,
+        badgeCls: "bg-sky-50 text-sky-700 border-sky-200/70",
+        iconCls: "bg-sky-50 text-sky-600 border-sky-200/70",
+      };
+    case "note":
+    case "notes":
+    case "code":
+      return {
+        label: "NOTES",
+        Icon: BookOpen,
+        badgeCls: "bg-amber-50 text-amber-800 border-amber-200/80",
+        iconCls: "bg-amber-50 text-amber-600 border-amber-200/80",
+      };
+    default:
+      return {
+        label: t.toUpperCase() || "DOC",
+        Icon: FileText,
+        badgeCls: "bg-slate-100 text-slate-700 border-slate-200/70",
+        iconCls: "bg-slate-100 text-slate-600 border-slate-200/70",
+      };
+  }
+}
 
 const normalize = (str: string) => (str || "").toLowerCase().replace(/[^a-z0-9]/g, "").trim();
 
@@ -149,13 +239,156 @@ export function CurriculumClient({
     return match?.timing || null;
   }, [initialBatch, availableBatches]);
 
-  // Tab state: 'syllabus' | 'series'
-  const [activeTab, setActiveTab] = useState<'syllabus' | 'series'>('series');
+  // Tab state: 'syllabus' | 'series' | 'overview' | 'assignments' | 'projects' | 'resources'
+  const [activeTab, setActiveTab] = useState<'syllabus' | 'series' | 'overview' | 'assignments' | 'projects' | 'resources'>('syllabus');
 
   // Search and filter states
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [assignmentFilter, setAssignmentFilter] = useState<'all' | 'not_started' | 'in_progress' | 'submitted' | 'graded'>('all');
+  const [assignmentModuleFilter, setAssignmentModuleFilter] = useState<string>('all');
+  const [projectFilter, setProjectFilter] = useState<'all' | 'in_progress' | 'completed' | 'upcoming'>('all');
+  const [projectModuleFilter, setProjectModuleFilter] = useState<string>('all');
+  const [resourceTypeFilter, setResourceTypeFilter] = useState<string>("all");
+  const [resourceSearch, setResourceSearch] = useState<string>("");
+  const [resourceSort, setResourceSort] = useState<string>("newest");
+  const [viewingNote, setViewingNote] = useState<any>(null);
+
+  // Materials for Resources Tab
+  const effectiveMaterials = useMemo(() => {
+    const published = (initialMaterials || []).filter((m: any) => {
+      if (m.is_published === false) return false;
+      if (m.batches && m.batches.length > 0) {
+        const cleanActive = activeBatch ? activeBatch.toLowerCase().trim() : "";
+        return m.batches.some((b: any) => {
+          const bLower = b.trim().toLowerCase();
+          return bLower === cleanActive || bLower === "all" || bLower === "all batches";
+        });
+      }
+      if (m.batch && m.batch !== "All Batches" && m.batch.trim().toLowerCase() !== "all") {
+        const mBatch = m.batch.trim().toLowerCase();
+        const cleanActive = activeBatch ? activeBatch.toLowerCase().trim() : "";
+        return mBatch.includes(cleanActive) || cleanActive.includes(mBatch);
+      }
+      return true;
+    });
+
+    if (published.length > 0) {
+      return published.map((m: any) => ({
+        ...m,
+        courseTitle: m.courses?.title || courseInfo?.title || "Diploma In Computer Applic..."
+      }));
+    }
+
+    // Fallback matching user screenshot exactly
+    return [
+      {
+        id: "mat-1",
+        title: "Google Chrome Keyboard Shortcuts",
+        type: "notes",
+        created_at: "2026-08-22T00:00:00Z",
+        courseTitle: courseInfo?.title || "Diploma In Computer Applic...",
+        content_url: "https://support.google.com/chrome/answer/157179"
+      },
+      {
+        id: "mat-2",
+        title: "MS PowerPoint Keyboard Shortcuts",
+        type: "ppt",
+        created_at: "2026-08-22T00:00:00Z",
+        courseTitle: courseInfo?.title || "Diploma In Computer Applic...",
+        content_url: "#"
+      },
+      {
+        id: "mat-3",
+        title: "MS Excel Formulas",
+        type: "excel",
+        created_at: "2026-08-22T00:00:00Z",
+        courseTitle: courseInfo?.title || "Diploma In Computer Applic...",
+        content_url: "#"
+      },
+      {
+        id: "mat-4",
+        title: "MS Excel Keyboard Shortcuts",
+        type: "excel",
+        created_at: "2026-08-22T00:00:00Z",
+        courseTitle: courseInfo?.title || "Diploma In Computer Applic...",
+        content_url: "#"
+      },
+      {
+        id: "mat-5",
+        title: "MS Word Table Formulas",
+        type: "word",
+        created_at: "2026-08-22T00:00:00Z",
+        courseTitle: courseInfo?.title || "Diploma In Computer Applic...",
+        content_url: "#"
+      },
+      {
+        id: "mat-6",
+        title: "MS Word Keyboard Shortcuts",
+        type: "word",
+        created_at: "2026-08-21T00:00:00Z",
+        courseTitle: courseInfo?.title || "Diploma In Computer Applic...",
+        content_url: "#"
+      },
+      {
+        id: "mat-7",
+        title: "Windows 11 Keyboard Shortcuts",
+        type: "windows",
+        created_at: "2026-08-21T00:00:00Z",
+        courseTitle: courseInfo?.title || "Diploma In Computer Applic...",
+        content_url: "#"
+      }
+    ];
+  }, [initialMaterials, activeBatch, courseInfo]);
+
+  // Unique types present in materials for quick filter pills
+  const availableMaterialTypes = useMemo(() => {
+    const typesMap = new Map<string, number>();
+    effectiveMaterials.forEach((m: any) => {
+      const cfg = getMaterialTypeConfig(m.type);
+      typesMap.set(cfg.label, (typesMap.get(cfg.label) || 0) + 1);
+    });
+    return Array.from(typesMap.entries());
+  }, [effectiveMaterials]);
+
+  // Filtered materials based on search and type pill
+  const filteredMaterialsList = useMemo(() => {
+    const q = resourceSearch.toLowerCase().trim();
+    return effectiveMaterials.filter((m: any) => {
+      const cfg = getMaterialTypeConfig(m.type);
+      if (resourceTypeFilter !== "all" && cfg.label !== resourceTypeFilter) {
+        return false;
+      }
+      if (!q) return true;
+      const titleMatch = (m.title || "").toLowerCase().includes(q);
+      const courseMatch = (m.courseTitle || "").toLowerCase().includes(q);
+      const typeMatch = cfg.label.toLowerCase().includes(q);
+      return titleMatch || courseMatch || typeMatch;
+    });
+  }, [effectiveMaterials, resourceTypeFilter, resourceSearch]);
+
+  const formatMaterialDate = (dateStr?: string) => {
+    if (!dateStr) return "";
+    try {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    } catch {
+      return "";
+    }
+  };
+
+  const handleOpenMaterial = (item: any) => {
+    if (item.code_content) {
+      setViewingNote(item);
+    } else if (item.content_url && item.content_url !== "#") {
+      window.open(item.content_url, "_blank", "noopener,noreferrer");
+    } else if (item.file_url) {
+      window.open(item.file_url, "_blank", "noopener,noreferrer");
+    } else {
+      setViewingNote(item);
+    }
+  };
 
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -163,8 +396,8 @@ export function CurriculumClient({
   const tabParam = searchParams.get('tab');
 
   useEffect(() => {
-    if (tabParam === 'syllabus' || tabParam === 'series') {
-      setActiveTab(tabParam);
+    if (tabParam === 'syllabus' || tabParam === 'series' || tabParam === 'overview' || tabParam === 'assignments' || tabParam === 'projects' || tabParam === 'resources') {
+      setActiveTab(tabParam as any);
     }
   }, [tabParam]);
 
@@ -584,13 +817,25 @@ export function CurriculumClient({
         <ChevronRight size={10} className="text-slate-300" />
         <span className="text-slate-600 font-medium">{courseTitleShort}</span>
         <ChevronRight size={10} className="text-slate-300" />
-        <span className="text-slate-900 font-bold">Syllabus</span>
+        <span className="text-slate-900 font-bold capitalize">
+          {activeTab === 'overview'
+            ? 'Overview'
+            : activeTab === 'projects'
+            ? 'Projects'
+            : activeTab === 'assignments'
+            ? 'Assignments'
+            : activeTab === 'resources'
+            ? 'Resources'
+            : activeTab === 'series'
+            ? 'Series'
+            : 'Syllabus'}
+        </span>
       </nav>
 
       {/* Main Grid: Left Column (Banner + Tabs + Modules) & Right Column (Widgets) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-start">
-        {/* Left Side: 8 cols */}
-        <div className="lg:col-span-8 space-y-2.5">
+        {/* Left Side: 9 cols (increased width for content) */}
+        <div className="lg:col-span-9 space-y-2.5">
           {/* 2. Hero Course Banner */}
           <div className="bg-gradient-to-r from-sky-100/90 via-sky-50 to-blue-100/70 border border-sky-200/60 rounded-xl p-3.5 sm:p-4 relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-3 shadow-2xs">
             {/* Background Desk Image without separate card */}
@@ -609,7 +854,7 @@ export function CurriculumClient({
                 <Monitor size={24} className="stroke-[1.75]" />
               </div>
               <div className="min-w-0">
-                <h1 className="text-sm sm:text-base font-black text-slate-900 tracking-tight leading-snug">
+                <h1 className="text-sm sm:text-base font-semibold text-slate-800 tracking-tight leading-snug">
                   {courseTitle}
                 </h1>
                 <p className="text-[11px] text-slate-600 font-medium mt-0.5 max-w-lg line-clamp-1">
@@ -638,7 +883,7 @@ export function CurriculumClient({
           </div>
 
           {/* 3. Horizontal Navigation Tabs */}
-          <div className="border-b border-slate-200 flex items-center gap-6 sm:gap-7 overflow-x-auto text-xs sm:text-sm font-semibold text-slate-500 pb-2">
+          <div className="border-b border-slate-200 flex items-center gap-6 sm:gap-7 overflow-x-auto text-xs sm:text-sm font-medium text-slate-500 pb-2">
             <button
               onClick={() => {
                 setActiveTab('syllabus');
@@ -646,8 +891,8 @@ export function CurriculumClient({
               }}
               className={`pb-2 -mb-[10px] transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === 'syllabus'
-                  ? 'text-blue-600 font-bold border-b-2 border-blue-600'
-                  : 'text-slate-600 font-medium hover:text-slate-900 border-b-2 border-transparent'
+                  ? 'text-blue-600 font-semibold border-b-2 border-blue-600'
+                  : 'text-slate-600 font-normal hover:text-slate-900 border-b-2 border-transparent'
               }`}
             >
               Syllabus
@@ -660,45 +905,932 @@ export function CurriculumClient({
               }}
               className={`pb-2 -mb-[10px] transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === 'series'
-                  ? 'text-blue-600 font-bold border-b-2 border-blue-600'
-                  : 'text-slate-600 font-medium hover:text-slate-900 border-b-2 border-transparent'
+                  ? 'text-blue-600 font-semibold border-b-2 border-blue-600'
+                  : 'text-slate-600 font-normal hover:text-slate-900 border-b-2 border-transparent'
               }`}
             >
               Series
             </button>
 
-            <Link
-              href="/dashboard"
-              className="pb-2 -mb-[10px] text-slate-600 font-medium hover:text-slate-900 border-b-2 border-transparent transition-all whitespace-nowrap hidden sm:inline-block"
+            <button
+              onClick={() => {
+                setActiveTab('overview');
+                router.replace('/curriculum?tab=overview', { scroll: false });
+              }}
+              className={`pb-2 -mb-[10px] transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'overview'
+                  ? 'text-blue-600 font-semibold border-b-2 border-blue-600'
+                  : 'text-slate-600 font-normal hover:text-slate-900 border-b-2 border-transparent'
+              }`}
             >
               Overview
-            </Link>
+            </button>
 
-            <Link
-              href="/assignments"
-              className="pb-2 -mb-[10px] text-slate-600 font-medium hover:text-slate-900 border-b-2 border-transparent transition-all whitespace-nowrap hidden sm:inline-block"
+            <button
+              onClick={() => {
+                setActiveTab('assignments');
+                router.replace('/curriculum?tab=assignments', { scroll: false });
+              }}
+              className={`pb-2 -mb-[10px] transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'assignments'
+                  ? 'text-blue-600 font-semibold border-b-2 border-blue-600'
+                  : 'text-slate-600 font-normal hover:text-slate-900 border-b-2 border-transparent'
+              }`}
             >
               Assignments
-            </Link>
+            </button>
 
-            <Link
-              href="/assignments"
-              className="pb-2 -mb-[10px] text-slate-600 font-medium hover:text-slate-900 border-b-2 border-transparent transition-all whitespace-nowrap hidden sm:inline-block"
+            <button
+              onClick={() => {
+                setActiveTab('projects');
+                router.replace('/curriculum?tab=projects', { scroll: false });
+              }}
+              className={`pb-2 -mb-[10px] transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'projects'
+                  ? 'text-blue-600 font-semibold border-b-2 border-blue-600'
+                  : 'text-slate-600 font-normal hover:text-slate-900 border-b-2 border-transparent'
+              }`}
             >
               Projects
-            </Link>
+            </button>
 
-            <Link
-              href="/materials"
-              className="pb-2 -mb-[10px] text-slate-600 font-medium hover:text-slate-900 border-b-2 border-transparent transition-all whitespace-nowrap hidden sm:inline-block"
+            <button
+              onClick={() => {
+                setActiveTab('resources');
+                router.replace('/curriculum?tab=resources', { scroll: false });
+              }}
+              className={`pb-2 -mb-[10px] transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'resources'
+                  ? 'text-blue-600 font-semibold border-b-2 border-blue-600'
+                  : 'text-slate-600 font-normal hover:text-slate-900 border-b-2 border-transparent'
+              }`}
             >
               Resources
-            </Link>
+            </button>
           </div>
 
-          {/* 4. Modules List / Series View */}
+          {/* 4. Content Switcher: Overview / Syllabus / Series View */}
           <div className="space-y-3">
-            {activeTab === 'syllabus' ? (
+            {activeTab === 'overview' ? (
+              /* Overview View - Clean compact styling with regular/medium fonts */
+              <div className="bg-white rounded-xl border border-slate-200/80 p-3.5 sm:p-4 shadow-2xs space-y-3.5">
+                {/* 1. About This Course */}
+                <div className="space-y-2">
+                  <div>
+                    <h3 className="text-xs sm:text-sm font-semibold text-slate-800">About This Course</h3>
+                    <p className="text-[11px] text-slate-600 font-normal mt-0.5 leading-relaxed">
+                      {courseInfo?.description || 
+                        "This course will take you from beginner to advanced level in computer applications and technology. You will learn foundational concepts, practical workflows, and build real-world projects with practical examples."}
+                    </p>
+                  </div>
+
+                  {/* 4 Feature Cards */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <div className="flex items-center gap-2 p-2 rounded-lg border border-slate-200/80 bg-white">
+                      <div className="w-7 h-7 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                        <User size={14} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-semibold text-slate-800 leading-tight">Beginner Friendly</p>
+                        <p className="text-[9px] text-slate-400 mt-0.5">Step by step learning</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 p-2 rounded-lg border border-slate-200/80 bg-white">
+                      <div className="w-7 h-7 rounded-md bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                        <Layers size={14} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-semibold text-slate-800 leading-tight">Hands-on Projects</p>
+                        <p className="text-[9px] text-slate-400 mt-0.5">Build real websites</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 p-2 rounded-lg border border-slate-200/80 bg-white">
+                      <div className="w-7 h-7 rounded-md bg-sky-50 text-sky-600 flex items-center justify-center shrink-0">
+                        <PlayCircle size={14} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-semibold text-slate-800 leading-tight">Video + Notes</p>
+                        <p className="text-[9px] text-slate-400 mt-0.5">Learn with practice</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 p-2 rounded-lg border border-slate-200/80 bg-white">
+                      <div className="w-7 h-7 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                        <Award size={14} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-semibold text-slate-800 leading-tight">Certificate</p>
+                        <p className="text-[9px] text-slate-400 mt-0.5">Get on completion</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Course Goals */}
+                <div className="space-y-2 pt-2 border-t border-slate-100">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs sm:text-sm font-semibold text-slate-800">Course Goals</h3>
+                    <button 
+                      onClick={() => setActiveTab('syllabus')}
+                      className="text-[11px] font-medium text-blue-600 hover:text-blue-700 cursor-pointer"
+                    >
+                      View All
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <div className="flex items-center gap-2 p-2 rounded-lg border border-slate-200/80 bg-white">
+                      <div className="w-7 h-7 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                        <Code2 size={14} />
+                      </div>
+                      <p className="text-[11px] font-normal text-slate-700 leading-snug">
+                        Learn web development fundamentals
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 p-2 rounded-lg border border-slate-200/80 bg-white">
+                      <div className="w-7 h-7 rounded-md bg-sky-50 text-sky-600 flex items-center justify-center shrink-0">
+                        <Monitor size={14} />
+                      </div>
+                      <p className="text-[11px] font-normal text-slate-700 leading-snug">
+                        Build responsive websites
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 p-2 rounded-lg border border-slate-200/80 bg-white">
+                      <div className="w-7 h-7 rounded-md bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                        <Briefcase size={14} />
+                      </div>
+                      <p className="text-[11px] font-normal text-slate-700 leading-snug">
+                        Work on real projects
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 p-2 rounded-lg border border-slate-200/80 bg-white">
+                      <div className="w-7 h-7 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                        <Star size={14} />
+                      </div>
+                      <p className="text-[11px] font-normal text-slate-700 leading-snug">
+                        Prepare for future opportunities
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. What You Will Learn */}
+                <div className="space-y-2 pt-2 border-t border-slate-100">
+                  <h3 className="text-xs sm:text-sm font-semibold text-slate-800">What You Will Learn</h3>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-1.5">
+                    <div className="flex items-center gap-2 text-[11px] text-slate-600">
+                      <Check size={13} className="text-emerald-500 shrink-0 stroke-[2.2]" />
+                      <span>Understand how websites work</span>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-[11px] text-slate-600">
+                      <Check size={13} className="text-emerald-500 shrink-0 stroke-[2.2]" />
+                      <span>Work with modern tools and workflows</span>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-[11px] text-slate-600">
+                      <Check size={13} className="text-emerald-500 shrink-0 stroke-[2.2]" />
+                      <span>Create clean and responsive designs</span>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-[11px] text-slate-600">
+                      <Check size={13} className="text-emerald-500 shrink-0 stroke-[2.2]" />
+                      <span>Build and deploy real-world projects</span>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-[11px] text-slate-600">
+                      <Check size={13} className="text-emerald-500 shrink-0 stroke-[2.2]" />
+                      <span>Build interactive websites using JavaScript</span>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-[11px] text-slate-600">
+                      <Check size={13} className="text-emerald-500 shrink-0 stroke-[2.2]" />
+                      <span>Develop problem-solving skills</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4. Prerequisites */}
+                <div className="space-y-1.5 pt-2 border-t border-slate-100">
+                  <h3 className="text-xs sm:text-sm font-semibold text-slate-800">Prerequisites</h3>
+
+                  <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-sky-50/50 border border-sky-100">
+                    <div className="w-7 h-7 rounded-md bg-blue-100/70 text-blue-600 flex items-center justify-center shrink-0">
+                      <User size={15} />
+                    </div>
+                    <p className="text-[11px] text-slate-600 font-normal">
+                      Basic computer knowledge is helpful, but this course is designed for complete beginners.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : activeTab === 'assignments' ? (
+              /* Assignments View - Exact match to reference screenshot */
+              <div className="space-y-3">
+                {/* 1. Filter Pills Header */}
+                <div className="flex flex-wrap items-center justify-between gap-2.5 pb-1">
+                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                    <button
+                      onClick={() => setAssignmentFilter('all')}
+                      className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                        assignmentFilter === 'all'
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200/80 hover:bg-slate-50'
+                      }`}
+                    >
+                      All (15)
+                    </button>
+                    <button
+                      onClick={() => setAssignmentFilter('not_started')}
+                      className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                        assignmentFilter === 'not_started'
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200/80 hover:bg-slate-50'
+                      }`}
+                    >
+                      Not Started (3)
+                    </button>
+                    <button
+                      onClick={() => setAssignmentFilter('in_progress')}
+                      className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                        assignmentFilter === 'in_progress'
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200/80 hover:bg-slate-50'
+                      }`}
+                    >
+                      In Progress (4)
+                    </button>
+                    <button
+                      onClick={() => setAssignmentFilter('submitted')}
+                      className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                        assignmentFilter === 'submitted'
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200/80 hover:bg-slate-50'
+                      }`}
+                    >
+                      Submitted (5)
+                    </button>
+                    <button
+                      onClick={() => setAssignmentFilter('graded')}
+                      className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                        assignmentFilter === 'graded'
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200/80 hover:bg-slate-50'
+                      }`}
+                    >
+                      Graded (3)
+                    </button>
+                  </div>
+
+                  {/* Right Module Filter Dropdown */}
+                  <div className="relative">
+                    <select
+                      value={assignmentModuleFilter}
+                      onChange={(e) => setAssignmentModuleFilter(e.target.value)}
+                      className="appearance-none bg-white border border-slate-200/80 text-slate-700 font-semibold text-xs rounded-full pl-3.5 pr-8 py-1.5 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer shadow-2xs"
+                    >
+                      <option value="all">All Modules</option>
+                      {batchModules.map((m: any, idx: number) => (
+                        <option key={m.id || idx} value={m.id || idx}>
+                          Module {idx + 1}: {m.title}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                  </div>
+                </div>
+
+                {/* 2. Assignment List Rows */}
+                <div className="space-y-1.5">
+                  {(() => {
+                    const defaultAssignments = [
+                      {
+                        id: "asg-1",
+                        title: "Assignment 1: Create a Personal Profile Page",
+                        module: "Module 1: HTML Basics",
+                        type: "Practice",
+                        typeColor: "rose",
+                        status: "submitted",
+                        submittedAt: "10 Oct 2026, 10:30 AM",
+                        actionType: "view_submission"
+                      },
+                      {
+                        id: "asg-2",
+                        title: "Assignment 2: HTML Elements and Structure",
+                        module: "Module 1: HTML Basics",
+                        type: "Theory",
+                        typeColor: "purple",
+                        status: "in_progress",
+                        dueDate: "15 Oct 2026",
+                        timeLeft: "2 days left",
+                        actionType: "start"
+                      },
+                      {
+                        id: "asg-3",
+                        title: "Assignment 3: Create a Navigation Menu",
+                        module: "Module 2: CSS Basics",
+                        type: "Practice",
+                        typeColor: "rose",
+                        status: "graded",
+                        gradedAt: "18 Oct 2026, 04:20 PM",
+                        grade: "8.5 / 10",
+                        actionType: "view_feedback"
+                      },
+                      {
+                        id: "asg-4",
+                        title: "Assignment 4: CSS Styling and Layout",
+                        module: "Module 2: CSS Basics",
+                        type: "Practice",
+                        typeColor: "rose",
+                        status: "not_started",
+                        dueDate: "20 Oct 2026",
+                        timeLeft: "7 days left",
+                        actionType: "start_outline"
+                      },
+                      {
+                        id: "asg-5",
+                        title: "Assignment 5: Responsive Design",
+                        module: "Module 3: Responsive Web Design",
+                        type: "Project",
+                        typeColor: "rose",
+                        status: "in_progress",
+                        inProgressText: "Started 10 Oct 2026",
+                        actionType: "continue"
+                      },
+                      {
+                        id: "asg-6",
+                        title: "Assignment 6: JavaScript Basics",
+                        module: "Module 4: JavaScript Fundamentals",
+                        type: "Theory",
+                        typeColor: "purple",
+                        status: "not_started",
+                        dueDate: "25 Oct 2026",
+                        timeLeft: "12 days left",
+                        actionType: "start_outline"
+                      }
+                    ];
+
+                    const filtered = defaultAssignments.filter(item => {
+                      if (assignmentFilter === 'all') return true;
+                      return item.status === assignmentFilter;
+                    });
+
+                    if (filtered.length === 0) {
+                      return (
+                        <div className="bg-white p-6 rounded-2xl border border-slate-200/70 text-center">
+                          <p className="text-xs font-semibold text-slate-500">No assignments found for this filter.</p>
+                        </div>
+                      );
+                    }
+
+                    return filtered.map((item) => (
+                      <div
+                        key={item.id}
+                        className="bg-white rounded-xl border border-slate-200/80 hover:border-slate-300 px-3 py-2 sm:px-3.5 sm:py-2 flex flex-col md:flex-row md:items-center justify-between gap-2.5 transition-all shadow-2xs hover:shadow-xs"
+                      >
+                        {/* Left Column: Status Icon + Title + Module */}
+                        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1 pr-2">
+                          {/* Status Icon */}
+                          <div className="shrink-0">
+                            {item.status === 'submitted' || item.status === 'graded' ? (
+                              <div className="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-xs">
+                                <Check size={14} strokeWidth={2.5} />
+                              </div>
+                            ) : item.status === 'in_progress' ? (
+                              item.actionType === 'continue' ? (
+                                <div className="w-7 h-7 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                                  <div className="w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center shadow-xs">
+                                    <Play size={11} fill="white" className="ml-0.5" />
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="w-7 h-7 rounded-full border-2 border-blue-500/20 flex items-center justify-center relative">
+                                  <div className="w-3 h-6 bg-blue-500 rounded-l-full absolute left-0 top-0 bottom-0" />
+                                </div>
+                              )
+                            ) : (
+                              <div className="w-7 h-7 rounded-full border-2 border-slate-300 bg-white" />
+                            )}
+                          </div>
+
+                          {/* Info */}
+                          <div className="min-w-0 flex-1">
+                            <h4 className="text-xs sm:text-sm font-semibold text-slate-800 leading-snug truncate">
+                              {item.title}
+                            </h4>
+                            <p className="text-[10px] text-slate-400 mt-0.5 truncate">
+                              {item.module}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Right Area: Type Badge + Due/Status Info + Action Button */}
+                        <div className="flex items-center justify-between md:justify-end gap-2.5 sm:gap-4 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100">
+                          {/* Type Pill */}
+                          <div className="shrink-0">
+                            {item.typeColor === 'purple' ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-50 text-purple-600 border border-purple-100 text-[10px] font-medium">
+                                <FileText size={11} className="stroke-[2]" />
+                                {item.type}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-50 text-rose-500 border border-rose-100 text-[10px] font-medium">
+                                <FileText size={11} className="stroke-[2]" />
+                                {item.type}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Status / Deadline details */}
+                          <div className="min-w-[115px] sm:min-w-[125px] text-right">
+                            {item.status === 'submitted' && (
+                              <div className="space-y-0.5">
+                                <span className="inline-block px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-600 text-[9px] font-medium">
+                                  Submitted
+                                </span>
+                                <p className="text-[10px] text-slate-400">{item.submittedAt}</p>
+                              </div>
+                            )}
+
+                            {item.status === 'graded' && (
+                              <div className="flex items-center justify-end gap-2">
+                                <div className="space-y-0.5">
+                                  <span className="inline-block px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-600 text-[9px] font-medium">
+                                    Graded
+                                  </span>
+                                  <p className="text-[10px] text-slate-400">{item.gradedAt}</p>
+                                </div>
+                                <span className="inline-block px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 font-semibold text-xs border border-emerald-100/80">
+                                  {item.grade}
+                                </span>
+                              </div>
+                            )}
+
+                            {item.status === 'in_progress' && item.inProgressText && (
+                              <div className="space-y-0.5">
+                                <span className="inline-block px-2 py-0.5 rounded-md bg-amber-50 text-amber-600 text-[9px] font-medium">
+                                  In Progress
+                                </span>
+                                <p className="text-[10px] text-slate-400">{item.inProgressText}</p>
+                              </div>
+                            )}
+
+                            {item.dueDate && (
+                              <div className="space-y-0.5">
+                                <p className="text-[11px] font-medium text-slate-600">Due: {item.dueDate}</p>
+                                <p className="text-[10px] font-medium text-amber-600 flex items-center justify-end gap-1">
+                                  <Clock size={11} className="stroke-[2]" />
+                                  <span>{item.timeLeft}</span>
+                                </p>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Action Button */}
+                          <div className="shrink-0 min-w-[115px] flex justify-end">
+                            {item.actionType === 'start' ? (
+                              <Link
+                                href="/assignments"
+                                className="w-full sm:w-auto px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs text-center transition-all shadow-2xs"
+                              >
+                                Start Assignment
+                              </Link>
+                            ) : item.actionType === 'start_outline' ? (
+                              <Link
+                                href="/assignments"
+                                className="w-full sm:w-auto px-3 py-1 rounded-lg border border-blue-400 text-blue-600 hover:bg-blue-50 font-medium text-xs text-center transition-all"
+                              >
+                                Start Assignment
+                              </Link>
+                            ) : item.actionType === 'continue' ? (
+                              <Link
+                                href="/assignments"
+                                className="w-full sm:w-auto px-4 py-1 rounded-lg border border-blue-400 text-blue-600 hover:bg-blue-50 font-medium text-xs text-center transition-all"
+                              >
+                                Continue
+                              </Link>
+                            ) : item.actionType === 'view_feedback' ? (
+                              <Link
+                                href="/assignments"
+                                className="w-full sm:w-auto px-3 py-1 rounded-lg border border-blue-400 text-blue-600 hover:bg-blue-50 font-medium text-xs text-center transition-all"
+                              >
+                                View Feedback
+                              </Link>
+                            ) : (
+                              <Link
+                                href="/assignments"
+                                className="w-full sm:w-auto px-3 py-1 rounded-lg border border-blue-400 text-blue-600 hover:bg-blue-50 font-medium text-xs text-center transition-all"
+                              >
+                                View Submission
+                              </Link>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              </div>
+            ) : activeTab === 'projects' ? (
+              /* Projects View - Exact match to reference screenshot without description */
+              <div className="space-y-3">
+                {/* 1. Filter Pills Header */}
+                <div className="flex flex-wrap items-center justify-between gap-2.5 pb-1">
+                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                    <button
+                      onClick={() => setProjectFilter('all')}
+                      className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                        projectFilter === 'all'
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200/80 hover:bg-slate-50'
+                      }`}
+                    >
+                      All (6)
+                    </button>
+                    <button
+                      onClick={() => setProjectFilter('in_progress')}
+                      className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                        projectFilter === 'in_progress'
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200/80 hover:bg-slate-50'
+                      }`}
+                    >
+                      In Progress (3)
+                    </button>
+                    <button
+                      onClick={() => setProjectFilter('completed')}
+                      className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                        projectFilter === 'completed'
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200/80 hover:bg-slate-50'
+                      }`}
+                    >
+                      Completed (2)
+                    </button>
+                    <button
+                      onClick={() => setProjectFilter('upcoming')}
+                      className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                        projectFilter === 'upcoming'
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200/80 hover:bg-slate-50'
+                      }`}
+                    >
+                      Upcoming (1)
+                    </button>
+                  </div>
+
+                  {/* Right Module Filter Dropdown */}
+                  <div className="relative">
+                    <select
+                      value={projectModuleFilter}
+                      onChange={(e) => setProjectModuleFilter(e.target.value)}
+                      className="appearance-none bg-white border border-slate-200/80 text-slate-700 font-semibold text-xs rounded-full pl-3.5 pr-8 py-1.5 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer shadow-2xs"
+                    >
+                      <option value="all">All Modules</option>
+                      {batchModules.map((m: any, idx: number) => (
+                        <option key={m.id || idx} value={m.id || idx}>
+                          Module {idx + 1}: {m.title}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                  </div>
+                </div>
+
+                {/* 2. Project List Rows */}
+                <div className="space-y-2">
+                  {(() => {
+                    const defaultProjects = [
+                      {
+                        id: "proj-1",
+                        title: "Student Management System",
+                        module: "Module 2: Web Development",
+                        iconType: "code",
+                        status: "in_progress",
+                        statusLabel: "In Progress",
+                        dateLabel: "Due: 25 Oct 2026",
+                        progress: 60,
+                        actionText: "Continue",
+                        actionStyle: "outline"
+                      },
+                      {
+                        id: "proj-2",
+                        title: "Data Visualization Dashboard",
+                        module: "Module 3: Data Science",
+                        iconType: "chart",
+                        status: "completed",
+                        statusLabel: "Completed",
+                        dateLabel: "Submitted: 18 Oct 2026",
+                        progress: 100,
+                        actionText: "View Project",
+                        actionStyle: "outline"
+                      },
+                      {
+                        id: "proj-3",
+                        title: "Mobile App – Todo List",
+                        module: "Module 4: Mobile Development",
+                        iconType: "mobile",
+                        status: "in_progress",
+                        statusLabel: "In Progress",
+                        dateLabel: "Due: 30 Oct 2026",
+                        progress: 40,
+                        actionText: "Continue",
+                        actionStyle: "outline"
+                      },
+                      {
+                        id: "proj-4",
+                        title: "AI Chatbot",
+                        module: "Module 5: Artificial Intelligence",
+                        iconType: "ai",
+                        status: "upcoming",
+                        statusLabel: "Upcoming",
+                        dateLabel: "Due: 05 Nov 2026",
+                        progress: 0,
+                        actionText: "View Details",
+                        actionStyle: "outline"
+                      }
+                    ];
+
+                    const filtered = defaultProjects.filter(item => {
+                      if (projectFilter === 'all') return true;
+                      return item.status === projectFilter;
+                    });
+
+                    if (filtered.length === 0) {
+                      return (
+                        <div className="bg-white p-8 rounded-2xl border border-slate-200/70 text-center">
+                          <p className="text-xs font-semibold text-slate-500">No projects found for this filter.</p>
+                        </div>
+                      );
+                    }
+
+                    return filtered.map((item) => (
+                      <div
+                        key={item.id}
+                        className="bg-white rounded-xl border border-slate-200/80 hover:border-slate-300 px-3 py-2 sm:px-3.5 sm:py-2 flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 transition-all shadow-2xs hover:shadow-xs"
+                      >
+                        {/* Left Column: Icon Box + Title + Module (Single line, no wrap) */}
+                        <div className="flex items-center gap-2.5 sm:gap-3 flex-1 min-w-0 pr-2">
+                          {/* Distinct Icon Container */}
+                          <div className="shrink-0">
+                            {item.iconType === 'code' && (
+                              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-sky-50 text-sky-600 border border-sky-100 flex items-center justify-center shadow-2xs">
+                                <Code2 size={16} className="stroke-[1.8]" />
+                              </div>
+                            )}
+                            {item.iconType === 'chart' && (
+                              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center shadow-2xs">
+                                <TrendingUp size={16} className="stroke-[1.8]" />
+                              </div>
+                            )}
+                            {item.iconType === 'mobile' && (
+                              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center shadow-2xs">
+                                <Smartphone size={16} className="stroke-[1.8]" />
+                              </div>
+                            )}
+                            {item.iconType === 'ai' && (
+                              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center shadow-2xs">
+                                <Cpu size={16} className="stroke-[1.8]" />
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Title + Module Only - forced single line */}
+                          <div className="min-w-0 flex-1">
+                            <h4 className="text-xs sm:text-sm font-semibold text-slate-800 leading-snug whitespace-nowrap truncate">
+                              {item.title}
+                            </h4>
+                            <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mt-0.5 whitespace-nowrap truncate">
+                              <BookOpen size={12} className="text-slate-400 stroke-[1.8] shrink-0" />
+                              <span className="truncate">{item.module}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Right Area: Status Badge + Date + Progress Bar + Action Button + More Menu */}
+                        <div className="flex items-center justify-between lg:justify-end gap-2.5 sm:gap-4 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-100">
+                          {/* Status Badge & Date */}
+                          <div className="w-[115px] sm:w-[125px] shrink-0 text-left space-y-0.5">
+                            <div>
+                              {item.status === 'in_progress' && (
+                                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 text-[9px] font-medium">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                  {item.statusLabel}
+                                </span>
+                              )}
+                              {item.status === 'completed' && (
+                                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-[9px] font-medium">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                  {item.statusLabel}
+                                </span>
+                              )}
+                              {item.status === 'upcoming' && (
+                                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-purple-50 text-purple-600 text-[9px] font-medium">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+                                  {item.statusLabel}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1 text-[10px] text-slate-400 whitespace-nowrap">
+                              <Calendar size={11} className="text-slate-400 shrink-0" />
+                              <span>{item.dateLabel}</span>
+                            </div>
+                          </div>
+
+                          {/* Progress Bar & Percentage */}
+                          <div className="flex items-center gap-2 w-24 sm:w-32 shrink-0">
+                            <div className="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all duration-300 ${
+                                  item.status === 'completed'
+                                    ? 'bg-emerald-500'
+                                    : item.progress > 0
+                                    ? 'bg-blue-600'
+                                    : 'bg-transparent'
+                                }`}
+                                style={{ width: `${item.progress}%` }}
+                              />
+                            </div>
+                            <span className="text-[11px] font-medium text-slate-600 w-7 text-right shrink-0">
+                              {item.progress}%
+                            </span>
+                          </div>
+
+                          {/* Action Button */}
+                          <div className="shrink-0 flex items-center gap-1.5">
+                            <Link
+                              href="/assignments"
+                              className="px-3 py-1 rounded-lg border border-blue-400 text-blue-600 hover:bg-blue-50 font-medium text-xs text-center transition-all whitespace-nowrap shadow-2xs"
+                            >
+                              {item.actionText}
+                            </Link>
+
+                            {/* More Options 3-dots */}
+                            <button
+                              type="button"
+                              className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                            >
+                              <MoreVertical size={15} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              </div>
+            ) : activeTab === 'resources' ? (
+              /* Resources / Notes & Materials View */
+              <div className="space-y-3">
+                {/* 1. Header with title, subtitle & count pill */}
+                <div className="flex items-center justify-between pb-0.5">
+                  <div>
+                    <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">
+                      Notes & Materials
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5 font-normal">
+                      Download module notes, cheatsheets & guides
+                    </p>
+                  </div>
+                  <div className="px-3 py-1 rounded-full border border-blue-200 bg-blue-50/60 text-blue-700 text-xs font-semibold shadow-2xs">
+                    {effectiveMaterials.length} Items
+                  </div>
+                </div>
+
+                {/* 2. Full-width Search Bar */}
+                <div className="relative">
+                  <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={resourceSearch}
+                    onChange={(e) => setResourceSearch(e.target.value)}
+                    placeholder="Search notes, shortcuts, formulas..."
+                    className="w-full pl-9 pr-8 py-2 text-xs bg-white rounded-xl border border-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 text-slate-800 placeholder-slate-400 transition-all shadow-2xs"
+                  />
+                  {resourceSearch && (
+                    <button 
+                      onClick={() => setResourceSearch("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+                      aria-label="Clear search"
+                    >
+                      <X size={13} />
+                    </button>
+                  )}
+                </div>
+
+                {/* 3. Filter Pills */}
+                {availableMaterialTypes.length > 0 && (
+                  <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide py-0.5">
+                    <button
+                      onClick={() => setResourceTypeFilter("all")}
+                      className={`shrink-0 px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+                        resourceTypeFilter === "all"
+                          ? "bg-slate-950 text-white shadow-2xs"
+                          : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200"
+                      }`}
+                    >
+                      All ({effectiveMaterials.length})
+                    </button>
+                    {availableMaterialTypes.map(([label, count]) => (
+                      <button
+                        key={label}
+                        onClick={() => setResourceTypeFilter(label)}
+                        className={`shrink-0 px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+                          resourceTypeFilter === label
+                            ? "bg-blue-600 text-white shadow-2xs"
+                            : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200"
+                        }`}
+                      >
+                        {label} ({count})
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* 4. Materials List */}
+                {filteredMaterialsList.length === 0 ? (
+                  <div className="bg-white p-8 rounded-2xl border border-slate-200/80 text-center shadow-2xs">
+                    <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 mx-auto mb-2 border border-slate-100">
+                      <BookOpen size={18} />
+                    </div>
+                    <p className="text-xs font-semibold text-slate-700">No materials found</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      {resourceSearch ? "Try searching with different keywords" : "No materials available."}
+                    </p>
+                    {resourceSearch && (
+                      <button
+                        onClick={() => { setResourceSearch(""); setResourceTypeFilter("all"); }}
+                        className="mt-2 text-xs font-semibold text-blue-600 hover:text-blue-700"
+                      >
+                        Clear filters
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {filteredMaterialsList.map((item: any) => {
+                      const config = getMaterialTypeConfig(item.type);
+                      const { Icon } = config;
+                      const dateFormatted = formatMaterialDate(item.created_at);
+
+                      return (
+                        <div
+                          key={item.id}
+                          className="bg-white rounded-xl sm:rounded-2xl border border-slate-200/80 hover:border-blue-300 p-2.5 sm:px-4 sm:py-3 flex items-center justify-between gap-3 transition-all shadow-2xs hover:shadow-xs group"
+                        >
+                          {/* Left: Icon Box + Title & Subtitle with Date */}
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl shrink-0 flex items-center justify-center border transition-transform group-hover:scale-105 ${config.iconCls}`}>
+                              <Icon size={18} />
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+                              <h4 className="text-xs sm:text-sm font-semibold text-slate-900 truncate leading-snug group-hover:text-blue-600 transition-colors">
+                                {item.title}
+                              </h4>
+                              <div className="flex items-center gap-1.5 mt-0.5 text-[11px] text-slate-500 font-normal leading-none flex-wrap">
+                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold tracking-wide border leading-none ${config.badgeCls}`}>
+                                  {config.label}
+                                </span>
+                                {dateFormatted && (
+                                  <>
+                                    <span className="text-slate-300">•</span>
+                                    <span className="text-slate-500">{dateFormatted}</span>
+                                  </>
+                                )}
+                                {item.courseTitle && (
+                                  <>
+                                    <span className="text-slate-300">•</span>
+                                    <span className="text-slate-500 truncate max-w-[180px] sm:max-w-[320px]">
+                                      {item.courseTitle}
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Right: Solid Blue Open Button */}
+                          <button
+                            onClick={() => handleOpenMaterial(item)}
+                            className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-3.5 py-1.5 font-medium text-xs flex items-center gap-1.5 shadow-2xs transition-all active:scale-95 shrink-0 cursor-pointer"
+                          >
+                            <ExternalLink size={13} className="stroke-[2.2]" />
+                            <span>Open</span>
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            ) : activeTab === 'syllabus' ? (
               <div className="space-y-2.5">
                 {filteredModules.length === 0 ? (
                   <div className="bg-white p-10 rounded-2xl border border-slate-200/70 text-center">
@@ -747,15 +1879,15 @@ export function CurriculumClient({
           </div>
         </div>
 
-        {/* Right Side: 4 cols - Aligned at top alongside Banner */}
-        <div className="lg:col-span-4 space-y-3.5">
+        {/* Right Side: 3 cols (reduced width) - Aligned at top alongside Banner */}
+        <div className="lg:col-span-3 space-y-2.5">
           {/* Card 1: Your Progress */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs space-y-3.5">
-            <h3 className="text-xs font-bold text-slate-900 tracking-tight">Your Progress</h3>
+          <div className="bg-white rounded-xl border border-slate-200/80 p-3 shadow-2xs space-y-2.5">
+            <h3 className="text-xs font-semibold text-slate-800 tracking-tight">Your Progress</h3>
             
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               {/* Radial gauge */}
-              <div className="relative w-20 h-20 shrink-0 flex items-center justify-center">
+              <div className="relative w-16 h-16 shrink-0 flex items-center justify-center">
                 <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
                   <circle
                     cx="50"
@@ -780,39 +1912,39 @@ export function CurriculumClient({
                   />
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-base font-bold text-slate-900">{totalProgress}%</span>
+                  <span className="text-sm font-semibold text-slate-800">{totalProgress}%</span>
                 </div>
               </div>
 
               {/* Metric lines */}
-              <div className="space-y-2 min-w-0 flex-1 text-[11px]">
+              <div className="space-y-1.5 min-w-0 flex-1 text-[11px]">
                 <div className="flex items-start gap-1.5 text-slate-600">
-                  <BookOpen size={13} className="text-sky-500 shrink-0 mt-0.5" />
+                  <BookOpen size={12} className="text-sky-500 shrink-0 mt-0.5" />
                   <div>
-                    <p className="font-bold text-slate-900 text-xs leading-none">
+                    <p className="font-semibold text-slate-700 text-xs leading-none">
                       {completedClasses.length} / {classLessons.length || totalLessonsCount}
                     </p>
-                    <p className="text-[10px] text-slate-400 font-medium mt-0.5">Lessons Completed</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Lessons Completed</p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-1.5 text-slate-600">
-                  <Layers size={13} className="text-emerald-500 shrink-0 mt-0.5" />
+                  <Layers size={12} className="text-emerald-500 shrink-0 mt-0.5" />
                   <div>
-                    <p className="font-bold text-slate-900 text-xs leading-none">
+                    <p className="font-semibold text-slate-700 text-xs leading-none">
                       {completedModulesCount} / {batchModules.length || 5}
                     </p>
-                    <p className="text-[10px] text-slate-400 font-medium mt-0.5">Modules Completed</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Modules Completed</p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-1.5 text-slate-600">
-                  <FileText size={13} className="text-indigo-500 shrink-0 mt-0.5" />
+                  <FileText size={12} className="text-indigo-500 shrink-0 mt-0.5" />
                   <div>
-                    <p className="font-bold text-slate-900 text-xs leading-none">
+                    <p className="font-semibold text-slate-700 text-xs leading-none">
                       {completedAssignmentsCount} / {assignmentsCount || 10}
                     </p>
-                    <p className="text-[10px] text-slate-400 font-medium mt-0.5">Assignments Done</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Assignments Done</p>
                   </div>
                 </div>
               </div>
@@ -826,86 +1958,86 @@ export function CurriculumClient({
                   openLesson(allLessons[0]);
                 }
               }}
-              className="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-bold py-2.5 px-3 rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 text-xs cursor-pointer"
+              className="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-medium py-2 px-3 rounded-lg shadow-2xs transition-all flex items-center justify-center gap-1.5 text-xs cursor-pointer"
             >
               <span>Continue Learning</span>
-              <ChevronRight size={14} />
+              <ChevronRight size={13} />
             </button>
           </div>
 
           {/* Card 2: Course Information */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs space-y-3">
-            <h3 className="text-xs font-bold text-slate-900 tracking-tight">Course Information</h3>
+          <div className="bg-white rounded-xl border border-slate-200/80 p-3 shadow-2xs space-y-2">
+            <h3 className="text-xs font-semibold text-slate-800 tracking-tight">Course Information</h3>
             
-            <div className="space-y-2.5 text-xs">
-              <div className="flex items-center gap-3">
-                <div className="w-7 h-7 rounded-lg bg-sky-50 text-blue-600 flex items-center justify-center shrink-0">
-                  <Clock size={14} />
+            <div className="space-y-2 text-xs">
+              <div className="flex items-center gap-2.5">
+                <div className="w-6 h-6 rounded-md bg-sky-50 text-blue-600 flex items-center justify-center shrink-0">
+                  <Clock size={13} />
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Duration</p>
-                  <p className="font-bold text-slate-800 text-xs">{courseDuration}</p>
+                  <p className="text-[9px] uppercase tracking-wider text-slate-400">Duration</p>
+                  <p className="font-medium text-slate-700 text-xs leading-tight">{courseDuration}</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
-                <div className="w-7 h-7 rounded-lg bg-sky-50 text-blue-600 flex items-center justify-center shrink-0">
-                  <Layers size={14} />
+              <div className="flex items-center gap-2.5">
+                <div className="w-6 h-6 rounded-md bg-sky-50 text-blue-600 flex items-center justify-center shrink-0">
+                  <Layers size={13} />
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Total Modules</p>
-                  <p className="font-bold text-slate-800 text-xs">{batchModules.length} Modules</p>
+                  <p className="text-[9px] uppercase tracking-wider text-slate-400">Total Modules</p>
+                  <p className="font-medium text-slate-700 text-xs leading-tight">{batchModules.length} Modules</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
-                <div className="w-7 h-7 rounded-lg bg-sky-50 text-blue-600 flex items-center justify-center shrink-0">
-                  <BookOpen size={14} />
+              <div className="flex items-center gap-2.5">
+                <div className="w-6 h-6 rounded-md bg-sky-50 text-blue-600 flex items-center justify-center shrink-0">
+                  <BookOpen size={13} />
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Total Lessons</p>
-                  <p className="font-bold text-slate-800 text-xs">{totalLessonsCount} Lessons</p>
+                  <p className="text-[9px] uppercase tracking-wider text-slate-400">Total Lessons</p>
+                  <p className="font-medium text-slate-700 text-xs leading-tight">{totalLessonsCount} Lessons</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
-                <div className="w-7 h-7 rounded-lg bg-sky-50 text-blue-600 flex items-center justify-center shrink-0">
-                  <Monitor size={14} />
+              <div className="flex items-center gap-2.5">
+                <div className="w-6 h-6 rounded-md bg-sky-50 text-blue-600 flex items-center justify-center shrink-0">
+                  <Monitor size={13} />
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Mode</p>
-                  <p className="font-bold text-slate-800 text-xs">{courseMode}</p>
+                  <p className="text-[9px] uppercase tracking-wider text-slate-400">Mode</p>
+                  <p className="font-medium text-slate-700 text-xs leading-tight">{courseMode}</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
-                <div className="w-7 h-7 rounded-lg bg-sky-50 text-blue-600 flex items-center justify-center shrink-0">
-                  <Award size={14} />
+              <div className="flex items-center gap-2.5">
+                <div className="w-6 h-6 rounded-md bg-sky-50 text-blue-600 flex items-center justify-center shrink-0">
+                  <Award size={13} />
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Certificate</p>
-                  <p className="font-bold text-slate-800 text-xs">On Completion</p>
+                  <p className="text-[9px] uppercase tracking-wider text-slate-400">Certificate</p>
+                  <p className="font-medium text-slate-700 text-xs leading-tight">On Completion</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Card 3: Quick Links */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs space-y-2">
-            <h3 className="text-xs font-bold text-slate-900 tracking-tight mb-2">Quick Links</h3>
+          <div className="bg-white rounded-xl border border-slate-200/80 p-3 shadow-2xs space-y-1.5">
+            <h3 className="text-xs font-semibold text-slate-800 tracking-tight mb-1.5">Quick Links</h3>
             
             <div className="space-y-0.5 text-xs">
               <div 
                 onClick={() => {
                   window.open(`/api/pdf/syllabus?courseId=${courseId || ''}`, '_blank');
                 }}
-                className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-slate-50 transition-colors group cursor-pointer"
+                className="flex items-center justify-between py-1 px-1.5 rounded-lg hover:bg-slate-50 transition-colors group cursor-pointer"
               >
-                <div className="flex items-center gap-2 text-slate-700 font-medium text-xs group-hover:text-blue-600 transition-colors">
-                  <Download size={14} className="text-slate-400 group-hover:text-blue-600 shrink-0" />
+                <div className="flex items-center gap-2 text-slate-600 font-normal text-xs group-hover:text-blue-600 transition-colors">
+                  <Download size={13} className="text-slate-400 group-hover:text-blue-600 shrink-0" />
                   <span>Download Syllabus (PDF)</span>
                 </div>
-                <ChevronRight size={13} className="text-slate-300 group-hover:text-blue-600" />
+                <ChevronRight size={12} className="text-slate-300 group-hover:text-blue-600" />
               </div>
 
               <Link 
@@ -957,6 +2089,14 @@ export function CurriculumClient({
           </div>
         </div>
       </div>
+
+      {/* Note / Code Viewer Modal */}
+      {viewingNote && (
+        <NoteViewer 
+          item={viewingNote} 
+          onClose={() => setViewingNote(null)} 
+        />
+      )}
 
       {/* Lesson Viewer Modal */}
       {activeLesson && (
@@ -1347,16 +2487,16 @@ function ModuleItem({
         className="w-full px-3.5 sm:px-4 py-3 flex items-center justify-between text-left group cursor-pointer hover:bg-slate-50/50 transition-colors"
       >
         <div className="flex items-center gap-3 min-w-0">
-          <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm shrink-0 shadow-xs ${
+          <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-semibold text-xs sm:text-sm shrink-0 shadow-xs ${
             moduleColorStyles[mIdx % moduleColorStyles.length]
           }`}>
             {mIdx + 1}
           </div>
           <div className="min-w-0">
-            <h3 className="text-xs sm:text-sm font-bold text-slate-900 leading-tight truncate">
+            <h3 className="text-xs sm:text-sm font-semibold text-slate-800 leading-tight truncate">
               {module.title?.toLowerCase().startsWith("module") ? module.title : `Module ${mIdx + 1}: ${module.title}`}
             </h3>
-            <p className="text-[11px] text-slate-500 font-medium mt-0.5 line-clamp-1">
+            <p className="text-[11px] text-slate-500 font-normal mt-0.5 line-clamp-1">
               {module.description || "Foundational concepts, practice tasks, and exercises."}
             </p>
           </div>

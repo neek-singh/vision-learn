@@ -6,14 +6,14 @@ import Image from "next/image";
 import packageJson from "@/package.json";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase-browser";
-import { 
-  LayoutDashboard, 
-  BookOpen, 
-  FileText, 
-  PenTool, 
-  User, 
-  LogOut, 
-  Menu, 
+import {
+  LayoutDashboard,
+  BookOpen,
+  FileText,
+  PenTool,
+  User,
+  LogOut,
+  Menu,
   X,
   Bell,
   Calendar,
@@ -21,7 +21,13 @@ import {
   Wallet,
   Plus,
   ListOrdered,
-  LayoutList
+  LayoutList,
+  Award,
+  UserCheck,
+  SlidersHorizontal,
+  ShieldCheck,
+  Globe,
+  ChevronLeft
 } from "lucide-react";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { SyncStatus } from "@/components/SyncStatus";
@@ -29,35 +35,31 @@ import { GlobalSearch } from "@/components/GlobalSearch";
 
 const sidebarLinks = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "My Classes", href: "/curriculum", icon: BookOpen },
   { name: "My Courses", href: "/courses", icon: BookOpen },
   { name: "Tests", href: "/tests", icon: FileText },
-  { name: "Notes & Materials", href: "/materials", icon: FileText },
-  { name: "Projects", href: "/assignments", icon: PenTool },
   { name: "Calendar", href: "/calendar", icon: Calendar },
   { name: "Attendance", href: "/attendance", icon: CheckCircle2 },
-  { name: "Notifications", href: "/notifications", icon: Bell },
+  { name: "Certificates", href: "/certificates", icon: Award },
   { name: "My Fees", href: "/fees", icon: Wallet },
-  { name: "Profile", href: "/profile", icon: User },
+  { name: "Profile", href: "/settings", icon: User },
 ];
 
-const NavLink = memo(({ 
-  href, 
-  icon: Icon, 
-  name, 
-  isActive, 
-  unreadCount, 
+const NavLink = memo(({
+  href,
+  icon: Icon,
+  name,
+  isActive,
+  unreadCount,
   onClick,
   hasSubmenu,
   isSubmenuOpen,
   onToggleSubmenu
 }: any) => (
   <div
-    className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 group ${
-      isActive 
-        ? "bg-indigo-50 text-indigo-700 font-bold" 
+    className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 group ${isActive
+        ? "bg-blue-50 text-blue-700 font-bold shadow-2xs"
         : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
-    }`}
+      }`}
   >
     <Link
       href={href}
@@ -65,7 +67,7 @@ const NavLink = memo(({
       onClick={onClick}
       className="flex items-center gap-3 flex-1 min-w-0"
     >
-      <Icon size={18} className={isActive ? "text-indigo-600" : "text-slate-400 group-hover:text-slate-600"} />
+      <Icon size={18} className={isActive ? "text-blue-600" : "text-slate-400 group-hover:text-slate-600"} />
       <span className="text-sm truncate">{name}</span>
     </Link>
     {name === "Notifications" && unreadCount > 0 && (
@@ -83,11 +85,10 @@ const NavLink = memo(({
         }}
         title={isSubmenuOpen ? "Close list" : "Open Series and Syllabus"}
         aria-label={isSubmenuOpen ? "Close list" : "Open Series and Syllabus"}
-        className={`p-1 -mr-1 rounded-lg transition-transform duration-200 hover:bg-indigo-100/70 shrink-0 cursor-pointer ${
-          isActive 
-            ? "text-indigo-600 hover:text-indigo-800" 
+        className={`p-1 -mr-1 rounded-lg transition-transform duration-200 hover:bg-indigo-100/70 shrink-0 cursor-pointer ${isActive
+            ? "text-indigo-600 hover:text-indigo-800"
             : "text-slate-400 hover:text-slate-700"
-        } ${isSubmenuOpen ? "rotate-45" : ""}`}
+          } ${isSubmenuOpen ? "rotate-45" : ""}`}
       >
         <Plus size={16} className="stroke-[2.5]" />
       </button>
@@ -110,11 +111,10 @@ function ClassesSubmenuContent({ onSubLinkClick }: { onSubLinkClick?: () => void
         href="/curriculum?tab=series"
         prefetch={true}
         onClick={onSubLinkClick}
-        className={`flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all group ${
-          isSeriesActive
+        className={`flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all group ${isSeriesActive
             ? "bg-indigo-50 text-indigo-700 font-bold shadow-2xs"
             : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
-        }`}
+          }`}
       >
         <ListOrdered size={14} className={isSeriesActive ? "text-indigo-600" : "text-slate-400 group-hover:text-slate-600"} />
         <span className="flex-1">Series</span>
@@ -123,11 +123,10 @@ function ClassesSubmenuContent({ onSubLinkClick }: { onSubLinkClick?: () => void
         href="/curriculum?tab=syllabus"
         prefetch={true}
         onClick={onSubLinkClick}
-        className={`flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all group ${
-          isSyllabusActive
+        className={`flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all group ${isSyllabusActive
             ? "bg-indigo-50 text-indigo-700 font-bold shadow-2xs"
             : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
-        }`}
+          }`}
       >
         <LayoutList size={14} className={isSyllabusActive ? "text-indigo-600" : "text-slate-400 group-hover:text-slate-600"} />
         <span className="flex-1">Syllabus</span>
@@ -143,8 +142,8 @@ const ClassesSubmenu = memo(({ onSubLinkClick }: { onSubLinkClick?: () => void }
 ));
 
 const MobileBottomLink = memo(({ href, icon: Icon, name, isActive }: any) => (
-  <Link 
-    href={href} 
+  <Link
+    href={href}
     prefetch={true}
     className={`flex flex-col items-center gap-1 p-2 min-w-[64px] transition-all active:scale-90 ${isActive ? 'text-indigo-600' : 'text-slate-400'}`}
   >
@@ -184,7 +183,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       // 2. Setup SINGLE channel
       const channelId = `vision_realtime_${studentId}`;
-      
+
       // Clean up any existing channel with same ID first to be safe
       supabase.removeChannel(supabase.channel(channelId));
 
@@ -268,7 +267,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const interval = setInterval(() => {
       if (document.visibilityState === 'visible') {
         accumulatedSeconds += 1;
-        
+
         // Also update local storage so it reflects instantly on dashboard
         const key = `vision_active_seconds_${studentId}`;
         const currentTotal = parseInt(localStorage.getItem(key) || '0', 10);
@@ -339,11 +338,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="p-6">
           <Link href="/dashboard" className="flex items-center gap-2">
             <div className="w-9 h-9 relative flex items-center justify-center">
-              <Image 
-                src="https://res.cloudinary.com/ddiooxxks/image/upload/f_auto,q_auto/logo_unnut8.png" 
-                alt="Vision IT Logo" 
-                width={36} 
-                height={36} 
+              <Image
+                src="https://res.cloudinary.com/ddiooxxks/image/upload/f_auto,q_auto/logo_unnut8.png"
+                alt="Vision IT Logo"
+                width={36}
+                height={36}
                 className="object-contain"
                 priority
               />
@@ -360,9 +359,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             const isClasses = link.name === "My Classes";
             return (
               <div key={link.href}>
-                <NavLink 
-                  {...link} 
-                  isActive={pathname === link.href} 
+                <NavLink
+                  {...link}
+                  isActive={pathname === link.href}
                   unreadCount={unreadCount}
                   hasSubmenu={isClasses}
                   isSubmenuOpen={isClassesSubmenuOpen}
@@ -392,24 +391,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Mobile Sidebar Overlay */}
       {isMobileMenuOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 lg:hidden"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
 
       {/* Sidebar - Mobile */}
-      <aside className={`fixed inset-y-0 left-0 w-72 bg-white z-50 transform transition-transform duration-300 lg:hidden flex flex-col ${
-        isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-      }`}>
+      <aside className={`fixed inset-y-0 left-0 w-72 bg-white z-50 transform transition-transform duration-300 lg:hidden flex flex-col ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+        }`}>
         <div className="p-8 flex justify-between items-center shrink-0">
           <Link href="/dashboard" className="flex items-center gap-3">
             <div className="w-12 h-12 relative flex items-center justify-center">
-              <Image 
-                src="https://res.cloudinary.com/ddiooxxks/image/upload/f_auto,q_auto/logo_unnut8.png" 
-                alt="Vision IT Logo" 
-                width={44} 
-                height={44} 
+              <Image
+                src="https://res.cloudinary.com/ddiooxxks/image/upload/f_auto,q_auto/logo_unnut8.png"
+                alt="Vision IT Logo"
+                width={44}
+                height={44}
                 className="object-contain"
                 priority
               />
@@ -419,8 +417,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <span className="text-[10px] font-extrabold text-slate-400 mt-1">v{packageJson.version}</span>
             </div>
           </Link>
-          <button 
-            onClick={() => setIsMobileMenuOpen(false)} 
+          <button
+            onClick={() => setIsMobileMenuOpen(false)}
             aria-label="Close mobile menu"
             className="p-2 text-slate-400 hover:text-slate-900"
           >
@@ -432,10 +430,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             const isClasses = link.name === "My Classes";
             return (
               <div key={link.href}>
-                <NavLink 
-                  {...link} 
-                  isActive={pathname === link.href} 
-                  unreadCount={unreadCount} 
+                <NavLink
+                  {...link}
+                  isActive={pathname === link.href}
+                  unreadCount={unreadCount}
                   onClick={() => {
                     setIsMobileMenuOpen(false);
                     if (isClasses) setIsClassesSubmenuOpen(true);
@@ -468,7 +466,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Navbar - Compact height */}
         <header className="h-13 bg-white border-b border-slate-100 flex items-center justify-between px-4 sm:px-6 lg:px-8 sticky top-0 z-30">
-          <button 
+          <button
             onClick={() => setIsMobileMenuOpen(true)}
             aria-label="Open mobile menu"
             className="p-1.5 -ml-1 text-slate-400 hover:text-slate-900 lg:hidden"
@@ -481,7 +479,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
 
           <div className="flex items-center gap-3">
-            <Link 
+            <Link
               href="/notifications"
               aria-label={`View notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}
               className="p-1.5 text-slate-400 hover:text-slate-900 relative"
@@ -491,11 +489,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-rose-500 rounded-full border-2 border-white" />
               )}
             </Link>
-            
+
             <div className="h-5 w-[1px] bg-slate-100 mx-0.5" />
-            
+
             <div className="flex items-center gap-2">
-              <Link href="/profile" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+              <Link href="/settings" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                 <div className="text-right hidden sm:block">
                   <p className="text-xs font-bold text-slate-900 leading-tight">{student?.name || "Loading..."}</p>
                   <p className="text-[10px] text-slate-400 font-medium leading-none">Student</p>
@@ -522,7 +520,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {!isMobileMenuOpen && (
           <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 px-4 py-2 z-50 flex items-center justify-around shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.05)] animate-in slide-in-from-bottom duration-300">
             <MobileBottomLink href="/dashboard" icon={LayoutDashboard} name="Home" isActive={pathname === '/dashboard'} />
-            <MobileBottomLink href="/curriculum" icon={BookOpen} name="Classes" isActive={pathname === '/curriculum'} />
+            <MobileBottomLink href="/courses" icon={BookOpen} name="Courses" isActive={pathname === '/courses'} />
             <MobileBottomLink href="/materials" icon={FileText} name="Notes" isActive={pathname === '/materials'} />
             <MobileBottomLink href="/tests" icon={PenTool} name="Tests" isActive={pathname === '/tests'} />
           </nav>

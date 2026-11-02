@@ -18,11 +18,11 @@ export default async function TestsPage() {
   // 1. Get Student Batch & Enrollments
   const [studentRes, enrollmentRes] = await Promise.all([
     supabase.from("students").select("batch").eq("id", payload.id).single(),
-    supabase.from("enrollments").select("course_id, batch").eq("student_id", payload.id)
+    supabase.from("enrollments").select("course_id, batch, courses(title)").eq("student_id", payload.id)
   ]);
 
   const student = studentRes.data;
-  const enrollments = enrollmentRes.data || [];
+  const enrollments: any[] = enrollmentRes.data || [];
   const courseIds = enrollments.map(e => e.course_id).filter(Boolean);
   const activeBatch = (student?.batch || enrollments[0]?.batch || "").trim();
 
@@ -72,25 +72,19 @@ export default async function TestsPage() {
     .select("lesson_id, score, status, content_url")
     .eq("student_id", payload.id);
 
-  return (
-    <div className="max-w-4xl mx-auto space-y-3 animate-in fade-in duration-300 pb-16">
-      <div className="bg-white rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">Online Tests & Quizzes</h1>
-          <p className="text-xs text-slate-500 font-medium">Evaluate your progress and master your skills</p>
-        </div>
-      </div>
+  const courseTitle = enrollments[0]?.courses?.title || "Web Development";
 
-      <TestsClient 
-        initialTests={tests || []} 
-        schedules={schedules || []}
-        activeBatch={activeBatch}
-        activeBatchId={activeBatchId}
-        studentId={payload.id} 
-        initialResults={results || []} 
-        quizLessons={quizLessons || []}
-        quizSubmissions={quizSubmissions || []}
-      />
-    </div>
+  return (
+    <TestsClient 
+      initialTests={tests || []} 
+      schedules={schedules || []}
+      activeBatch={activeBatch}
+      activeBatchId={activeBatchId}
+      studentId={payload.id} 
+      initialResults={results || []} 
+      quizLessons={quizLessons || []}
+      quizSubmissions={quizSubmissions || []}
+      courseTitle={courseTitle}
+    />
   );
 }

@@ -55,16 +55,41 @@ export async function POST(request: Request) {
         .single();
 
       if (moduleData?.course_id) {
-        // 3. Fetch progress_percentage updated by DB trigger
-        const { data: enrollment } = await supabase
-          .from("enrollments")
-          .select("progress_percentage")
-          .eq("student_id", payload.id)
-          .eq("course_id", moduleData.course_id)
-          .single();
+        const courseId = moduleData.course_id;
 
-        if (enrollment) {
-          progressPercentage = enrollment.progress_percentage;
+        // Fetch all modules and lessons for this course to calculate real percentage
+        const { data: allModules } = await supabase
+          .from("lms_modules")
+          .select("id, lessons(id)")
+          .eq("course_id", courseId);
+
+        const allLessonIds: string[] = [];
+        (allModules || []).forEach((m: any) => {
+          (m.lessons || []).forEach((l: any) => {
+            if (l.id) allLessonIds.push(l.id);
+          });
+        });
+
+        if (allLessonIds.length > 0) {
+          // Count completed lessons for this student
+          const { count: completedCount } = await supabase
+            .from("user_progress")
+            .select("lesson_id", { count: "exact", head: true })
+            .eq("user_id", payload.id)
+            .eq("completed", true)
+            .in("lesson_id", allLessonIds);
+
+          progressPercentage = Math.round(((completedCount || 0) / allLessonIds.length) * 100);
+
+          // Update enrollments table
+          await supabase
+            .from("enrollments")
+            .update({
+              progress_percentage: progressPercentage,
+              last_lesson_id: lessonId
+            })
+            .eq("student_id", payload.id)
+            .eq("course_id", courseId);
         }
       }
     }

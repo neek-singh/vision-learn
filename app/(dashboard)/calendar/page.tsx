@@ -16,18 +16,9 @@ export default async function CalendarPage() {
   if (!payload) redirect("/login");
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight mb-1">Learning Calendar</h1>
-          <p className="text-sm text-slate-500 font-medium">Track your upcoming classes, tests, and deadlines.</p>
-        </div>
-      </div>
-
-      <Suspense fallback={<CalendarSkeleton />}>
-        <CalendarContent userId={payload.id} />
-      </Suspense>
-    </div>
+    <Suspense fallback={<CalendarSkeleton />}>
+      <CalendarContent userId={payload.id} />
+    </Suspense>
   );
 }
 
@@ -37,13 +28,14 @@ async function CalendarContent({ userId }: { userId: string }) {
   // 1. Fetch Student & Enrollments in parallel
   const [studentRes, enrollmentRes] = await Promise.all([
     supabase.from("students").select("batch").eq("id", userId).single(),
-    supabase.from("enrollments").select("course_id, batch").eq("student_id", userId)
+    supabase.from("enrollments").select("course_id, batch, courses(title)").eq("student_id", userId)
   ]);
 
   const student = studentRes.data;
-  const enrollments = enrollmentRes.data || [];
+  const enrollments: any[] = enrollmentRes.data || [];
   const courseIds = enrollments.map(e => e.course_id);
   const activeBatch = student?.batch || enrollments[0]?.batch;
+  const courseTitle = enrollments[0]?.courses?.title || "Web Development";
 
   // 2. Fetch Events and Schedules in parallel
   const [eventsRes, schedulesRes] = await Promise.all([
@@ -71,5 +63,5 @@ async function CalendarContent({ userId }: { userId: string }) {
     ...filteredSchedules.map(s => ({ ...s, event_date: s.date, type: s.type || 'class' }))
   ];
 
-  return <CalendarClient initialEvents={allEvents} />;
+  return <CalendarClient initialEvents={allEvents} courseTitle={courseTitle} />;
 }

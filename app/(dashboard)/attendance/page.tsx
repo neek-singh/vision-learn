@@ -16,33 +16,41 @@ export default async function StudentAttendancePage() {
   if (!payload) redirect("/login");
 
   return (
-    <div className="max-w-4xl mx-auto space-y-3.5 animate-in fade-in duration-300">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">My Attendance</h1>
-          <p className="text-xs text-slate-500 font-medium mt-0.5">Track your presence and learning consistency</p>
-        </div>
-      </div>
-
-      <Suspense fallback={<AttendanceSkeleton />}>
-        <AttendanceContent userId={payload.id} />
-      </Suspense>
-    </div>
+    <Suspense fallback={<AttendanceSkeleton />}>
+      <AttendanceContent userId={payload.id} />
+    </Suspense>
   );
 }
 
 async function AttendanceContent({ userId }: { userId: string }) {
   const supabase = createPublicSupabaseClient();
 
-  // Fetch Attendance Records for the logged-in student
-  const { data: attendance } = await supabase
-    .from("attendance")
-    .select(`
-      *,
-      courses(title)
-    `)
-    .eq("student_id", userId)
-    .order("date", { ascending: false });
+  // Fetch Attendance Records, Student and Enrollments in parallel
+  const [studentRes, enrollmentRes, attendanceRes, batchesRes] = await Promise.all([
+    supabase.from("students").select("id, name, batch").eq("id", userId).single(),
+    supabase.from("enrollments").select("course_id, batch, courses(title)").eq("student_id", userId),
+    supabase.from("attendance").select("*, courses(title)").eq("student_id", userId).order("date", { ascending: false }),
+    supabase.from("batches").select("*")
+  ]);
 
-  return <StudentAttendanceClient initialRecords={attendance || []} />;
+  const student = studentRes.data;
+  const enrollments: any[] = enrollmentRes.data || [];
+  const attendance = attendanceRes.data || [];
+  const batches: any[] = batchesRes.data || [];
+
+  const courseTitle = enrollments[0]?.courses?.title || "Web Development";
+  const activeBatch = student?.batch || enrollments[0]?.batch || "WD-2026";
+  const matchedBatch = batches.find((b: any) => 
+    b.title?.trim().toLowerCase() === activeBatch?.trim().toLowerCase()
+  );
+
+  return (
+    <StudentAttendanceClient 
+      initialRecords={attendance} 
+      courseTitle={courseTitle}
+      batchName={activeBatch}
+      batchTiming={matchedBatch?.timing || "10:00 AM - 11:00 AM"}
+      facultyName={matchedBatch?.faculty_name || "Neeraj Sir"}
+    />
+  );
 }
