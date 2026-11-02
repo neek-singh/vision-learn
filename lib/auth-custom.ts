@@ -1,8 +1,14 @@
 import { SignJWT, jwtVerify } from "jose";
 
-const SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "vision_learn_super_secret_key_2026"
-);
+const jwtSecret =
+  process.env.JWT_SECRET ||
+  (process.env.NODE_ENV === "production" ? "" : "dev_jwt_secret_local_only");
+
+if (!jwtSecret && process.env.NODE_ENV === "production") {
+  throw new Error("JWT_SECRET environment variable is missing.");
+}
+
+const SECRET = new TextEncoder().encode(jwtSecret || "dev_jwt_secret_local_only");
 
 export async function createToken(payload: { id: string; student_id: string; name: string }) {
   return await new SignJWT(payload)
