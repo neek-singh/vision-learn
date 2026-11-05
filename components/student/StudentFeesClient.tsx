@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import Link from "next/link";
 import { 
+  Home,
+  ChevronRight,
   Wallet, 
   Clock, 
   CheckCircle2, 
@@ -11,11 +14,15 @@ import {
   Calendar,
   History,
   Download,
-  ArrowUpRight,
   ShieldCheck,
   AlertTriangle,
   Search,
-  Filter
+  Filter,
+  CreditCard,
+  Building,
+  Phone,
+  FileCheck2,
+  CalendarCheck
 } from "lucide-react";
 
 export function StudentFeesClient({ fee }: { fee: any }) {
@@ -26,27 +33,25 @@ export function StudentFeesClient({ fee }: { fee: any }) {
     return fee.payments?.reduce((acc: number, p: any) => acc + Number(p.amount), 0) || 0;
   }, [fee.payments]);
 
-  const balance = Number(fee.final_fee) - totalPaid;
-  const progress = Math.min((totalPaid / Number(fee.final_fee)) * 100, 100);
+  const finalFee = Number(fee.final_fee || 0);
+  const baseFee = Number(fee.total_fee || finalFee);
+  const discountAmount = Number(fee.discount || 0);
+  const balance = Math.max(0, finalFee - totalPaid);
+  const progress = finalFee > 0 ? Math.min((totalPaid / finalFee) * 100, 100) : 0;
   
   const overdueInstallment = useMemo(() => {
-    return fee.installments?.find((i: any) => i.status === 'overdue' || (i.status === 'pending' && new Date(i.due_date) < new Date()));
+    return fee.installments?.find(
+      (i: any) => i.status === 'overdue' || (i.status === 'pending' && new Date(i.due_date) < new Date())
+    );
   }, [fee.installments]);
 
-  // Donut chart calculations
-  const radius = 38;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (progress / 100) * circumference;
-
-  // Filter payments
+  // Filter payments by search query and mode
   const filteredPayments = useMemo(() => {
     return (fee.payments || []).filter((pay: any) => {
-      // Payment mode filter
       if (filterMode !== "all" && pay.payment_mode?.toLowerCase() !== filterMode.toLowerCase()) {
         return false;
       }
       
-      // Text search (amount, mode, txn id)
       if (searchTerm.trim() !== "") {
         const query = searchTerm.toLowerCase();
         const matchesAmount = pay.amount?.toString().includes(query);
@@ -72,7 +77,7 @@ export function StudentFeesClient({ fee }: { fee: any }) {
       <head>
         <title>Receipt_${pay.transaction_id || pay.id || 'payment'}</title>
         <style>
-          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap');
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
           body {
             font-family: 'Inter', sans-serif;
             color: #1e293b;
@@ -118,25 +123,23 @@ export function StudentFeesClient({ fee }: { fee: any }) {
           }
           .address {
             font-size: 11px;
-            font-weight: 600;
-            color: #475569;
+            color: #64748b;
             margin-top: 4px;
-            line-height: 1.4;
           }
           .subtitle {
             font-size: 10px;
             font-weight: 700;
-            color: #94a3b8;
+            color: #4f46e5;
             text-transform: uppercase;
             letter-spacing: 0.1em;
-            margin-top: 6px;
+            margin-top: 2px;
           }
           .receipt-title {
             text-align: center;
             font-size: 16px;
-            font-weight: 800;
+            font-weight: 900;
             color: #0f172a;
-            margin-bottom: 24px;
+            margin-bottom: 20px;
             text-transform: uppercase;
             letter-spacing: 0.05em;
           }
@@ -145,7 +148,10 @@ export function StudentFeesClient({ fee }: { fee: any }) {
             grid-template-columns: 1fr 1fr;
             gap: 16px;
             margin-bottom: 24px;
-            font-size: 13px;
+            background: #f8fafc;
+            padding: 16px;
+            border-radius: 16px;
+            border: 1px solid #f1f5f9;
           }
           .meta-item {
             display: flex;
@@ -160,19 +166,17 @@ export function StudentFeesClient({ fee }: { fee: any }) {
             margin-bottom: 2px;
           }
           .meta-value {
-            font-weight: 600;
-            color: #334155;
+            font-size: 13px;
+            font-weight: 700;
+            color: #1e293b;
           }
           .section-title {
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 800;
-            color: #64748b;
+            color: #475569;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            border-bottom: 1px solid #f1f5f9;
-            padding-bottom: 6px;
             margin-bottom: 12px;
-            margin-top: 24px;
           }
           .details-list {
             margin-bottom: 24px;
@@ -180,31 +184,30 @@ export function StudentFeesClient({ fee }: { fee: any }) {
           .details-row {
             display: flex;
             justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #f1f5f9;
             font-size: 13px;
-            padding: 8px 0;
-            border-bottom: 1px solid #f8fafc;
+            color: #334155;
           }
           .details-row.total {
             border-top: 2px solid #e2e8f0;
             border-bottom: 2px solid #e2e8f0;
-            font-weight: 800;
+            padding: 14px 0;
             font-size: 16px;
-            padding: 12px 0;
+            font-weight: 900;
             color: #0f172a;
-            margin-top: 12px;
+            margin-top: 8px;
           }
           .footer {
             text-align: center;
-            margin-top: 40px;
-            font-size: 10px;
+            font-size: 11px;
             color: #94a3b8;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
+            margin-top: 30px;
+            line-height: 1.5;
           }
           @media print {
             body {
-              padding: 20px;
+              padding: 0;
             }
             .receipt-container {
               border: none;
@@ -224,7 +227,7 @@ export function StudentFeesClient({ fee }: { fee: any }) {
               <div class="subtitle">Center for Excellence & Learning</div>
             </div>
           </div>
-          <div class="receipt-title">Payment Receipt</div>
+          <div class="receipt-title">Official Payment Receipt</div>
           
           <div class="meta-grid">
             <div class="meta-item">
@@ -272,10 +275,9 @@ export function StudentFeesClient({ fee }: { fee: any }) {
               <span>₹${Number(pay.exam_fee).toLocaleString('en-IN')}</span>
             </div>` : ''}
             
-            <!-- Fallback if breakdown not populated -->
             ${(!pay.registration_fee && !pay.course_fee && !pay.exam_fee) ? `
             <div class="details-row">
-              <span>Fee Payment</span>
+              <span>Course Fee Payment</span>
               <span>₹${Number(pay.amount).toLocaleString('en-IN')}</span>
             </div>` : ''}
 
@@ -287,7 +289,7 @@ export function StudentFeesClient({ fee }: { fee: any }) {
           
           <div class="footer">
             Thank you for your payment!<br>
-            This is a computer generated receipt, no signature required.
+            This is a computer generated receipt from Vision Learn LMS. No signature required.
           </div>
         </div>
         <script>
@@ -306,292 +308,498 @@ export function StudentFeesClient({ fee }: { fee: any }) {
     printWindow.document.close();
   };
 
+  const statusLabel = (fee.status || "partial").toUpperCase();
+  const isPaid = statusLabel === "PAID" || balance <= 0;
+  const isPartial = statusLabel === "PARTIAL" || (balance > 0 && totalPaid > 0);
+
   return (
-    <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in duration-700 pb-20 px-4">
-      
-      {/* Header & Alert */}
-      <div className="space-y-4">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div>
-            <h1 className="text-4xl font-black text-slate-900 tracking-tight">Fees & Billing</h1>
-            <p className="text-slate-500 font-medium">Detailed breakdown of your {fee.courses?.title} fee structure.</p>
-          </div>
-          <div className="flex items-center gap-3 bg-white p-2 rounded-2xl border border-slate-100 shadow-sm shrink-0">
-             <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">
-                <ShieldCheck size={20} />
-             </div>
-             <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Security Status</p>
-                <p className="text-xs font-bold text-slate-900 mt-1">Encrypted Payments</p>
-             </div>
-          </div>
-        </div>
+    <div className="space-y-3.5 sm:space-y-4 animate-in fade-in duration-300 pb-20 md:pb-12">
+      {/* 1. Breadcrumb navigation */}
+      <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+        <Link href="/dashboard" className="hover:text-slate-800 flex items-center gap-1">
+          <Home size={13} className="text-slate-400" />
+          <span>Dashboard</span>
+        </Link>
+        <ChevronRight size={12} className="text-slate-400" />
+        <Link href="/curriculum" className="hover:text-slate-800 truncate max-w-[140px] sm:max-w-none">
+          <span>{fee.courses?.title || "My Course"}</span>
+        </Link>
+        <ChevronRight size={12} className="text-slate-400" />
+        <span className="text-slate-800 font-semibold">Fees & Billing</span>
+      </div>
 
-        {overdueInstallment && (
-          <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl flex items-center gap-4 animate-bounce-subtle">
-             <div className="w-10 h-10 bg-rose-500 text-white rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-rose-200">
-                <AlertTriangle size={20} />
-             </div>
-             <div className="flex-1">
-                <p className="text-sm font-black text-rose-900">Payment Overdue</p>
-                <p className="text-xs font-medium text-rose-600 mt-0.5">
-                  You have an installment of ₹{Number(overdueInstallment.amount).toLocaleString()} due since {new Date(overdueInstallment.due_date).toLocaleDateString()}. Please clear it to avoid access restrictions.
+      {/* Main Two-Column Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 sm:gap-4 items-start">
+        
+        {/* Left Column (8 of 12 cols): Banner + 4 Metric Cards + Fee Details + Roadmap + Transactions */}
+        <div className="lg:col-span-8 space-y-3.5 sm:space-y-4">
+          
+          {/* 2. Hero Banner */}
+          <div className="bg-gradient-to-r from-blue-50/70 via-indigo-50/40 to-slate-50/40 rounded-2xl border border-indigo-100/70 p-4 sm:p-5 flex items-center justify-between gap-4 relative overflow-hidden shadow-2xs">
+            <div className="flex items-center gap-3 sm:gap-3.5 z-10 min-w-0">
+              <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-2xl bg-indigo-100/90 border border-indigo-200/80 text-indigo-600 flex items-center justify-center shrink-0 shadow-2xs">
+                <CreditCard size={22} className="stroke-[1.9]" />
+              </div>
+              <div className="min-w-0">
+                <h1 className="text-base sm:text-xl font-bold text-slate-900 leading-tight">
+                  Fees & Billing Ledger
+                </h1>
+                <p className="text-xs text-slate-500 mt-0.5 font-normal truncate">
+                  Course: <span className="font-semibold text-slate-700">{fee.courses?.title || "Course"}</span> • Student: <span className="font-semibold text-slate-700">{fee.students?.name || "Student"}</span>
                 </p>
-             </div>
-          </div>
-        )}
-      </div>
-
-      {/* Main Overview Card with SVG Donut Chart */}
-      <div className="bg-slate-900 rounded-[2.5rem] p-6 md:p-8 text-white relative overflow-hidden shadow-2xl shadow-indigo-950/20">
-         <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
-         <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl -ml-20 -mb-20 pointer-events-none" />
-         
-         <div className="relative z-10 space-y-6">
-            {/* Top Row: Balance and Donut side-by-side */}
-            <div className="flex items-center justify-between gap-4">
-               <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                     <span className={`text-[9px] font-black uppercase tracking-[0.2em] px-3.5 py-1.5 rounded-full border border-white/10 bg-white/5`}>
-                       ● {fee.status?.toUpperCase() || 'DUE'}
-                     </span>
-                  </div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Current Balance</p>
-                  <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tighter flex items-baseline gap-1">
-                    <span className="text-xl font-bold text-indigo-400">₹</span>
-                    {balance.toLocaleString()}
-                  </h2>
-               </div>
-
-               {/* Premium Interactive SVG Donut Chart */}
-               <div className="relative w-28 h-28 sm:w-32 sm:h-32 shrink-0 flex items-center justify-center bg-white/5 rounded-full p-3 border border-white/5 backdrop-blur-sm">
-                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                    <circle
-                      cx="50"
-                      cy="50"
-                      r={radius}
-                      className="stroke-slate-800"
-                      strokeWidth="8"
-                      fill="transparent"
-                    />
-                    <circle
-                      cx="50"
-                      cy="50"
-                      r={radius}
-                      className="stroke-indigo-500 transition-all duration-1000 ease-out"
-                      strokeWidth="8"
-                      strokeDasharray={circumference}
-                      strokeDashoffset={strokeDashoffset}
-                      strokeLinecap="round"
-                      fill="transparent"
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-lg sm:text-xl font-black tracking-tight">{progress.toFixed(0)}%</span>
-                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Paid</span>
-                  </div>
-               </div>
-            </div>
-
-            {/* Middle Row: Progress Bar */}
-            <div className="space-y-2 pt-2 border-t border-white/5">
-               <div className="flex justify-between items-center">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Payment Progress</p>
-                  <p className="text-xs font-black text-indigo-400">{progress.toFixed(0)}% Complete</p>
-               </div>
-               <div className="h-2.5 bg-white/10 rounded-full overflow-hidden p-0.5">
-                  <div 
-                     className="h-full bg-gradient-to-r from-indigo-500 to-indigo-400 rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(99,102,241,0.5)]" 
-                     style={{ width: `${progress}%` }} 
-                  />
-               </div>
-            </div>
-
-            {/* Bottom Row: Quick Stats Grid */}
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 pt-2">
-               <div className="p-4 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-md">
-                  <p className="text-[9px] font-black uppercase tracking-widest text-indigo-400 mb-1">Total Fee</p>
-                  <p className="text-base sm:text-lg font-black">₹{fee.final_fee.toLocaleString()}</p>
-               </div>
-               <div className="p-4 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-md">
-                  <p className="text-[9px] font-black uppercase tracking-widest text-emerald-400 mb-1">Total Paid</p>
-                  <p className="text-base sm:text-lg font-black">₹{totalPaid.toLocaleString()}</p>
-               </div>
-               <div className="p-4 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-md col-span-2 lg:col-span-1 flex items-center justify-between">
-                  <div className="min-w-0">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Course Enrolled</p>
-                    <p className="text-xs sm:text-sm font-black truncate pr-2">{fee.courses?.title}</p>
-                  </div>
-                  <div className="w-8 h-8 bg-white/10 rounded-xl flex items-center justify-center shrink-0">
-                    <Wallet size={16} className="text-indigo-400" />
-                  </div>
-               </div>
-            </div>
-         </div>
-      </div>
-
-      {/* Grid of Roadmap and Transaction History */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-         {/* Connected Timeline Roadmap */}
-         <div className="lg:col-span-2 bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden p-6 md:p-8 space-y-6">
-            <div className="flex items-center justify-between border-b border-slate-50 pb-5">
-               <h3 className="text-xl font-black text-slate-900 flex items-center gap-3">
-                 <Calendar className="text-indigo-600" /> Installment Roadmap
-               </h3>
-               <div className="px-3 py-1 bg-slate-50 rounded-lg text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                 {fee.installments?.length || 0} Installments
-               </div>
-            </div>
-
-            {/* Vertical Connected Timeline */}
-            <div className="space-y-6 relative">
-              {!fee.installments || fee.installments.length === 0 ? (
-                <div className="py-12 text-center text-slate-400 text-xs font-bold">
-                  No installment schedule available.
+                <div className="flex flex-wrap items-center gap-2 mt-2 text-[11px] text-slate-600 font-medium">
+                  <span className="inline-flex items-center gap-1 bg-white/70 px-2 py-0.5 rounded-md border border-indigo-100">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />
+                    Real DB Billing
+                  </span>
+                  <span className="inline-flex items-center gap-1 bg-white/70 px-2 py-0.5 rounded-md border border-indigo-100">
+                    <ShieldCheck size={11} className="text-emerald-600" />
+                    Encrypted Ledger
+                  </span>
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border font-semibold text-[10px] ${
+                    isPaid ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                    isPartial ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                    'bg-rose-50 text-rose-700 border-rose-200'
+                  }`}>
+                    ● {statusLabel}
+                  </span>
                 </div>
-              ) : (
-                fee.installments.map((inst: any, idx: number) => {
-                  const isPaid = inst.status === 'paid';
-                  const isOverdue = inst.status === 'overdue' || (inst.status === 'pending' && new Date(inst.due_date) < new Date());
+              </div>
+            </div>
+
+            {/* Right Graphic */}
+            <div className="hidden sm:flex items-center pr-2 shrink-0 opacity-90">
+              <div className="w-12 h-12 rounded-2xl bg-white/80 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-2xs">
+                <Receipt size={24} />
+              </div>
+            </div>
+          </div>
+
+          {/* Overdue Installment Warning Alert */}
+          {overdueInstallment && (
+            <div className="p-3.5 sm:p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-center gap-3 animate-in fade-in shadow-2xs">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 bg-rose-500 text-white rounded-xl flex items-center justify-center shrink-0 shadow-sm">
+                <AlertTriangle size={18} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs sm:text-sm font-bold text-rose-900 leading-tight">Payment Overdue</p>
+                <p className="text-[11px] sm:text-xs text-rose-700 mt-0.5 font-medium leading-relaxed">
+                  An installment of <span className="font-bold">₹{Number(overdueInstallment.amount).toLocaleString('en-IN')}</span> was due on {new Date(overdueInstallment.due_date).toLocaleDateString('en-IN')}. Please settle at the accounts office.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* 3. Top 4 Metric Cards (2x2 on mobile, 4 in row on tablet/desktop) */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+            
+            {/* Card 1: Final Total Fee */}
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-3.5 shadow-2xs flex items-center gap-2.5 sm:gap-3">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center shrink-0">
+                <Receipt size={17} className="stroke-[1.9]" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-base sm:text-lg font-bold text-slate-900 leading-none">
+                  ₹{finalFee.toLocaleString('en-IN')}
+                </div>
+                <div className="text-[11px] sm:text-xs font-semibold text-slate-700 mt-1 truncate">Total Course Fee</div>
+                <div className="text-[10px] text-slate-400 mt-0.5 truncate">
+                  {discountAmount > 0 ? `Save ₹${discountAmount.toLocaleString('en-IN')}` : 'Payable'}
+                </div>
+              </div>
+            </div>
+
+            {/* Card 2: Total Paid */}
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-3.5 shadow-2xs flex items-center gap-2.5 sm:gap-3">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center shrink-0">
+                <CheckCircle2 size={17} className="stroke-[1.9]" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-base sm:text-lg font-bold text-slate-900 leading-none">
+                  ₹{totalPaid.toLocaleString('en-IN')}
+                </div>
+                <div className="text-[11px] sm:text-xs font-semibold text-slate-700 mt-1 truncate">Total Paid</div>
+                <div className="text-[10px] text-slate-400 mt-0.5 truncate">
+                  {fee.payments?.length || 0} payment{fee.payments?.length === 1 ? '' : 's'} logged
+                </div>
+              </div>
+            </div>
+
+            {/* Card 3: Remaining Balance */}
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-3.5 shadow-2xs flex items-center gap-2.5 sm:gap-3">
+              <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl border flex items-center justify-center shrink-0 ${
+                balance === 0 ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100'
+              }`}>
+                <Clock size={17} className="stroke-[1.9]" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-base sm:text-lg font-bold text-slate-900 leading-none">
+                  ₹{balance.toLocaleString('en-IN')}
+                </div>
+                <div className="text-[11px] sm:text-xs font-semibold text-slate-700 mt-1 truncate">Current Balance</div>
+                <div className="text-[10px] text-slate-400 mt-0.5 truncate">
+                  {balance === 0 ? 'No dues pending' : 'Pending payment'}
+                </div>
+              </div>
+            </div>
+
+            {/* Card 4: Settlement Rate Gauge */}
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-3.5 shadow-2xs flex items-center gap-2.5 sm:gap-3">
+              <div className="relative w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center shrink-0">
+                <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
+                  <path
+                    className="text-slate-100"
+                    strokeWidth="3.5"
+                    stroke="currentColor"
+                    fill="none"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  />
+                  <path
+                    className={isPaid ? "text-emerald-500" : "text-indigo-600"}
+                    strokeDasharray={`${progress.toFixed(0)}, 100`}
+                    strokeWidth="3.5"
+                    strokeLinecap="round"
+                    stroke="currentColor"
+                    fill="none"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  />
+                </svg>
+                <span className="absolute text-[10px] font-bold text-slate-800">
+                  {progress.toFixed(0)}%
+                </span>
+              </div>
+              <div className="min-w-0">
+                <div className="text-base sm:text-lg font-bold text-slate-900 leading-none">
+                  {progress.toFixed(0)}%
+                </div>
+                <div className="text-[11px] sm:text-xs font-semibold text-slate-700 mt-1 truncate">Paid Rate</div>
+                <div className="text-[10px] text-slate-400 mt-0.5 truncate">
+                  {isPaid ? 'Fully cleared' : 'In installments'}
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          {/* 4. Payment Progress Bar & Fee Breakdown Card */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-2xs space-y-3.5">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <IndianRupee size={16} className="text-indigo-600" />
+                  <span>Fee Settlement Progress</span>
+                </h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Track your total cleared vs remaining course payments
+                </p>
+              </div>
+              <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100">
+                {progress.toFixed(0)}% Paid
+              </span>
+            </div>
+
+            {/* Linear Progress Bar */}
+            <div className="space-y-1.5">
+              <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden p-0.5">
+                <div 
+                  className="h-full bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full transition-all duration-700" 
+                  style={{ width: `${progress}%` }} 
+                />
+              </div>
+              <div className="flex justify-between items-center text-[11px] text-slate-500 font-medium">
+                <span>Paid: ₹{totalPaid.toLocaleString('en-IN')}</span>
+                <span>Balance: ₹{balance.toLocaleString('en-IN')}</span>
+              </div>
+            </div>
+
+            {/* Quick Breakdown Badges */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-100 text-center">
+              <div className="p-2 rounded-xl bg-slate-50 border border-slate-100">
+                <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Base Fee</p>
+                <p className="text-xs font-bold text-slate-700 mt-0.5">₹{baseFee.toLocaleString('en-IN')}</p>
+              </div>
+              <div className="p-2 rounded-xl bg-slate-50 border border-slate-100">
+                <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Discount</p>
+                <p className="text-xs font-bold text-emerald-600 mt-0.5">-₹{discountAmount.toLocaleString('en-IN')}</p>
+              </div>
+              <div className="p-2 rounded-xl bg-slate-50 border border-slate-100">
+                <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Net Payable</p>
+                <p className="text-xs font-bold text-slate-900 mt-0.5">₹{finalFee.toLocaleString('en-IN')}</p>
+              </div>
+              <div className="p-2 rounded-xl bg-slate-50 border border-slate-100">
+                <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Paid Total</p>
+                <p className="text-xs font-bold text-indigo-600 mt-0.5">₹{totalPaid.toLocaleString('en-IN')}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* 5. Installment Roadmap Card */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-2xs space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <Calendar className="text-indigo-600" size={17} /> 
+                <span>Installment Roadmap</span>
+              </h3>
+              <div className="px-2.5 py-1 bg-slate-50 border border-slate-200/80 rounded-lg text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+                {fee.installments?.length || 0} Installments
+              </div>
+            </div>
+
+            {/* Vertical Timeline / Direct Scheme Notice */}
+            {!fee.installments || fee.installments.length === 0 ? (
+              <div className="py-6 px-4 bg-slate-50/70 rounded-2xl border border-dashed border-slate-200 text-center space-y-2">
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center mx-auto">
+                  <CalendarCheck size={20} />
+                </div>
+                <h4 className="text-xs font-bold text-slate-800">Direct Payment Scheme Active</h4>
+                <p className="text-[11px] text-slate-500 max-w-md mx-auto leading-relaxed">
+                  No strict monthly schedule was enforced for your enrollment. All payments are recorded upon receipt at the institute accounts desk. View all generated receipts below.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4 relative">
+                {fee.installments.map((inst: any, idx: number) => {
+                  const isInstPaid = inst.status === 'paid';
+                  const isInstOverdue = inst.status === 'overdue' || (inst.status === 'pending' && new Date(inst.due_date) < new Date());
                   return (
-                    <div key={inst.id} className="relative flex gap-5 pb-5 last:pb-0 group/timeline">
-                      {/* Timeline connecting line */}
+                    <div key={inst.id} className="relative flex gap-3.5 sm:gap-4 pb-4 last:pb-0 group">
                       {idx !== fee.installments.length - 1 && (
-                        <div className={`absolute left-5 top-10 bottom-0 w-[2px] ${isPaid ? 'bg-emerald-500' : 'bg-slate-100'}`} />
+                        <div className={`absolute left-4 top-8 bottom-0 w-[2px] ${isInstPaid ? 'bg-emerald-500' : 'bg-slate-200'}`} />
                       )}
                       
-                      {/* Timeline node */}
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center z-10 shrink-0 border-2 transition-all ${
-                        isPaid ? 'bg-emerald-500 border-emerald-500 text-white' :
-                        isOverdue ? 'bg-rose-50 border-rose-500 text-rose-500 animate-pulse' :
-                        'bg-white border-slate-200 text-slate-400 group-hover/timeline:border-indigo-500 group-hover/timeline:text-indigo-500'
+                      {/* Timeline Node */}
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center z-10 shrink-0 border-2 transition-all ${
+                        isInstPaid ? 'bg-emerald-500 border-emerald-500 text-white' :
+                        isInstOverdue ? 'bg-rose-50 border-rose-500 text-rose-500' :
+                        'bg-white border-slate-300 text-slate-400 group-hover:border-indigo-500 group-hover:text-indigo-500'
                       }`}>
-                        {isPaid ? <CheckCircle2 size={16} /> : <Clock size={16} />}
+                        {isInstPaid ? <CheckCircle2 size={14} /> : <Clock size={14} />}
                       </div>
 
-                      {/* Content block */}
-                      <div className={`flex-1 p-5 rounded-2xl border transition-all ${
-                        isPaid ? 'bg-emerald-50/10 border-emerald-100/50 hover:bg-emerald-50/20' :
-                        isOverdue ? 'bg-rose-50/30 border-rose-100/50 hover:bg-rose-50/50' :
-                        'bg-slate-50/50 border-slate-100 hover:bg-white hover:shadow-md hover:border-slate-200'
+                      {/* Content Card */}
+                      <div className={`flex-1 p-3.5 sm:p-4 rounded-xl border transition-all ${
+                        isInstPaid ? 'bg-emerald-50/20 border-emerald-100 hover:bg-emerald-50/30' :
+                        isInstOverdue ? 'bg-rose-50/30 border-rose-100 hover:bg-rose-50/40' :
+                        'bg-slate-50/60 border-slate-200/70 hover:bg-white hover:shadow-2xs'
                       }`}>
-                        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+                        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
                           <div>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Installment #{idx + 1}</p>
-                            <p className="text-lg font-black text-slate-900 mt-0.5">₹{Number(inst.amount).toLocaleString()}</p>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Installment #{idx + 1}</p>
+                            <p className="text-base font-bold text-slate-900 mt-0.5">₹{Number(inst.amount).toLocaleString('en-IN')}</p>
                           </div>
                           <div className="sm:text-right">
-                            <span className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md border inline-block ${
-                              isPaid ? 'text-emerald-700 bg-emerald-50 border-emerald-100' :
-                              isOverdue ? 'text-rose-700 bg-rose-50 border-rose-100' :
-                              'text-slate-500 bg-slate-100 border-slate-200'
+                            <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border inline-block ${
+                              isInstPaid ? 'text-emerald-700 bg-emerald-50 border-emerald-200' :
+                              isInstOverdue ? 'text-rose-700 bg-rose-50 border-rose-200' :
+                              'text-slate-600 bg-slate-100 border-slate-200'
                             }`}>
-                              {isPaid ? 'Paid' : isOverdue ? 'Overdue' : 'Upcoming'}
+                              {isInstPaid ? 'Paid' : isInstOverdue ? 'Overdue' : 'Upcoming'}
                             </span>
-                            <p className="text-[10px] font-bold text-slate-400 mt-1">
-                              Due: {new Date(inst.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            <p className="text-[10px] text-slate-400 mt-1">
+                              Due: {new Date(inst.due_date).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}
                             </p>
                           </div>
                         </div>
                       </div>
                     </div>
                   );
-                })
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* 6. Transaction History & Receipts Card */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-2xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-slate-100">
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <History className="text-indigo-600" size={17} /> 
+                <span>Transactions & Receipts</span>
+              </h3>
+              <span className="text-[11px] font-semibold text-slate-500">
+                {filteredPayments.length} of {fee.payments?.length || 0} records
+              </span>
+            </div>
+
+            {/* Filter and Search Bar */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                  <Search size={14} />
+                </div>
+                <input 
+                  type="text" 
+                  placeholder="Search by amount, mode, txn ID..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-8 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200/80 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-xs text-slate-800 placeholder-slate-400"
+                />
+              </div>
+              
+              <div className="relative">
+                <select
+                  value={filterMode}
+                  onChange={(e) => setFilterMode(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200/80 focus:bg-white focus:outline-none text-xs font-semibold text-slate-700 cursor-pointer"
+                >
+                  <option value="all">All Payment Modes</option>
+                  <option value="upi">UPI / Online</option>
+                  <option value="cash">Cash</option>
+                  <option value="card">Card</option>
+                  <option value="transfer">Bank Transfer</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Transaction Items */}
+            <div className="space-y-3">
+              {filteredPayments.length === 0 ? (
+                <div className="py-8 text-center text-slate-400 text-xs font-medium bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                  No transaction records found matching your filter.
+                </div>
+              ) : (
+                filteredPayments.map((pay: any) => (
+                  <div 
+                    key={pay.id} 
+                    className="p-3.5 sm:p-4 rounded-xl bg-slate-50/60 hover:bg-white border border-slate-200/70 hover:border-slate-300 transition-all shadow-2xs hover:shadow-xs space-y-2.5"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center shrink-0">
+                          <IndianRupee size={17} />
+                        </div>
+                        <div>
+                          <div className="text-base sm:text-lg font-bold text-slate-900 leading-tight">
+                            ₹{Number(pay.amount).toLocaleString('en-IN')}
+                          </div>
+                          <div className="text-[11px] text-slate-500 mt-0.5">
+                            {pay.payment_date ? new Date(pay.payment_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : "Payment Date N/A"}
+                          </div>
+                        </div>
+                      </div>
+
+                      <button 
+                        onClick={() => handleDownloadReceipt(pay)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 active:scale-95 text-indigo-700 text-xs font-semibold border border-indigo-200/70 transition-all cursor-pointer shadow-2xs shrink-0" 
+                        title="Download / Print Receipt"
+                      >
+                        <Download size={13} />
+                        <span className="hidden sm:inline">Download Receipt</span>
+                        <span className="sm:hidden">Receipt</span>
+                      </button>
+                    </div>
+
+                    {/* Breakdown Chips */}
+                    <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                      {Number(pay.registration_fee) > 0 && (
+                        <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-md">
+                          Registration: ₹{Number(pay.registration_fee).toLocaleString('en-IN')}
+                        </span>
+                      )}
+                      {Number(pay.course_fee) > 0 && (
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-md">
+                          Course Fee: ₹{Number(pay.course_fee).toLocaleString('en-IN')}
+                        </span>
+                      )}
+                      {Number(pay.exam_fee) > 0 && (
+                        <span className="text-[10px] font-bold text-purple-700 bg-purple-50 border border-purple-100 px-2 py-0.5 rounded-md">
+                          Exam Fee: ₹{Number(pay.exam_fee).toLocaleString('en-IN')}
+                        </span>
+                      )}
+                      <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md uppercase">
+                        Mode: {pay.payment_mode || 'Cash'}
+                      </span>
+                    </div>
+
+                    {pay.transaction_id && (
+                      <p className="text-[10px] font-mono text-slate-400 pt-1.5 border-t border-slate-100 truncate">
+                        TXN: {pay.transaction_id}
+                      </p>
+                    )}
+                  </div>
+                ))
               )}
             </div>
-         </div>
+          </div>
 
-         {/* Transaction History Column */}
-         <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-6 md:p-8 space-y-6 flex flex-col h-fit">
-            <div className="flex items-center justify-between border-b border-slate-50 pb-5">
-               <h3 className="text-xl font-black text-slate-900 flex items-center gap-3">
-                 <History className="text-indigo-600" /> Transactions
-               </h3>
-               <Receipt size={18} className="text-slate-300" />
+        </div>
+
+        {/* Right Column (4 of 12 cols): Financial Summary + Accounts Desk + Security Verification */}
+        <div className="lg:col-span-4 space-y-3.5 sm:space-y-4">
+          
+          {/* Right Card 1: Student & Enrollment Summary */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-2xs space-y-4">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+              <FileCheck2 size={14} className="text-indigo-600" />
+              <span>Enrollment Details</span>
+            </h3>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <p className="text-[10px] font-semibold text-slate-400 uppercase">Student Name</p>
+                <p className="text-sm font-bold text-slate-900 mt-0.5">{fee.students?.name || "Student"}</p>
+              </div>
+
+              <div>
+                <p className="text-[10px] font-semibold text-slate-400 uppercase">Roll / Student ID</p>
+                <p className="text-xs font-mono font-bold text-slate-800 mt-0.5">{fee.students?.student_id || "N/A"}</p>
+              </div>
+
+              <div>
+                <p className="text-[10px] font-semibold text-slate-400 uppercase">Enrolled Course</p>
+                <p className="text-xs font-bold text-slate-800 mt-0.5 leading-snug">{fee.courses?.title || "My Course"}</p>
+              </div>
+
+              <div>
+                <p className="text-[10px] font-semibold text-slate-400 uppercase">Ledger Status</p>
+                <span className={`inline-block text-[10px] font-bold uppercase px-2.5 py-1 rounded-md border mt-1 ${
+                  isPaid ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                  isPartial ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                  'bg-rose-50 text-rose-700 border-rose-200'
+                }`}>
+                  ● {statusLabel}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Card 2: Accounts Office & Payment Assistance */}
+          <div className="bg-gradient-to-br from-indigo-50/60 to-blue-50/40 rounded-2xl border border-indigo-100 p-4 sm:p-5 shadow-2xs space-y-3">
+            <div className="w-9 h-9 rounded-xl bg-white text-indigo-600 border border-indigo-100 flex items-center justify-center shadow-2xs">
+              <Building size={17} />
             </div>
 
-            {/* Filter & Search */}
-            <div className="space-y-3 shrink-0">
-               <div className="relative">
-                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                   <Search size={14} />
-                 </div>
-                 <input 
-                   type="text" 
-                   placeholder="Search payments..."
-                   value={searchTerm}
-                   onChange={(e) => setSearchTerm(e.target.value)}
-                   className="w-full pl-8 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-xs font-semibold"
-                 />
-               </div>
-               
-               <select
-                 value={filterMode}
-                 onChange={(e) => setFilterMode(e.target.value)}
-                 className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-100 focus:outline-none text-xs font-bold text-slate-600 cursor-pointer"
-               >
-                 <option value="all">All Payment Modes</option>
-                 <option value="cash">Cash</option>
-                 <option value="online">Online / UPI</option>
-                 <option value="card">Card</option>
-                 <option value="transfer">Bank Transfer</option>
-               </select>
-            </div>
-            
-            {/* Scrollable list of receipts */}
-            <div className="space-y-4 max-h-[450px] overflow-y-auto pr-1 scrollbar-hide flex-1">
-               {filteredPayments.length === 0 ? (
-                 <div className="py-12 text-center text-slate-300 text-xs font-bold bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                    No transactions found
-                 </div>
-               ) : (
-                 filteredPayments.map((pay: any) => (
-                   <div key={pay.id} className="group p-4 rounded-2xl bg-slate-50 hover:bg-white hover:shadow-xl hover:shadow-indigo-500/5 transition-all duration-300 border border-transparent hover:border-slate-100 relative">
-                      <div className="flex items-start justify-between mb-3">
-                         <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center text-emerald-600 shadow-sm group-hover:scale-110 transition-transform">
-                            <IndianRupee size={16}/>
-                         </div>
-                         <button 
-                           onClick={() => handleDownloadReceipt(pay)}
-                           className="p-2 text-slate-300 hover:text-indigo-600 hover:bg-white rounded-lg transition-all cursor-pointer" 
-                           title="Download Receipt"
-                         >
-                            <Download size={14}/>
-                         </button>
-                      </div>
-                       <div className="space-y-2">
-                          <div className="flex justify-between items-baseline">
-                             <p className="text-lg font-black text-slate-900">₹{Number(pay.amount).toLocaleString()}</p>
-                             <span className="text-[9px] font-bold text-slate-400">{pay.payment_date ? new Date(pay.payment_date).toLocaleDateString('en-IN') : ""}</span>
-                          </div>
-                          
-                          {(Number(pay.registration_fee) > 0 || Number(pay.course_fee) > 0 || Number(pay.exam_fee) > 0) ? (
-                             <div className="flex flex-wrap gap-1 text-[8px] font-black uppercase tracking-wider">
-                               {Number(pay.registration_fee) > 0 && <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md border border-blue-100/30">Registration Fee</span>}
-                               {Number(pay.course_fee) > 0 && <span className="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-md border border-emerald-100/30">Course Fee</span>}
-                               {Number(pay.exam_fee) > 0 && <span className="bg-purple-50 text-purple-600 px-2 py-0.5 rounded-md border border-purple-100/30">Exam Fee</span>}
-                             </div>
-                          ) : (
-                             <div className="flex text-[8px] font-black uppercase tracking-wider">
-                               <span className="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-md border border-emerald-100/30">Course Fee</span>
-                             </div>
-                          )}
-
-                          <div className="flex items-center justify-between text-[9px] font-bold text-slate-400">
-                             <span className="uppercase">Mode: {pay.payment_mode || 'payment'}</span>
-                          </div>
-                          
-                          <p className="text-[8px] font-mono text-slate-300 pt-2 border-t border-slate-200/50 mt-2 truncate">TXN: {pay.transaction_id || 'ID-PLACEHOLDER'}</p>
-                       </div>
-                   </div>
-                 ))
-               )}
+            <div>
+              <h4 className="text-xs font-bold text-slate-900">Institute Accounts Office</h4>
+              <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                For fee receipts, installment extensions, or UPI verification issues, visit the admin desk:
+              </p>
             </div>
 
-            <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 shrink-0">
-               <p className="text-[9px] font-black text-slate-400 uppercase text-center tracking-[0.2em]">End of Records</p>
+            <div className="space-y-1.5 text-[11px] text-slate-600 font-medium">
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                <span>Mon – Sat: 9:00 AM – 5:00 PM</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                <span>Kadampara Chowk, Pratappur</span>
+              </div>
             </div>
-         </div>
+          </div>
+
+          {/* Right Card 3: Security & Verification Seal */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-4 shadow-2xs flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center shrink-0">
+              <ShieldCheck size={18} />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-slate-900">Verified LMS Ledger</p>
+              <p className="text-[10px] text-slate-500 mt-0.5">Transactions synchronized with central database</p>
+            </div>
+          </div>
+
+        </div>
+
       </div>
     </div>
   );
