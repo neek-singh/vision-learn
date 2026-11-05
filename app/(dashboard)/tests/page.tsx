@@ -26,14 +26,16 @@ export default async function TestsPage() {
   const courseIds = enrollments.map(e => e.course_id).filter(Boolean);
   const activeBatch = (student?.batch || enrollments[0]?.batch || "").trim();
 
-  // 2. Fetch Schedules and Batches for these courses in parallel
-  const [schedulesRes, batchesRes] = await Promise.all([
+  // 2. Fetch Schedules, Batches, and Modules for these courses in parallel
+  const [schedulesRes, batchesRes, modulesRes] = await Promise.all([
     supabase.from("schedules").select("*").in("course_id", courseIds),
-    supabase.from("batches").select("id, title").in("course_id", courseIds)
+    supabase.from("batches").select("id, title").in("course_id", courseIds),
+    supabase.from("lms_modules").select("id, title, course_id").in("course_id", courseIds)
   ]);
 
   const schedules = schedulesRes.data || [];
   const batches = batchesRes.data || [];
+  const modules = modulesRes.data || [];
 
   const activeBatchLower = activeBatch.toLowerCase();
   const activeBatchMatch = batches.find((b: any) => {
@@ -43,7 +45,7 @@ export default async function TestsPage() {
   const activeBatchId = activeBatchMatch?.id || null;
 
   // 3. Fetch Tests (from tests table)
-  const { data: tests } = await supabase
+  const { data: rawTests } = await supabase
     .from("tests")
     .select(`
       *,
@@ -53,37 +55,81 @@ export default async function TestsPage() {
     .in("course_id", courseIds)
     .order("created_at", { ascending: false });
 
+  const tests = (rawTests || []).filter(t => {
+    // Hide unpublished tests
+    if (t.is_published === false) return false;
+
+    // Filter by batches array if defined
+    if (Array.isArray(t.batches) && t.batches.length > 0) {
+      const activeBatchLower = activeBatch.toLowerCase();
+      return t.batches.some((b: string) => {
+        const bLower = (b || "").trim().toLowerCase();
+        return bLower === activeBatchLower || bLower === "all" || bLower === "all batches";
+      });
+    }
+
+    // Filter by single batch string if defined
+    if (t.batch && t.batch !== "All Batches" && t.batch.trim().toLowerCase() !== "all") {
+      return t.batch.trim().toLowerCase() === activeBatch.toLowerCase();
+    }
+
+    return true;
+  });
+
   // 4. Fetch curriculum quiz lessons (mcq type)
-  const { data: quizLessons } = await supabase
+  const { data: rawQuizLessons } = await supabase
     .from("lessons")
-    .select("id, title, course_id, notes_content, lesson_type, type, batches, created_at")
+    .select("id, title, course_id, module_id, notes_content, lesson_type, type, batches, created_at, courses(title)")
     .in("course_id", courseIds)
     .or("lesson_type.eq.mcq,type.eq.mcq");
 
-  // 5. Fetch Results
-  const { data: results } = await supabase
-    .from("test_results")
-    .select("test_id, score, total_questions")
-    .eq("student_id", payload.id);
+  // Filter quiz lessons by student's batch
+  const quizLessons = (rawQuizLessons || []).filter((ql: any) => {
+    if (Array.isArray(ql.batches) && ql.batches.length > 0) {
+      const activeBatchLower = activeBatch.toLowerCase();
+      return ql.batches.some((b: string) => {
+        const bLower = (b || "").trim().toLowerCase();
+        return bLower === activeBatchLower || bLower === "all" || bLower === "all batches" || (activeBatchId && b === activeBatchId);
+      });
+    }
+    return true;
+  });
 
-  // 6. Fetch quiz submissions from submissions table (lesson_id based)
-  const { data: quizSubmissions } = await supabase
-    .from("submissions")
-    .select("lesson_id, score, status, content_url")
-    .eq("student_id", payload.id);
+  // 5. Fetch Results, Quiz Submissions, and User Progress in parallel
+  const [resultsRes, submissionsRes, progressRes] = await Promise.all([
+    supabase
+      .from("test_results")
+      .select("test_id, score, total_questions, completed_at")
+      .eq("student_id", payload.id),
+    supabase
+      .from("submissions")
+      .select("lesson_id, score, status, content_url, submitted_at")
+      .eq("student_id", payload.id),
+    supabase
+      .from("user_progress")
+      .select("lesson_id")
+      .eq("user_id", payload.id)
+      .eq("completed", true)
+  ]);
 
-  const courseTitle = enrollments[0]?.courses?.title || "Web Development";
+  const results = resultsRes.data || [];
+  const quizSubmissions = submissionsRes.data || [];
+  const completedLessonIds = (progressRes.data || []).map(p => p.lesson_id);
+
+  const courseTitle = enrollments[0]?.courses?.title || "My Course";
 
   return (
     <TestsClient 
       initialTests={tests || []} 
+      modules={modules}
       schedules={schedules || []}
       activeBatch={activeBatch}
       activeBatchId={activeBatchId}
       studentId={payload.id} 
-      initialResults={results || []} 
+      initialResults={results} 
       quizLessons={quizLessons || []}
-      quizSubmissions={quizSubmissions || []}
+      quizSubmissions={quizSubmissions}
+      initialCompletedLessons={completedLessonIds}
       courseTitle={courseTitle}
     />
   );

@@ -87,6 +87,15 @@ export class CacheManager {
 
       // 3. If successful, mark as synced
       await db.progress.update(id, { is_synced: true });
+
+      // 3b. Trigger background sync to /api/progress to keep enrollments.progress_percentage in sync
+      if (typeof window !== 'undefined') {
+        fetch('/api/progress', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ lessonId, completed })
+        }).catch(() => {});
+      }
     } catch (err) {
       // 4. If failed (offline), it stays is_synced: false
       console.warn('[CacheManager] Offline: Progress saved locally, will sync later.');

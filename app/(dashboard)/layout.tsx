@@ -145,10 +145,14 @@ const MobileBottomLink = memo(({ href, icon: Icon, name, isActive }: any) => (
   <Link
     href={href}
     prefetch={true}
-    className={`flex flex-col items-center gap-1 p-2 min-w-[64px] transition-all active:scale-90 ${isActive ? 'text-indigo-600' : 'text-slate-400'}`}
+    className={`flex flex-col items-center justify-center gap-1 py-1 px-1.5 min-w-[56px] rounded-xl transition-all active:scale-95 ${
+      isActive 
+        ? 'text-blue-600 font-bold bg-blue-50/70' 
+        : 'text-slate-500 hover:text-slate-800'
+    }`}
   >
-    <Icon size={20} />
-    <span className="text-[10px] font-bold">{name}</span>
+    <Icon size={18} className={isActive ? 'text-blue-600' : 'text-slate-400'} />
+    <span className="text-[10px] tracking-tight">{name}</span>
   </Link>
 ));
 
@@ -512,17 +516,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        <main className="p-3.5 lg:p-4 max-w-7xl pb-24 lg:pb-6">
+        <main className="p-3 sm:p-3.5 lg:p-4 max-w-7xl pb-24 lg:pb-6 overflow-x-hidden min-w-0 flex-1">
           {children}
         </main>
 
         {/* Mobile Bottom Navigation */}
         {!isMobileMenuOpen && (
-          <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 px-4 py-2 z-50 flex items-center justify-around shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.05)] animate-in slide-in-from-bottom duration-300">
+          <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200/80 px-2 py-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] z-50 flex items-center justify-around shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.06)] animate-in slide-in-from-bottom duration-300">
             <MobileBottomLink href="/dashboard" icon={LayoutDashboard} name="Home" isActive={pathname === '/dashboard'} />
             <MobileBottomLink href="/courses" icon={BookOpen} name="Courses" isActive={pathname === '/courses'} />
-            <MobileBottomLink href="/materials" icon={FileText} name="Notes" isActive={pathname === '/materials'} />
-            <MobileBottomLink href="/tests" icon={PenTool} name="Tests" isActive={pathname === '/tests'} />
+            <MobileBottomLink href="/calendar" icon={Calendar} name="Calendar" isActive={pathname === '/calendar'} />
+            <MobileBottomLink href="/attendance" icon={CheckCircle2} name="Attendance" isActive={pathname === '/attendance'} />
+            <MobileBottomLink href="/tests" icon={FileText} name="Tests" isActive={pathname === '/tests'} />
           </nav>
         )}
       </div>

@@ -2,21 +2,21 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { 
-  BookOpen, 
-  Award, 
-  Calendar, 
-  CheckCircle2, 
-  PlayCircle, 
-  FileText, 
-  BarChart3, 
-  Clock, 
-  ChevronRight, 
-  LayoutGrid, 
-  Laptop, 
-  Layers, 
-  Building, 
-  Trophy, 
+import {
+  BookOpen,
+  Award,
+  Calendar,
+  CheckCircle2,
+  PlayCircle,
+  FileText,
+  BarChart3,
+  Clock,
+  ChevronRight,
+  LayoutGrid,
+  Laptop,
+  Layers,
+  Building,
+  Trophy,
   FileCheck,
   CheckSquare,
   Sparkles,
@@ -29,6 +29,10 @@ interface DashboardClientProps {
   student: any;
   mainCourse: any;
   otherCourses: any[];
+  enrolledCourses?: { id: string; title: string; code?: string; progress: number; totalLessons?: number; completedLessons?: number }[];
+  recentAssignments?: { id: string; title: string; module?: string; status: string; dueDate?: string }[];
+  attendanceStats?: { total: number; present: number; percentage: number };
+  certificatesCount?: number;
   stats: {
     completedCount: number;
     totalLessonsCount: number;
@@ -59,21 +63,46 @@ export default function DashboardClient({
   student,
   mainCourse,
   otherCourses = [],
+  enrolledCourses = [],
+  recentAssignments = [],
+  attendanceStats = { total: 0, present: 0, percentage: 0 },
+  certificatesCount = 0,
   stats,
   nextLesson,
   nextScheduledClass,
   upcomingEvents = [],
   recentActivities = []
 }: DashboardClientProps) {
-  const studentName = student?.name || "Neeraj Singh";
+  const studentName = student?.name || "Student";
 
-  // Dynamic values with benchmark fallbacks matching reference screenshot
-  const totalCourses = (otherCourses.length + 1) >= 3 ? (otherCourses.length + 1) : 3;
-  const completedLessons = stats?.completedCount > 0 ? stats.completedCount : 28;
-  const totalLessons = stats?.totalLessonsCount > 0 ? stats.totalLessonsCount : 42;
-  const totalAssignments = stats?.totalAssignments && stats.totalAssignments > 0 ? stats.totalAssignments : 5;
-  const submittedAssignments = stats?.completedAssignments && stats.completedAssignments > 0 ? stats.completedAssignments : 3;
-  const totalTests = stats?.totalQuizzes && stats.totalQuizzes > 0 ? stats.totalQuizzes : 4;
+  // Pure real metrics calculated 100% from Supabase (zero mock / benchmark overrides)
+  const totalCourses = enrolledCourses && enrolledCourses.length > 0
+    ? enrolledCourses.length
+    : (mainCourse ? otherCourses.length + 1 : 0);
+  const completedLessons = stats?.completedCount || 0;
+  const totalLessons = stats?.totalLessonsCount || 0;
+  const totalAssignments = stats?.totalAssignments || 0;
+  const submittedAssignments = stats?.completedAssignments || 0;
+  const totalTests = stats?.totalQuizzes || 0;
+  const completedTests = stats?.completedQuizzes || 0;
+  const certificatesEarned = certificatesCount || 0;
+  const attendancePct = attendanceStats?.percentage || 0;
+  const attendancePresent = attendanceStats?.present || 0;
+  const attendanceTotal = attendanceStats?.total || 0;
+
+  // Filter real upcoming classes & upcoming tests from upcomingEvents
+  const upcomingClasses = (upcomingEvents || []).filter((e: any) => {
+    const t = (e.type || "").toLowerCase();
+    return t === "class" || t === "lecture" || t === "video";
+  }).slice(0, 3);
+
+  const upcomingTests = (upcomingEvents || []).filter((e: any) => {
+    const t = (e.type || "").toLowerCase();
+    return t === "quiz" || t === "test" || t === "mcq";
+  }).slice(0, 3);
+
+  const overallProgressPct = Math.min(100, Math.max(0, stats?.progressPercentage || 0));
+  const remainingLessonsCount = stats?.remainingCount || Math.max(0, totalLessons - completedLessons);
 
   return (
     <div className="space-y-4 animate-in fade-in duration-300 pb-12">
@@ -95,7 +124,7 @@ export default function DashboardClient({
           <svg className="w-52 h-32" viewBox="0 0 220 120" fill="none">
             {/* Soft backdrop glow */}
             <circle cx="110" cy="65" r="50" fill="#EEF2FF" />
-            
+
             {/* Lightbulb & Ideas floating */}
             <g transform="translate(85, 15)">
               <circle cx="10" cy="10" r="9" fill="#FEF3C7" stroke="#F59E0B" strokeWidth="1.2" />
@@ -125,7 +154,7 @@ export default function DashboardClient({
             <circle cx="115" cy="50" r="14" fill="#FCD34D" />
             {/* Blue Shirt Body */}
             <path d="M92 105C92 82 101 74 115 74C129 74 138 82 138 105H92Z" fill="#2563EB" />
-            
+
             {/* Laptop */}
             <rect x="96" y="84" width="38" height="24" rx="3" fill="#0F172A" stroke="#334155" strokeWidth="1.5" />
             <circle cx="115" cy="96" r="2.5" fill="#60A5FA" />
@@ -151,7 +180,7 @@ export default function DashboardClient({
       {/* 2. Top Metric Cards Row (6 Cards) */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
         {/* Card 1: Enrolled Courses */}
-        <Link 
+        <Link
           href="/courses"
           className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-4 shadow-2xs hover:shadow-xs transition-all flex items-center gap-3 group"
         >
@@ -168,7 +197,7 @@ export default function DashboardClient({
         </Link>
 
         {/* Card 2: Lessons Completed */}
-        <Link 
+        <Link
           href="/curriculum"
           className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-4 shadow-2xs hover:shadow-xs transition-all flex items-center gap-3 group"
         >
@@ -185,7 +214,7 @@ export default function DashboardClient({
         </Link>
 
         {/* Card 3: Assignments */}
-        <Link 
+        <Link
           href="/assignments"
           className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-4 shadow-2xs hover:shadow-xs transition-all flex items-center gap-3 group"
         >
@@ -202,7 +231,7 @@ export default function DashboardClient({
         </Link>
 
         {/* Card 4: Tests */}
-        <Link 
+        <Link
           href="/tests"
           className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-4 shadow-2xs hover:shadow-xs transition-all flex items-center gap-3 group"
         >
@@ -214,12 +243,12 @@ export default function DashboardClient({
               {totalTests}
             </div>
             <div className="text-xs font-semibold text-slate-700 mt-1 truncate">Tests</div>
-            <div className="text-[10px] text-slate-400 mt-0.5 truncate">1 upcoming</div>
+            <div className="text-[10px] text-slate-400 mt-0.5 truncate">{completedTests} completed</div>
           </div>
         </Link>
 
         {/* Card 5: Certificates */}
-        <Link 
+        <Link
           href="/certificates"
           className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-4 shadow-2xs hover:shadow-xs transition-all flex items-center gap-3 group"
         >
@@ -228,15 +257,15 @@ export default function DashboardClient({
           </div>
           <div className="min-w-0">
             <div className="text-xl sm:text-2xl font-bold text-slate-900 leading-none">
-              2
+              {certificatesEarned}
             </div>
             <div className="text-xs font-semibold text-slate-700 mt-1 truncate">Certificates</div>
-            <div className="text-[10px] text-slate-400 mt-0.5 truncate">Earned</div>
+            <div className="text-[10px] text-slate-400 mt-0.5 truncate">{certificatesEarned > 0 ? "Earned" : "In Progress"}</div>
           </div>
         </Link>
 
         {/* Card 6: Attendance */}
-        <Link 
+        <Link
           href="/attendance"
           className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-4 shadow-2xs hover:shadow-xs transition-all flex items-center gap-3 group"
         >
@@ -245,10 +274,10 @@ export default function DashboardClient({
           </div>
           <div className="min-w-0">
             <div className="text-xl sm:text-2xl font-bold text-slate-900 leading-none">
-              85%
+              {attendancePct}%
             </div>
             <div className="text-xs font-semibold text-slate-700 mt-1 truncate">Attendance</div>
-            <div className="text-[10px] text-slate-400 mt-0.5 truncate">26 / 31 classes</div>
+            <div className="text-[10px] text-slate-400 mt-0.5 truncate">{attendancePresent} / {attendanceTotal} classes</div>
           </div>
         </Link>
       </div>
@@ -264,7 +293,7 @@ export default function DashboardClient({
                 <BookOpen size={16} className="text-blue-600" />
                 <span>My Courses</span>
               </div>
-              <Link 
+              <Link
                 href="/courses"
                 className="text-xs font-semibold text-blue-600 hover:underline"
               >
@@ -273,107 +302,46 @@ export default function DashboardClient({
             </div>
 
             <div className="space-y-3">
-              {/* Course 1: Web Development */}
-              <div className="flex items-center justify-between gap-3 p-1">
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div className="w-10 h-10 rounded-xl bg-sky-50 text-blue-600 flex items-center justify-center shrink-0 border border-sky-100 relative">
-                    <Laptop size={18} />
-                    <span className="absolute text-[8px] font-black text-blue-600 top-2.5">&lt;/&gt;</span>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h4 className="text-xs font-bold text-slate-900 truncate">
-                      Web Development
-                    </h4>
-                    <p className="text-[11px] text-slate-400 truncate">
-                      HTML, CSS, JavaScript
-                    </p>
-                    {/* Progress Bar */}
-                    <div className="flex items-center gap-2 mt-1.5">
-                      <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-blue-600 rounded-full w-[70%]" />
+              {enrolledCourses && enrolledCourses.length > 0 ? (
+                enrolledCourses.slice(0, 3).map((c, idx) => (
+                  <div key={c.id || idx} className={`flex items-center justify-between gap-3 p-1 ${idx > 0 ? "border-t border-slate-100 pt-2.5" : ""}`}>
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="w-10 h-10 rounded-xl bg-sky-50 text-blue-600 flex items-center justify-center shrink-0 border border-sky-100 relative">
+                        <BookOpen size={18} />
                       </div>
-                      <span className="text-[10px] font-semibold text-slate-500">70%</span>
-                    </div>
-                  </div>
-                </div>
-
-                <Link
-                  href="/curriculum"
-                  className="px-3 py-1 rounded-lg border border-blue-500 text-blue-600 hover:bg-blue-50 text-xs font-medium transition-all shadow-2xs active:scale-95 shrink-0"
-                >
-                  Continue
-                </Link>
-              </div>
-
-              {/* Course 2: MS Office */}
-              <div className="flex items-center justify-between gap-3 p-1 border-t border-slate-100 pt-2.5">
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div className="w-10 h-10 rounded-xl bg-orange-50/70 text-orange-600 flex items-center justify-center shrink-0 border border-orange-100/70">
-                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
-                      <rect x="3" y="3" width="8" height="8" rx="1.5" fill="#F25022" />
-                      <rect x="13" y="3" width="8" height="8" rx="1.5" fill="#7FBA00" />
-                      <rect x="3" y="13" width="8" height="8" rx="1.5" fill="#00A4EF" />
-                      <rect x="13" y="13" width="8" height="8" rx="1.5" fill="#FFB900" />
-                    </svg>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h4 className="text-xs font-bold text-slate-900 truncate">
-                      MS Office
-                    </h4>
-                    <p className="text-[11px] text-slate-400 truncate">
-                      Word, Excel, PowerPoint
-                    </p>
-                    {/* Progress Bar */}
-                    <div className="flex items-center gap-2 mt-1.5">
-                      <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-blue-600 rounded-full w-[50%]" />
+                      <div className="min-w-0 flex-1">
+                        <h4 className="text-xs font-bold text-slate-900 truncate">
+                          {c.title}
+                        </h4>
+                        <p className="text-[11px] text-slate-400 truncate">
+                          {c.code || "Course Curriculum"}
+                        </p>
+                        {/* Progress Bar */}
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-blue-600 rounded-full transition-all" style={{ width: `${c.progress}%` }} />
+                          </div>
+                          <span className="text-[10px] font-semibold text-slate-500 shrink-0">
+                            {c.totalLessons ? `${c.completedLessons || 0}/${c.totalLessons} • ` : ""}{c.progress}%
+                          </span>
+                        </div>
                       </div>
-                      <span className="text-[10px] font-semibold text-slate-500">50%</span>
                     </div>
+
+                    <Link
+                      href="/curriculum"
+                      className="px-3 py-1 rounded-lg border border-blue-500 text-blue-600 hover:bg-blue-50 text-xs font-medium transition-all shadow-2xs active:scale-95 shrink-0"
+                    >
+                      Continue
+                    </Link>
                   </div>
+                ))
+              ) : (
+                <div className="py-6 text-center space-y-1">
+                  <p className="text-xs font-semibold text-slate-700">No active course enrollments</p>
+                  <p className="text-[11px] text-slate-400">Enroll in a course to start your learning journey.</p>
                 </div>
-
-                <Link
-                  href="/curriculum"
-                  className="px-3 py-1 rounded-lg border border-blue-500 text-blue-600 hover:bg-blue-50 text-xs font-medium transition-all shadow-2xs active:scale-95 shrink-0"
-                >
-                  Continue
-                </Link>
-              </div>
-
-              {/* Course 3: Python Basics */}
-              <div className="flex items-center justify-between gap-3 p-1 border-t border-slate-100 pt-2.5">
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div className="w-10 h-10 rounded-xl bg-amber-50/80 text-amber-600 flex items-center justify-center shrink-0 border border-amber-100/80">
-                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                      <path fill="#387EB8" d="M11.9 2c-3.1 0-2.9 1.3-2.9 1.3l.1 1.4h3v.4H6.2S4 4.8 4 8c0 3.1 1.9 3 1.9 3h1.1V9.5s-.1-1.8 1.8-1.8h3.1s1.7 0 1.7-1.7V4.2s.3-2.2-1.7-2.2zm-1.8 1.7c.3 0 .6.3.6.6s-.3.6-.6.6-.6-.3-.6-.6.3-.6.6-.6z" />
-                      <path fill="#FFE052" d="M12.1 22c3.1 0 2.9-1.3 2.9-1.3l-.1-1.4h-3v-.4h5.9s2.2.3 2.2-2.9c0-3.1-1.9-3-1.9-3h-1.1v1.5s.1 1.8-1.8 1.8h-3.1s-1.7 0-1.7 1.7v1.8s-.3 2.2 1.7 2.2zm1.8-1.7c-.3 0-.6-.3-.6-.6s.3-.6.6-.6.6.3.6.6-.3.6-.6.6z" />
-                    </svg>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h4 className="text-xs font-bold text-slate-900 truncate">
-                      Python Basics
-                    </h4>
-                    <p className="text-[11px] text-slate-400 truncate">
-                      Python Fundamentals
-                    </p>
-                    {/* Progress Bar */}
-                    <div className="flex items-center gap-2 mt-1.5">
-                      <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-blue-600 rounded-full w-[30%]" />
-                      </div>
-                      <span className="text-[10px] font-semibold text-slate-500">30%</span>
-                    </div>
-                  </div>
-                </div>
-
-                <Link
-                  href="/curriculum"
-                  className="px-3 py-1 rounded-lg border border-blue-500 text-blue-600 hover:bg-blue-50 text-xs font-medium transition-all shadow-2xs active:scale-95 shrink-0"
-                >
-                  Continue
-                </Link>
-              </div>
+              )}
             </div>
           </div>
 
@@ -384,7 +352,7 @@ export default function DashboardClient({
                 <FileText size={16} className="text-blue-600" />
                 <span>Recent Assignments</span>
               </div>
-              <Link 
+              <Link
                 href="/assignments"
                 className="text-xs font-semibold text-blue-600 hover:underline"
               >
@@ -393,74 +361,41 @@ export default function DashboardClient({
             </div>
 
             <div className="space-y-3">
-              {/* Assignment 1: HTML Page Layout */}
-              <div className="flex items-center justify-between gap-2 p-1">
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100">
-                    <FileText size={16} />
+              {recentAssignments && recentAssignments.length > 0 ? (
+                recentAssignments.slice(0, 3).map((a, idx) => (
+                  <div key={a.id || idx} className={`flex items-center justify-between gap-2 p-1 ${idx > 0 ? "border-t border-slate-100 pt-2.5" : ""}`}>
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100">
+                        <FileText size={16} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="text-xs font-bold text-slate-900 truncate">
+                          {a.title}
+                        </h4>
+                        <p className="text-[11px] text-slate-400 truncate">
+                          {a.module}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border ${a.status === "submitted"
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                        : "bg-amber-50 text-amber-700 border-amber-200"
+                        }`}>
+                        {a.status === "submitted" ? "Submitted" : "Pending"}
+                      </span>
+                      {a.dueDate && (
+                        <p className="text-[10px] text-slate-400 mt-0.5">Due: {a.dueDate}</p>
+                      )}
+                    </div>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <h4 className="text-xs font-bold text-slate-900 truncate">
-                      HTML Page Layout
-                    </h4>
-                    <p className="text-[11px] text-slate-400 truncate">
-                      Module 1: HTML Basics
-                    </p>
-                  </div>
+                ))
+              ) : (
+                <div className="py-6 text-center space-y-1">
+                  <p className="text-xs font-semibold text-slate-700">No active assignments</p>
+                  <p className="text-[11px] text-slate-400">Assignments given by teachers will appear here.</p>
                 </div>
-                <div className="text-right shrink-0">
-                  <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    Submitted
-                  </span>
-                  <p className="text-[10px] text-slate-400 mt-0.5">18 Oct 2026</p>
-                </div>
-              </div>
-
-              {/* Assignment 2: CSS Design Practice */}
-              <div className="flex items-center justify-between gap-2 p-1 border-t border-slate-100 pt-2.5">
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 border border-purple-100">
-                    <FileText size={16} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h4 className="text-xs font-bold text-slate-900 truncate">
-                      CSS Design Practice
-                    </h4>
-                    <p className="text-[11px] text-slate-400 truncate">
-                      Module 2: CSS Basics
-                    </p>
-                  </div>
-                </div>
-                <div className="text-right shrink-0">
-                  <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                    In Progress
-                  </span>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Due: 22 Oct 2026</p>
-                </div>
-              </div>
-
-              {/* Assignment 3: JavaScript Form Validation */}
-              <div className="flex items-center justify-between gap-2 p-1 border-t border-slate-100 pt-2.5">
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-100">
-                    <FileText size={16} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h4 className="text-xs font-bold text-slate-900 truncate">
-                      JavaScript Form Validation
-                    </h4>
-                    <p className="text-[11px] text-slate-400 truncate">
-                      Module 3: JavaScript
-                    </p>
-                  </div>
-                </div>
-                <div className="text-right shrink-0">
-                  <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
-                    Not Started
-                  </span>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Due: 25 Oct 2026</p>
-                </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
@@ -474,7 +409,7 @@ export default function DashboardClient({
                 <Calendar size={16} className="text-blue-600" />
                 <span>Upcoming Classes</span>
               </div>
-              <Link 
+              <Link
                 href="/calendar"
                 className="text-xs font-semibold text-blue-600 hover:underline"
               >
@@ -483,109 +418,55 @@ export default function DashboardClient({
             </div>
 
             <div className="space-y-3">
-              {/* Class 1: CSS Flexbox and Grid */}
-              <div className="flex items-center justify-between gap-2.5 p-1">
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  {/* Date badge */}
-                  <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-200/80 flex flex-col items-center justify-center text-center shrink-0">
-                    <span className="text-[9px] font-bold text-slate-400 uppercase leading-none">OCT</span>
-                    <span className="text-sm font-bold text-slate-900 leading-none mt-0.5">21</span>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h4 className="text-xs font-bold text-slate-900 truncate">
-                      CSS Flexbox and Grid
-                    </h4>
-                    <p className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
-                      <Clock size={11} className="text-blue-600" />
-                      <span>10:00 AM - 11:00 AM</span>
-                    </p>
-                    <p className="text-[10px] text-slate-400 truncate">
-                      Lab 1 • Neeraj Sir
-                    </p>
-                  </div>
-                </div>
+              {upcomingClasses.length > 0 ? (
+                upcomingClasses.map((item: any, idx: number) => {
+                  let monthStr = "CLASS";
+                  let dayStr = "";
+                  try {
+                    const dt = new Date(item.event_date || item.date);
+                    monthStr = dt.toLocaleDateString("en-US", { month: "short" }).toUpperCase();
+                    dayStr = String(dt.getDate());
+                  } catch { }
 
-                <div className="flex flex-col items-end gap-1 shrink-0">
-                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    Tomorrow
-                  </span>
-                  <Link
-                    href="/curriculum"
-                    className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium transition-all shadow-2xs active:scale-95"
-                  >
-                    Join Class
-                  </Link>
-                </div>
-              </div>
+                  return (
+                    <div key={item.id || idx} className={`flex items-center justify-between gap-2.5 p-1 ${idx > 0 ? "border-t border-slate-100 pt-2.5" : ""}`}>
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        {/* Date badge */}
+                        <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-200/80 flex flex-col items-center justify-center text-center shrink-0">
+                          <span className="text-[9px] font-bold text-slate-400 uppercase leading-none">{monthStr}</span>
+                          <span className="text-sm font-bold text-slate-900 leading-none mt-0.5">{dayStr}</span>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h4 className="text-xs font-bold text-slate-900 truncate">
+                            {item.title}
+                          </h4>
+                          <p className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
+                            <Clock size={11} className="text-blue-600" />
+                            <span>{item.start_time || "10:00 AM"}</span>
+                          </p>
+                          <p className="text-[10px] text-slate-400 truncate">
+                            {item.module || item.courses?.title || "Scheduled Session"}
+                          </p>
+                        </div>
+                      </div>
 
-              {/* Class 2: JavaScript Basics */}
-              <div className="flex items-center justify-between gap-2.5 p-1 border-t border-slate-100 pt-2.5">
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-200/80 flex flex-col items-center justify-center text-center shrink-0">
-                    <span className="text-[9px] font-bold text-slate-400 uppercase leading-none">OCT</span>
-                    <span className="text-sm font-bold text-slate-900 leading-none mt-0.5">23</span>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h4 className="text-xs font-bold text-slate-900 truncate">
-                      JavaScript Basics
-                    </h4>
-                    <p className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
-                      <Clock size={11} className="text-blue-600" />
-                      <span>10:00 AM - 11:00 AM</span>
-                    </p>
-                    <p className="text-[10px] text-slate-400 truncate">
-                      Lab 1 • Neeraj Sir
-                    </p>
-                  </div>
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <Link
+                          href="/curriculum"
+                          className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium transition-all shadow-2xs active:scale-95"
+                        >
+                          Join Class
+                        </Link>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="py-6 text-center space-y-1">
+                  <p className="text-xs font-semibold text-slate-700">No upcoming classes scheduled</p>
+                  <p className="text-[11px] text-slate-400">Check the calendar for future classes.</p>
                 </div>
-
-                <div className="flex flex-col items-end gap-1 shrink-0">
-                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-blue-50 text-blue-700 border border-blue-100">
-                    Thu
-                  </span>
-                  <Link
-                    href="/calendar"
-                    className="px-2.5 py-1 border border-blue-500 text-blue-600 hover:bg-blue-50 rounded-lg text-xs font-medium transition-all shadow-2xs active:scale-95"
-                  >
-                    View Details
-                  </Link>
-                </div>
-              </div>
-
-              {/* Class 3: Project Discussion */}
-              <div className="flex items-center justify-between gap-2.5 p-1 border-t border-slate-100 pt-2.5">
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-200/80 flex flex-col items-center justify-center text-center shrink-0">
-                    <span className="text-[9px] font-bold text-slate-400 uppercase leading-none">OCT</span>
-                    <span className="text-sm font-bold text-slate-900 leading-none mt-0.5">24</span>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h4 className="text-xs font-bold text-slate-900 truncate">
-                      Project Discussion
-                    </h4>
-                    <p className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
-                      <Clock size={11} className="text-blue-600" />
-                      <span>11:00 AM - 12:00 PM</span>
-                    </p>
-                    <p className="text-[10px] text-slate-400 truncate flex items-center gap-1">
-                      <Building size={10} />
-                      <span>Offline Class</span>
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex flex-col items-end gap-1 shrink-0">
-                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-blue-50 text-blue-700 border border-blue-100">
-                    Fri
-                  </span>
-                  <Link
-                    href="/calendar"
-                    className="px-2.5 py-1 border border-blue-500 text-blue-600 hover:bg-blue-50 rounded-lg text-xs font-medium transition-all shadow-2xs active:scale-95"
-                  >
-                    View Details
-                  </Link>
-                </div>
-              </div>
+              )}
             </div>
           </div>
 
@@ -596,7 +477,7 @@ export default function DashboardClient({
                 <Clock size={16} className="text-blue-600" />
                 <span>Upcoming Tests</span>
               </div>
-              <Link 
+              <Link
                 href="/tests"
                 className="text-xs font-semibold text-blue-600 hover:underline"
               >
@@ -605,75 +486,37 @@ export default function DashboardClient({
             </div>
 
             <div className="space-y-3">
-              {/* Test 1: CSS Fundamentals Test */}
-              <Link 
-                href="/tests"
-                className="flex items-center justify-between gap-2 p-1 hover:bg-slate-50/70 rounded-xl transition-all group"
-              >
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div className="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-100">
-                    <FileText size={16} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h4 className="text-xs font-bold text-slate-900 truncate group-hover:text-blue-600 transition-colors">
-                      CSS Fundamentals Test
-                    </h4>
-                    <p className="text-[11px] text-slate-400 truncate">
-                      Module 2: CSS Basics
-                    </p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">18 Oct 2026</p>
-                  </div>
+              {upcomingTests.length > 0 ? (
+                upcomingTests.map((t: any, idx: number) => (
+                  <Link
+                    key={t.id || idx}
+                    href="/tests"
+                    className={`flex items-center justify-between gap-2 p-1 ${idx > 0 ? "border-t border-slate-100 pt-2.5" : ""} hover:bg-slate-50/70 rounded-xl transition-all group`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-100">
+                        <CheckSquare size={16} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="text-xs font-bold text-slate-900 truncate group-hover:text-blue-600 transition-colors">
+                          {t.title}
+                        </h4>
+                        <p className="text-[11px] text-slate-400 truncate">
+                          {t.event_date || t.date || "Scheduled"} • {t.module || "Assessment"}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
+                      Upcoming
+                    </span>
+                  </Link>
+                ))
+              ) : (
+                <div className="py-6 text-center space-y-1">
+                  <p className="text-xs font-semibold text-slate-700">No upcoming tests</p>
+                  <p className="text-[11px] text-slate-400">All tests and quizzes are up to date.</p>
                 </div>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-100 shrink-0">
-                  Upcoming
-                </span>
-              </Link>
-
-              {/* Test 2: JavaScript Basics Quiz */}
-              <Link 
-                href="/tests"
-                className="flex items-center justify-between gap-2 p-1 border-t border-slate-100 pt-2.5 hover:bg-slate-50/70 rounded-xl transition-all group"
-              >
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div className="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-100">
-                    <FileText size={16} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h4 className="text-xs font-bold text-slate-900 truncate group-hover:text-blue-600 transition-colors">
-                      JavaScript Basics Quiz
-                    </h4>
-                    <p className="text-[11px] text-slate-400 truncate">
-                      Module 3: JavaScript
-                    </p>
-                  </div>
-                </div>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-100 shrink-0">
-                  Upcoming
-                </span>
-              </Link>
-
-              {/* Test 3: Web Development Mock Test */}
-              <Link 
-                href="/tests"
-                className="flex items-center justify-between gap-2 p-1 border-t border-slate-100 pt-2.5 hover:bg-slate-50/70 rounded-xl transition-all group"
-              >
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div className="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-100">
-                    <FileText size={16} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h4 className="text-xs font-bold text-slate-900 truncate group-hover:text-blue-600 transition-colors">
-                      Web Development Mock Test
-                    </h4>
-                    <p className="text-[11px] text-slate-400 truncate">
-                      Modules 1-3
-                    </p>
-                  </div>
-                </div>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-100 shrink-0">
-                  Upcoming
-                </span>
-              </Link>
+              )}
             </div>
           </div>
         </div>
@@ -687,7 +530,7 @@ export default function DashboardClient({
                 <BarChart3 size={16} className="text-blue-600" />
                 <span>Learning Progress</span>
               </div>
-              <Link 
+              <Link
                 href="/curriculum"
                 className="text-xs font-semibold text-blue-600 hover:underline"
               >
@@ -700,44 +543,29 @@ export default function DashboardClient({
               <div className="relative w-20 h-20 flex items-center justify-center shrink-0">
                 <svg className="w-20 h-20 -rotate-90" viewBox="0 0 36 36">
                   {/* Background Track */}
-                  <path 
-                    className="text-slate-100" 
-                    strokeWidth="3.5" 
-                    stroke="currentColor" 
-                    fill="none" 
-                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" 
+                  <path
+                    className="text-slate-100"
+                    strokeWidth="3.5"
+                    stroke="currentColor"
+                    fill="none"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                   />
-                  {/* Not Started (Gray): length 11%, offset -89 */}
-                  <path 
-                    stroke="#CBD5E1" 
-                    strokeDasharray="11 100" 
-                    strokeDashoffset="-89" 
-                    strokeWidth="3.5" 
-                    strokeLinecap="round" 
-                    fill="none" 
-                  />
-                  {/* In Progress (Blue): length 24%, offset -65 */}
-                  <path 
-                    stroke="#3B82F6" 
-                    strokeDasharray="24 100" 
-                    strokeDashoffset="-65" 
-                    strokeWidth="3.5" 
-                    strokeLinecap="round" 
-                    fill="none" 
-                  />
-                  {/* Completed (Emerald): length 65%, offset 0 */}
-                  <path 
-                    stroke="#10B981" 
-                    strokeDasharray="65 100" 
-                    strokeDashoffset="0" 
-                    strokeWidth="3.5" 
-                    strokeLinecap="round" 
-                    fill="none" 
-                  />
+                  {overallProgressPct > 0 && (
+                    <path
+                      className="text-blue-600 transition-all duration-500"
+                      stroke="currentColor"
+                      strokeDasharray={`${overallProgressPct}, 100`}
+                      strokeDashoffset="0"
+                      strokeWidth="3.5"
+                      strokeLinecap="round"
+                      fill="none"
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    />
+                  )}
                 </svg>
                 <div className="absolute text-center flex flex-col items-center justify-center">
-                  <span className="text-base font-black text-slate-900 leading-none">65%</span>
-                  <span className="text-[7.5px] font-medium text-slate-500 leading-tight mt-0.5">Overall Progress</span>
+                  <span className="text-base font-black text-slate-900 leading-none">{overallProgressPct}%</span>
+                  <span className="text-[7.5px] font-medium text-slate-500 leading-tight mt-0.5">Overall</span>
                 </div>
               </div>
 
@@ -745,77 +573,51 @@ export default function DashboardClient({
               <div className="space-y-1.5 flex-1 text-xs">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 text-slate-600">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    <span className="w-2 h-2 rounded-full bg-blue-600" />
                     <span className="text-[11px] font-medium">Completed</span>
                   </div>
-                  <span className="font-bold text-slate-900 text-[11px]">28</span>
+                  <span className="font-bold text-slate-900 text-[11px]">{completedLessons}</span>
                 </div>
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 text-slate-600">
-                    <span className="w-2 h-2 rounded-full bg-blue-500" />
-                    <span className="text-[11px] font-medium">In Progress</span>
+                    <span className="w-2 h-2 rounded-full bg-amber-500" />
+                    <span className="text-[11px] font-medium">Remaining</span>
                   </div>
-                  <span className="font-bold text-slate-900 text-[11px]">10</span>
+                  <span className="font-bold text-slate-900 text-[11px]">{remainingLessonsCount}</span>
                 </div>
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 text-slate-600">
                     <span className="w-2 h-2 rounded-full bg-slate-400" />
-                    <span className="text-[11px] font-medium">Not Started</span>
+                    <span className="text-[11px] font-medium">Total Lessons</span>
                   </div>
-                  <span className="font-bold text-slate-900 text-[11px]">4</span>
+                  <span className="font-bold text-slate-900 text-[11px]">{totalLessons}</span>
                 </div>
               </div>
             </div>
 
             {/* Subject-wise Progress Bars */}
             <div className="space-y-2.5 pt-2 border-t border-slate-100">
-              <h5 className="text-[11px] font-bold text-slate-900">Subject-wise Progress</h5>
-
-              {/* HTML & CSS */}
-              <div className="space-y-1">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-medium text-slate-700 text-[11px]">HTML & CSS</span>
-                  <span className="font-bold text-slate-800 text-[11px]">80%</span>
-                </div>
-                <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-blue-600 rounded-full w-[80%]" />
-                </div>
-              </div>
-
-              {/* JavaScript */}
-              <div className="space-y-1">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-medium text-slate-700 text-[11px]">JavaScript</span>
-                  <span className="font-bold text-slate-800 text-[11px]">60%</span>
-                </div>
-                <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-blue-600 rounded-full w-[60%]" />
-                </div>
-              </div>
-
-              {/* MS Office */}
-              <div className="space-y-1">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-medium text-slate-700 text-[11px]">MS Office</span>
-                  <span className="font-bold text-slate-800 text-[11px]">50%</span>
-                </div>
-                <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-blue-600 rounded-full w-[50%]" />
-                </div>
-              </div>
-
-              {/* Python */}
-              <div className="space-y-1">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-medium text-slate-700 text-[11px]">Python</span>
-                  <span className="font-bold text-slate-800 text-[11px]">30%</span>
-                </div>
-                <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-blue-600 rounded-full w-[30%]" />
-                </div>
-              </div>
+              <h5 className="text-[11px] font-bold text-slate-900">Enrolled Courses Progress</h5>
+              {enrolledCourses && enrolledCourses.length > 0 ? (
+                enrolledCourses.map((c, idx) => (
+                  <div key={c.id || idx} className="space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-medium text-slate-700 text-[11px] truncate">{c.title}</span>
+                      <span className="font-bold text-slate-800 text-[11px] shrink-0">
+                        {c.totalLessons ? <span className="text-[10px] font-normal text-slate-400 mr-1.5">{c.completedLessons || 0}/{c.totalLessons}</span> : null}
+                        {c.progress}%
+                      </span>
+                    </div>
+                    <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div className="h-full bg-blue-600 rounded-full transition-all" style={{ width: `${c.progress}%` }} />
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-[11px] text-slate-400 py-2 text-center">No enrolled courses logged yet</p>
+              )}
             </div>
           </div>
 

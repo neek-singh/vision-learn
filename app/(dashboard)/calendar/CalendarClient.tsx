@@ -65,6 +65,13 @@ const CATEGORY_CONFIG: Record<string, { label: string; dotClass: string; badgeCl
     iconBg: "bg-purple-50 text-purple-600 border-purple-200/70",
     textColor: "text-purple-600",
   },
+  holiday: {
+    label: "Holiday",
+    dotClass: "bg-rose-500",
+    badgeClass: "bg-rose-50 text-rose-700 border-rose-200/80",
+    iconBg: "bg-rose-50 text-rose-600 border-rose-200/70",
+    textColor: "text-rose-600",
+  },
   other: {
     label: "Other",
     dotClass: "bg-slate-400",
@@ -74,12 +81,27 @@ const CATEGORY_CONFIG: Record<string, { label: string; dotClass: string; badgeCl
   },
 };
 
+function formatDisplayTime(timeStr?: string): string {
+  if (!timeStr) return "";
+  if (timeStr.includes("AM") || timeStr.includes("PM")) return timeStr;
+  const parts = timeStr.split(":");
+  if (parts.length >= 2) {
+    let hours = parseInt(parts[0], 10);
+    const minutes = parts[1];
+    const ampm = hours >= 12 ? "PM" : "AM";
+    hours = hours % 12 || 12;
+    return `${hours}:${minutes} ${ampm}`;
+  }
+  return timeStr;
+}
+
 function getCategoryConfig(type: string = "") {
   const t = type.toLowerCase().trim();
   if (t === "live class" || t === "class" || t === "lecture" || t === "video") return CATEGORY_CONFIG.class;
   if (t === "assignment" || t === "practical") return CATEGORY_CONFIG.assignment;
   if (t === "test" || t === "quiz" || t === "mcq") return CATEGORY_CONFIG.test;
   if (t === "project") return CATEGORY_CONFIG.project;
+  if (t === "holiday" || t === "vacation" || t === "break") return CATEGORY_CONFIG.holiday;
   return CATEGORY_CONFIG.other;
 }
 
@@ -120,11 +142,12 @@ export default function CalendarClient({
     return `${y}-${m}-${d}`;
   }, [now]);
 
-  // Selected date state - default to 15th if viewing October 2026, or today
+  // Selected date state - default to today
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     const y = now.getFullYear();
     const m = String(now.getMonth() + 1).padStart(2, "0");
-    return `${y}-${m}-15`;
+    const d = String(now.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
   });
 
   const monthNames = [
@@ -133,176 +156,23 @@ export default function CalendarClient({
   ];
   const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-  // Dynamic Events for the active month & year
+  // Dynamic Events parsed 100% from real database initialEvents
   const allEvents = useMemo(() => {
-    const y = currentYear;
-    const m = String(currentMonth + 1).padStart(2, "0");
-
-    const defaultScreenshotEvents: CalendarEvent[] = [
-      {
-        id: "ev-1",
-        title: "HTML Class",
-        type: "class",
-        event_date: `${y}-${m}-01`,
-        start_time: "10:00 AM",
-        end_time: "11:00 AM",
-        module: "Module 1: Web Basics",
-        description: "Introduction to HTML structures, tags, and document layout."
-      },
-      {
-        id: "ev-2",
-        title: "Assignment Due",
-        type: "assignment",
-        event_date: `${y}-${m}-03`,
-        start_time: "11:59 PM",
-        module: "Module 1: Web Basics",
-        description: "Submit HTML tags practice exercise."
-      },
-      {
-        id: "ev-3",
-        title: "CSS Class",
-        type: "class",
-        event_date: `${y}-${m}-05`,
-        start_time: "10:00 AM",
-        end_time: "11:00 AM",
-        module: "Module 2: CSS Styling",
-        description: "CSS selectors, box model, and responsive flexbox."
-      },
-      {
-        id: "ev-4",
-        title: "Test: HTML",
-        type: "test",
-        event_date: `${y}-${m}-07`,
-        start_time: "11:00 AM",
-        end_time: "12:00 PM",
-        module: "Module 1: Web Basics",
-        description: "Multiple choice test on HTML fundamentals."
-      },
-      {
-        id: "ev-5",
-        title: "Project Work",
-        type: "project",
-        event_date: `${y}-${m}-10`,
-        start_time: "10:00 AM",
-        end_time: "01:00 PM",
-        module: "Module 1 Project",
-        description: "Build a single page website from scratch."
-      },
-      {
-        id: "ev-6",
-        title: "Assignment Due",
-        type: "assignment",
-        event_date: `${y}-${m}-12`,
-        start_time: "11:59 PM",
-        module: "Module 2: CSS Styling",
-        description: "Responsive navigation bar with mobile burger menu."
-      },
-      {
-        id: "ev-7",
-        title: "Live Class",
-        type: "class",
-        event_date: `${y}-${m}-15`,
-        start_time: "10:00 AM",
-        end_time: "11:00 AM",
-        module: "Module 2: Web Basics",
-        description: "HTTP and HTTPS Basics"
-      },
-      {
-        id: "ev-7b",
-        title: "Assignment Discussion",
-        type: "assignment",
-        event_date: `${y}-${m}-15`,
-        start_time: "01:00 PM",
-        end_time: "02:00 PM",
-        module: "Module 1: HTML Basics",
-        description: "HTML Elements Practice"
-      },
-      {
-        id: "ev-7c",
-        title: "Project Q&A",
-        type: "project",
-        event_date: `${y}-${m}-15`,
-        start_time: "04:00 PM",
-        end_time: "05:00 PM",
-        module: "Module 5: Projects",
-        description: "Personal Portfolio Website"
-      },
-      {
-        id: "ev-8",
-        title: "Project Review",
-        type: "project",
-        event_date: `${y}-${m}-18`,
-        start_time: "11:00 AM",
-        end_time: "12:30 PM",
-        module: "Portfolio Project",
-        description: "Code review and mentor feedback on portfolio."
-      },
-      {
-        id: "ev-9",
-        title: "Test: CSS",
-        type: "test",
-        event_date: `${y}-${m}-20`,
-        start_time: "11:00 AM",
-        end_time: "12:00 PM",
-        module: "Module 2: CSS Styling",
-        description: "Assessment on CSS Grid, Flexbox and Media Queries."
-      },
-      {
-        id: "ev-10",
-        title: "JavaScript",
-        type: "class",
-        event_date: `${y}-${m}-24`,
-        start_time: "10:00 AM",
-        end_time: "11:00 AM",
-        module: "Module 3: JavaScript",
-        description: "Variables, functions, loops, and DOM manipulation."
-      },
-      {
-        id: "ev-11",
-        title: "Assignment Due",
-        type: "assignment",
-        event_date: `${y}-${m}-27`,
-        start_time: "11:59 PM",
-        module: "Module 3: JavaScript",
-        description: "Interactive counter and modal dialog implementation."
-      },
-      {
-        id: "ev-12",
-        title: "Live Class",
-        type: "class",
-        event_date: `${y}-${m}-30`,
-        start_time: "10:00 AM",
-        end_time: "11:00 AM",
-        module: "Module 3: JavaScript",
-        description: "Async JavaScript, Promises, and Fetch API."
-      }
-    ];
-
     if (!initialEvents || initialEvents.length === 0) {
-      return defaultScreenshotEvents;
+      return [];
     }
 
-    const normalizedDbEvents = initialEvents.map((e, idx) => ({
+    return initialEvents.map((e, idx) => ({
       id: e.id || `dbev-${idx}`,
-      title: e.title || "Scheduled Class",
-      type: e.type || "class",
+      title: e.title || "Scheduled Session",
+      type: (e.type || "class").toLowerCase().trim(),
       event_date: e.event_date || e.date || todayStr,
-      start_time: e.start_time || "10:00 AM",
-      end_time: e.end_time || "11:00 AM",
-      module: e.courses?.title || "Course Schedule",
+      start_time: e.start_time ? formatDisplayTime(e.start_time) : "10:00 AM",
+      end_time: e.end_time ? formatDisplayTime(e.end_time) : "11:00 AM",
+      module: e.courses?.title || e.module || e.description || "Course Schedule",
       description: e.description || ""
     }));
-
-    // Merge DB events and default events without duplicate IDs
-    const merged: any[] = [...normalizedDbEvents];
-    defaultScreenshotEvents.forEach(item => {
-      if (!merged.some((m: any) => m.event_date === item.event_date && m.title === item.title)) {
-        merged.push(item);
-      }
-    });
-
-    return merged;
-  }, [initialEvents, currentYear, currentMonth, todayStr]);
+  }, [initialEvents, todayStr]);
 
   // Filtered by Category
   const filteredEvents = useMemo(() => {
@@ -420,95 +290,34 @@ export default function CalendarClient({
       });
     }
 
-    if (scheduleItems.length === 0) {
-      // Default sample 4 items if no events in that range
-      return [
-        {
-          id: "fix-1",
-          dateFormatted: "15 Oct 2026",
-          dayOfWeek: "Thu",
-          timeFormatted: "10:00 AM - 11:00 AM",
-          type: "class",
-          title: "HTTP and HTTPS Basics",
-          module: "Module 2",
-          action: "Join"
-        },
-        {
-          id: "fix-2",
-          dateFormatted: "17 Oct 2026",
-          dayOfWeek: "Sat",
-          timeFormatted: "10:00 AM - 11:00 AM",
-          type: "class",
-          title: "CSS Flexbox and Grid",
-          module: "Module 2",
-          action: "Join"
-        },
-        {
-          id: "fix-3",
-          dateFormatted: "20 Oct 2026",
-          dayOfWeek: "Tue",
-          timeFormatted: "11:00 AM - 12:00 PM",
-          type: "test",
-          title: "CSS Basics Test",
-          module: "Module 2",
-          action: "View"
-        },
-        {
-          id: "fix-4",
-          dateFormatted: "22 Oct 2026",
-          dayOfWeek: "Thu",
-          timeFormatted: "11:59 PM",
-          type: "assignment",
-          title: "Responsive Design",
-          module: "Module 3",
-          action: "View"
-        }
-      ];
-    }
-
     return scheduleItems;
-  }, [selectedDate, allEvents, monthNames]);
+  }, [selectedDate, allEvents, monthNames, dayNames]);
 
-  // Upcoming Events list on right card
+  // Upcoming Events list on right card (derived 100% from real database events from today onwards)
   const upcomingEventsList = useMemo(() => {
-    return [
-      {
-        dateStr: `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-17`,
-        dateFormatted: "17 Oct 2026",
-        timeFormatted: "10:00 AM",
-        title: "CSS Flexbox and Grid (Live Class)",
-        type: "class"
-      },
-      {
-        dateStr: `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-20`,
-        dateFormatted: "20 Oct 2026",
-        timeFormatted: "11:00 AM",
-        title: "Test: CSS Basics",
-        type: "test"
-      },
-      {
-        dateStr: `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-22`,
-        dateFormatted: "22 Oct 2026",
-        timeFormatted: "10:00 AM",
-        title: "Assignment Due: Responsive Design",
-        type: "assignment"
-      },
-      {
-        dateStr: `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-24`,
-        dateFormatted: "24 Oct 2026",
-        timeFormatted: "10:00 AM",
-        title: "JavaScript Fundamentals",
-        type: "class"
-      },
-      {
-        dateStr: `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-27`,
-        dateFormatted: "27 Oct 2026",
-        timeFormatted: "11:00 AM",
-        title: "Project Submission: Portfolio",
-        type: "project"
-      }
-    ];
-  }, [currentYear, currentMonth]);
+    return allEvents
+      .filter((ev) => ev.event_date >= todayStr)
+      .sort((a, b) => a.event_date.localeCompare(b.event_date))
+      .slice(0, 6)
+      .map((ev) => {
+        let dateFormatted = ev.event_date;
+        try {
+          const [y, m, d] = ev.event_date.split("-").map(Number);
+          const dt = new Date(y, m - 1, d);
+          dateFormatted = dt.toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" });
+        } catch {}
+
+        return {
+          id: ev.id,
+          dateStr: ev.event_date,
+          dateFormatted,
+          timeFormatted: ev.start_time || "10:00 AM",
+          title: ev.title,
+          type: ev.type,
+          module: ev.module
+        };
+      });
+  }, [allEvents, todayStr]);
 
   // Handlers for month navigation
   const handlePrevMonth = () => {
@@ -634,10 +443,10 @@ export default function CalendarClient({
             </p>
 
             {/* Interactive Category Dots Legend */}
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2.5 text-xs text-slate-600 font-medium">
+            <div className="flex items-center gap-2 sm:gap-2.5 mt-2.5 text-xs text-slate-600 font-medium overflow-x-auto no-scrollbar py-0.5 max-w-full">
               <button
                 onClick={() => setActiveCategoryFilter("all")}
-                className={`px-2 py-0.5 rounded-full text-[11px] transition-all cursor-pointer ${
+                className={`px-2.5 py-1 rounded-full text-[11px] whitespace-nowrap transition-all cursor-pointer ${
                   activeCategoryFilter === "all" ? "bg-slate-900 text-white font-semibold shadow-2xs" : "bg-white/80 hover:bg-white text-slate-600 border border-slate-200/70"
                 }`}
               >
@@ -645,7 +454,7 @@ export default function CalendarClient({
               </button>
               <button
                 onClick={() => setActiveCategoryFilter(activeCategoryFilter === "class" ? "all" : "class")}
-                className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] transition-all cursor-pointer ${
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] whitespace-nowrap transition-all cursor-pointer ${
                   activeCategoryFilter === "class" ? "bg-blue-600 text-white font-semibold shadow-2xs" : "bg-white/80 hover:bg-white text-slate-600 border border-slate-200/70"
                 }`}
               >
@@ -654,7 +463,7 @@ export default function CalendarClient({
               </button>
               <button
                 onClick={() => setActiveCategoryFilter(activeCategoryFilter === "assignment" ? "all" : "assignment")}
-                className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] transition-all cursor-pointer ${
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] whitespace-nowrap transition-all cursor-pointer ${
                   activeCategoryFilter === "assignment" ? "bg-emerald-600 text-white font-semibold shadow-2xs" : "bg-white/80 hover:bg-white text-slate-600 border border-slate-200/70"
                 }`}
               >
@@ -663,7 +472,7 @@ export default function CalendarClient({
               </button>
               <button
                 onClick={() => setActiveCategoryFilter(activeCategoryFilter === "test" ? "all" : "test")}
-                className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] transition-all cursor-pointer ${
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] whitespace-nowrap transition-all cursor-pointer ${
                   activeCategoryFilter === "test" ? "bg-amber-600 text-white font-semibold shadow-2xs" : "bg-white/80 hover:bg-white text-slate-600 border border-slate-200/70"
                 }`}
               >
@@ -671,8 +480,17 @@ export default function CalendarClient({
                 <span>Test</span>
               </button>
               <button
+                onClick={() => setActiveCategoryFilter(activeCategoryFilter === "holiday" ? "all" : "holiday")}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] whitespace-nowrap transition-all cursor-pointer ${
+                  activeCategoryFilter === "holiday" ? "bg-rose-600 text-white font-semibold shadow-2xs" : "bg-white/80 hover:bg-white text-slate-600 border border-slate-200/70"
+                }`}
+              >
+                <span className={`w-2 h-2 rounded-full ${activeCategoryFilter === "holiday" ? "bg-white" : "bg-rose-500"} shrink-0`} />
+                <span>Holiday</span>
+              </button>
+              <button
                 onClick={() => setActiveCategoryFilter(activeCategoryFilter === "project" ? "all" : "project")}
-                className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] transition-all cursor-pointer ${
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] whitespace-nowrap transition-all cursor-pointer ${
                   activeCategoryFilter === "project" ? "bg-purple-600 text-white font-semibold shadow-2xs" : "bg-white/80 hover:bg-white text-slate-600 border border-slate-200/70"
                 }`}
               >
@@ -840,7 +658,7 @@ export default function CalendarClient({
                             setSelectedDate(cell.dateStr);
                           }
                         }}
-                        className={`min-h-[75px] sm:min-h-[85px] p-1.5 sm:p-2 border-r border-b border-slate-100 transition-all flex flex-col justify-between ${
+                        className={`min-h-[52px] sm:min-h-[85px] p-1 sm:p-2 border-r border-b border-slate-100 transition-all flex flex-col justify-between ${
                           cell.isCurrentMonth
                             ? isSelected
                               ? "bg-blue-50/40 ring-2 ring-inset ring-blue-500/80 cursor-pointer z-10"
@@ -851,50 +669,72 @@ export default function CalendarClient({
                         {/* Top Row: Date Number */}
                         <div className="flex items-center justify-between">
                           {isSelected ? (
-                            <div className="w-6 h-6 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center shadow-2xs">
+                            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-blue-600 text-white font-bold text-[11px] sm:text-xs flex items-center justify-center shadow-2xs">
                               {cell.dayNumber}
                             </div>
                           ) : isToday ? (
-                            <div className="w-6 h-6 rounded-full bg-slate-900 text-white font-bold text-xs flex items-center justify-center shadow-2xs">
+                            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-slate-900 text-white font-bold text-[11px] sm:text-xs flex items-center justify-center shadow-2xs">
                               {cell.dayNumber}
                             </div>
                           ) : (
-                            <span className={`text-xs font-medium ${cell.isCurrentMonth ? "text-slate-700" : "text-slate-300"}`}>
+                            <span className={`text-[11px] sm:text-xs font-medium ${cell.isCurrentMonth ? "text-slate-700" : "text-slate-300"}`}>
                               {cell.dayNumber}
                             </span>
                           )}
                         </div>
 
                         {/* Events list in cell */}
-                        <div className="space-y-1 mt-1">
-                          {cell.events.slice(0, 2).map((ev) => {
-                            const cfg = getCategoryConfig(ev.type);
-                            return (
-                              <div
-                                key={ev.id}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSelectedDate(cell.dateStr);
-                                  handleActionClick({
-                                    title: ev.title,
-                                    module: ev.module,
-                                    type: ev.type,
-                                    action: ev.type === "class" ? "Join" : "View"
-                                  });
-                                }}
-                                className={`px-1.5 py-0.5 rounded text-[10px] font-medium border flex items-center gap-1 truncate cursor-pointer hover:brightness-95 transition-all ${cfg.badgeClass}`}
-                                title={`${ev.title} (${cfg.label})`}
-                              >
-                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${cfg.dotClass}`} />
-                                <span className="truncate">{ev.title}</span>
-                              </div>
-                            );
-                          })}
-                          {cell.events.length > 2 && (
-                            <span className="text-[9px] font-semibold text-slate-400 block px-1">
-                              +{cell.events.length - 2} more
-                            </span>
-                          )}
+                        <div className="space-y-1 mt-0.5 sm:mt-1">
+                          {/* Desktop / tablet badges */}
+                          <div className="hidden sm:block space-y-1">
+                            {cell.events.slice(0, 2).map((ev) => {
+                              const cfg = getCategoryConfig(ev.type);
+                              return (
+                                <div
+                                  key={ev.id}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedDate(cell.dateStr);
+                                    handleActionClick({
+                                      title: ev.title,
+                                      module: ev.module,
+                                      type: ev.type,
+                                      action: ev.type === "class" ? "Join" : "View"
+                                    });
+                                  }}
+                                  className={`px-1.5 py-0.5 rounded text-[10px] font-medium border flex items-center gap-1 truncate cursor-pointer hover:brightness-95 transition-all ${cfg.badgeClass}`}
+                                  title={`${ev.title} (${cfg.label})`}
+                                >
+                                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${cfg.dotClass}`} />
+                                  <span className="truncate">{ev.title}</span>
+                                </div>
+                              );
+                            })}
+                            {cell.events.length > 2 && (
+                              <span className="text-[9px] font-semibold text-slate-400 block px-1">
+                                +{cell.events.length - 2} more
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Mobile-only compact dots */}
+                          <div className="flex sm:hidden items-center justify-center gap-1 py-1 flex-wrap">
+                            {cell.events.slice(0, 3).map((ev) => {
+                              const cfg = getCategoryConfig(ev.type);
+                              return (
+                                <span
+                                  key={ev.id}
+                                  className={`w-1.5 h-1.5 rounded-full ${cfg.dotClass}`}
+                                  title={ev.title}
+                                />
+                              );
+                            })}
+                            {cell.events.length > 3 && (
+                              <span className="text-[8px] font-bold text-slate-400">
+                                +{cell.events.length - 3}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     );
@@ -905,8 +745,8 @@ export default function CalendarClient({
 
             {/* WEEK VIEW */}
             {viewMode === "week" && (
-              <div className="pt-3">
-                <div className="grid grid-cols-7 gap-2">
+              <div className="pt-3 overflow-x-auto no-scrollbar">
+                <div className="grid grid-cols-7 gap-2 min-w-[560px] sm:min-w-0">
                   {selectedWeekDays.map((col, idx) => (
                     <div
                       key={idx}
@@ -1021,53 +861,63 @@ export default function CalendarClient({
               </button>
             </div>
 
-            <div className="divide-y divide-slate-100">
-              {next7DaysSchedule.map((item, idx) => {
-                const cfg = getCategoryConfig(item.type);
-                return (
-                  <div 
-                    key={idx} 
-                    className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 hover:bg-slate-50/50 rounded-xl px-2 transition-colors"
-                  >
-                    {/* Date, Day & Time */}
-                    <div className="flex items-center gap-2.5 sm:w-56 shrink-0 text-xs">
-                      <span className="font-semibold text-slate-900 whitespace-nowrap">{item.dateFormatted}</span>
-                      <span className="text-slate-400 font-medium whitespace-nowrap">{item.dayOfWeek}</span>
-                      <span className="text-slate-600 font-medium whitespace-nowrap ml-auto sm:ml-0">{item.timeFormatted}</span>
-                    </div>
+            {next7DaysSchedule.length > 0 ? (
+              <div className="divide-y divide-slate-100">
+                {next7DaysSchedule.map((item, idx) => {
+                  const cfg = getCategoryConfig(item.type);
+                  return (
+                    <div 
+                      key={idx} 
+                      className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 hover:bg-slate-50/50 rounded-xl px-2 transition-colors"
+                    >
+                      {/* Date, Day & Time */}
+                      <div className="flex items-center gap-2.5 sm:w-56 shrink-0 text-xs">
+                        <span className="font-semibold text-slate-900 whitespace-nowrap">{item.dateFormatted}</span>
+                        <span className="text-slate-400 font-medium whitespace-nowrap">{item.dayOfWeek}</span>
+                        <span className="text-slate-600 font-medium whitespace-nowrap ml-auto sm:ml-0">{item.timeFormatted}</span>
+                      </div>
 
-                    {/* Badge */}
-                    <div className="shrink-0">
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${cfg.badgeClass}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${cfg.dotClass}`} />
-                        <span>{cfg.label}</span>
-                      </span>
-                    </div>
+                      {/* Badge */}
+                      <div className="shrink-0">
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${cfg.badgeClass}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${cfg.dotClass}`} />
+                          <span>{cfg.label}</span>
+                        </span>
+                      </div>
 
-                    {/* Title & Module */}
-                    <div className="min-w-0 flex-1 px-1">
-                      <span className="text-xs font-semibold text-slate-800 truncate block">
-                        {item.title}
-                      </span>
-                    </div>
+                      {/* Title & Module */}
+                      <div className="min-w-0 flex-1 px-1">
+                        <span className="text-xs font-semibold text-slate-800 truncate block">
+                          {item.title}
+                        </span>
+                      </div>
 
-                    <div className="shrink-0 text-xs text-slate-400">
-                      <span>{item.module}</span>
-                    </div>
+                      <div className="shrink-0 text-xs text-slate-400">
+                        <span>{item.module}</span>
+                      </div>
 
-                    {/* Action button */}
-                    <div className="shrink-0">
-                      <button
-                        onClick={() => handleActionClick(item)}
-                        className="px-4 py-1 rounded-lg border border-blue-500 text-blue-600 hover:bg-blue-50 text-xs font-medium transition-all shadow-2xs active:scale-95 cursor-pointer"
-                      >
-                        {item.action}
-                      </button>
+                      {/* Action button */}
+                      <div className="shrink-0">
+                        <button
+                          onClick={() => handleActionClick(item)}
+                          className="px-4 py-1 rounded-lg border border-blue-500 text-blue-600 hover:bg-blue-50 text-xs font-medium transition-all shadow-2xs active:scale-95 cursor-pointer"
+                        >
+                          {item.action}
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="py-8 text-center space-y-1.5">
+                <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-300 mx-auto">
+                  <CalendarIcon size={20} />
+                </div>
+                <p className="text-xs font-semibold text-slate-700">No classes or events in the next 7 days</p>
+                <p className="text-[11px] text-slate-400">All caught up! Check back soon or select a date on the calendar.</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -1193,48 +1043,55 @@ export default function CalendarClient({
               </button>
             </div>
 
-            <div className="divide-y divide-slate-100">
-              {upcomingEventsList.map((item, idx) => {
-                const cfg = getCategoryConfig(item.type);
-                return (
-                  <div
-                    key={idx}
-                    onClick={() => {
-                      setSelectedDate(item.dateStr);
-                      setToastMessage(`Selected date: ${item.dateFormatted}`);
-                    }}
-                    className="py-2.5 flex items-center justify-between gap-3 hover:bg-slate-50/60 rounded-xl px-1.5 transition-colors cursor-pointer group"
-                  >
-                    {/* Left: Icon Box + Details */}
-                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                      <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center border transition-transform group-hover:scale-105 ${cfg.iconBg}`}>
-                        {item.type === "class" ? (
-                          <Video size={14} />
-                        ) : item.type === "test" ? (
-                          <HelpCircle size={14} />
-                        ) : item.type === "assignment" ? (
-                          <FileText size={14} />
-                        ) : (
-                          <FolderCode size={14} />
-                        )}
-                      </div>
-
-                      <div className="min-w-0 flex-1">
-                        <div className="text-[10px] text-slate-400 font-medium">
-                          {item.dateFormatted}  {item.timeFormatted}
+            {upcomingEventsList.length > 0 ? (
+              <div className="divide-y divide-slate-100">
+                {upcomingEventsList.map((item, idx) => {
+                  const cfg = getCategoryConfig(item.type);
+                  return (
+                    <div
+                      key={idx}
+                      onClick={() => {
+                        setSelectedDate(item.dateStr);
+                        setToastMessage(`Selected date: ${item.dateFormatted}`);
+                      }}
+                      className="py-2.5 flex items-center justify-between gap-3 hover:bg-slate-50/60 rounded-xl px-1.5 transition-colors cursor-pointer group"
+                    >
+                      {/* Left: Icon Box + Details */}
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                        <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center border transition-transform group-hover:scale-105 ${cfg.iconBg}`}>
+                          {item.type === "class" ? (
+                            <Video size={14} />
+                          ) : item.type === "test" ? (
+                            <HelpCircle size={14} />
+                          ) : item.type === "assignment" ? (
+                            <FileText size={14} />
+                          ) : (
+                            <FolderCode size={14} />
+                          )}
                         </div>
-                        <h4 className="text-xs font-semibold text-slate-800 truncate leading-snug group-hover:text-blue-600 transition-colors">
-                          {item.title}
-                        </h4>
-                      </div>
-                    </div>
 
-                    {/* Right: Chevron */}
-                    <ChevronRight size={14} className="text-slate-300 group-hover:text-slate-500 shrink-0 transition-colors" />
-                  </div>
-                );
-              })}
-            </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-[10px] text-slate-400 font-medium">
+                            {item.dateFormatted}  {item.timeFormatted}
+                          </div>
+                          <h4 className="text-xs font-semibold text-slate-800 truncate leading-snug group-hover:text-blue-600 transition-colors">
+                            {item.title}
+                          </h4>
+                        </div>
+                      </div>
+
+                      {/* Right: Chevron */}
+                      <ChevronRight size={14} className="text-slate-300 group-hover:text-slate-500 shrink-0 transition-colors" />
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="py-6 text-center space-y-1.5">
+                <p className="text-xs font-semibold text-slate-700">No upcoming events</p>
+                <p className="text-[11px] text-slate-400">All scheduled sessions are up to date.</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -1387,36 +1244,46 @@ export default function CalendarClient({
             </div>
 
             <div className="p-5 overflow-y-auto divide-y divide-slate-100 space-y-2">
-              {allEvents.map((item, idx) => {
-                const cfg = getCategoryConfig(item.type);
-                return (
-                  <div key={idx} className="pt-2.5 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center border ${cfg.iconBg}`}>
-                        {item.type === "class" ? <Video size={14} /> : item.type === "test" ? <HelpCircle size={14} /> : <FileText size={14} />}
+              {allEvents.length > 0 ? (
+                allEvents.map((item, idx) => {
+                  const cfg = getCategoryConfig(item.type);
+                  return (
+                    <div key={idx} className="pt-2.5 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center border ${cfg.iconBg}`}>
+                          {item.type === "class" ? <Video size={14} /> : item.type === "test" ? <HelpCircle size={14} /> : <FileText size={14} />}
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-semibold text-slate-800">{item.title}</h4>
+                          <p className="text-[10px] text-slate-400">{item.event_date} • {item.start_time || "10:00 AM"} • {item.module}</p>
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="text-xs font-semibold text-slate-800">{item.title}</h4>
-                        <p className="text-[10px] text-slate-400">{item.event_date} • {item.start_time || "10:00 AM"} • {item.module}</p>
-                      </div>
+                      <button
+                        onClick={() => {
+                          setShowViewAllSchedule(false);
+                          handleActionClick({
+                            title: item.title,
+                            module: item.module,
+                            type: item.type,
+                            action: item.type === "class" ? "Join" : "View"
+                          });
+                        }}
+                        className="px-3 py-1 rounded-lg border border-blue-500 text-blue-600 hover:bg-blue-50 text-xs font-medium"
+                      >
+                        {item.type === "class" ? "Join" : "View"}
+                      </button>
                     </div>
-                    <button
-                      onClick={() => {
-                        setShowViewAllSchedule(false);
-                        handleActionClick({
-                          title: item.title,
-                          module: item.module,
-                          type: item.type,
-                          action: item.type === "class" ? "Join" : "View"
-                        });
-                      }}
-                      className="px-3 py-1 rounded-lg border border-blue-500 text-blue-600 hover:bg-blue-50 text-xs font-medium"
-                    >
-                      {item.type === "class" ? "Join" : "View"}
-                    </button>
+                  );
+                })
+              ) : (
+                <div className="py-10 text-center space-y-2">
+                  <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 mx-auto border border-slate-100">
+                    <CalendarIcon size={22} />
                   </div>
-                );
-              })}
+                  <p className="text-xs font-semibold text-slate-700">No events found for this month</p>
+                  <p className="text-[11px] text-slate-400">Classes and events will appear here once scheduled by the institute.</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

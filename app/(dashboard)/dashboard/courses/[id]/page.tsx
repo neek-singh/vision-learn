@@ -44,7 +44,27 @@ export default async function CoursePage({ params }: { params: Promise<{ id: str
     redirect("/dashboard");
   }
 
+  // Fetch modules and lessons for this course to calculate real progress
+  const { data: courseModules } = await supabase
+    .from("lms_modules")
+    .select("id, lessons(id)")
+    .eq("course_id", enrollment.course_id);
+
   const completedLessons = progressRes.data?.map(p => p.lesson_id) || [];
+  const completedLessonSet = new Set(completedLessons);
+  const allLessonIds: string[] = [];
+  (courseModules || []).forEach((m: any) => {
+    (m.lessons || []).forEach((l: any) => {
+      if (l.id) allLessonIds.push(l.id);
+    });
+  });
+
+  const totalLessons = allLessonIds.length;
+  const completedCount = allLessonIds.filter(id => completedLessonSet.has(id)).length;
+  const liveProgress = totalLessons > 0
+    ? Math.round((completedCount / totalLessons) * 100)
+    : (typeof enrollment.progress_percentage === "number" ? enrollment.progress_percentage : 0);
+
   const course = enrollment.courses as any;
   
   // Normalize curriculum
@@ -82,12 +102,14 @@ export default async function CoursePage({ params }: { params: Promise<{ id: str
           <div className="w-full md:w-64 bg-slate-900/50 border border-slate-800 rounded-2xl p-4">
             <div className="flex justify-between text-xs text-slate-400 mb-2">
               <span>Overall Progress</span>
-              <span className="font-semibold text-blue-400">{enrollment.progress_percentage}%</span>
+              <span className="font-semibold text-blue-400">
+                {totalLessons > 0 ? `${completedCount}/${totalLessons} (${liveProgress}%)` : `${liveProgress}%`}
+              </span>
             </div>
             <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-500"
-                style={{ width: `${enrollment.progress_percentage}%` }}
+                style={{ width: `${liveProgress}%` }}
               />
             </div>
           </div>

@@ -36,7 +36,7 @@ export function CoursesClient({
   lessonsCountMap,
   studentId,
 }: CoursesClientProps) {
-  const [activeTab, setActiveTab] = useState<"enrolled" | "available" | "all">("enrolled");
+  const [activeTab, setActiveTab] = useState<"all" | "enrolled" | "available">("all");
   const [exploreFilter, setExploreFilter] = useState<"all" | "free" | "paid" | "popular">("all");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -90,104 +90,15 @@ export function CoursesClient({
     });
   }, [initialEnrollments, modulesCountMap, lessonsCountMap]);
 
-  // Default Explore courses matching reference mockup if database lacks catalog
+  // Dynamic Explore courses derived 100% from Supabase courses
   const exploreCoursesCatalog = useMemo(() => {
     const enrolledIds = new Set((initialEnrollments || []).map(e => e.course_id));
-    
-    // Fallback showcase items matching user reference image
-    const fallbackExplore = [
-      {
-        id: "pgdca-preview",
-        title: "PGDCA",
-        subtitle: "Post Graduate Diploma in Computer Application",
-        duration: "12 Months",
-        modules: 8,
-        lessons: 120,
-        price: "₹4,999",
-        originalPrice: "₹6,499",
-        discount: "23% OFF",
-        isPopular: true,
-        isNew: false,
-        isPaid: true,
-        features: [
-          "Advanced Diploma Program",
-          "Practical Projects",
-          "Certificate on Completion"
-        ],
-        iconBg: "bg-purple-100 text-purple-600",
-        iconType: "cap"
-      },
-      {
-        id: "web-dev-preview",
-        title: "Web Development",
-        subtitle: "HTML, CSS, JavaScript & Projects",
-        duration: "6 Months",
-        modules: 6,
-        lessons: 80,
-        price: "₹3,999",
-        originalPrice: "₹5,499",
-        discount: "27% OFF",
-        isPopular: true,
-        isNew: false,
-        isPaid: true,
-        features: [
-          "Build Real Projects",
-          "Hands-on Practice",
-          "Certificate on Completion"
-        ],
-        iconBg: "bg-orange-100 text-orange-600",
-        iconType: "html"
-      },
-      {
-        id: "python-preview",
-        title: "Python Programming",
-        subtitle: "Learn Python from Basics to Advanced",
-        duration: "4 Months",
-        modules: 5,
-        lessons: 60,
-        price: "₹3,499",
-        originalPrice: "₹4,999",
-        discount: "30% OFF",
-        isPopular: false,
-        isNew: false,
-        isPaid: true,
-        features: [
-          "Beginner to Advanced",
-          "Real World Projects",
-          "Certificate on Completion"
-        ],
-        iconBg: "bg-sky-100 text-sky-600",
-        iconType: "python"
-      },
-      {
-        id: "cyber-preview",
-        title: "Cyber Security",
-        subtitle: "Ethical Hacking & Digital Safety",
-        duration: "4 Months",
-        modules: 5,
-        lessons: 50,
-        price: "₹4,999",
-        originalPrice: "₹6,999",
-        discount: "29% OFF",
-        isPopular: false,
-        isNew: true,
-        isPaid: true,
-        features: [
-          "Security Fundamentals",
-          "Practical Labs",
-          "Certificate on Completion"
-        ],
-        iconBg: "bg-slate-100 text-slate-700",
-        iconType: "shield"
-      }
-    ];
 
     if (!allCourses || allCourses.length === 0) {
-      return fallbackExplore;
+      return [];
     }
 
-    // Merge with DB courses if available
-    const dbExplore = allCourses
+    return allCourses
       .filter(c => !enrolledIds.has(c.id))
       .map((c, idx) => {
         const titleLower = (c.title || "").toLowerCase();
@@ -249,8 +160,6 @@ export function CoursesClient({
           iconType
         };
       });
-
-    return dbExplore.length > 0 ? dbExplore : fallbackExplore;
   }, [allCourses, initialEnrollments, modulesCountMap, lessonsCountMap]);
 
   // Filter explore courses
@@ -310,6 +219,17 @@ export function CoursesClient({
       {/* 2. Horizontal Navigation Tabs */}
       <div className="border-b border-slate-200 flex items-center gap-6 sm:gap-7 overflow-x-auto text-xs sm:text-sm font-semibold text-slate-500 pb-2">
         <button
+          onClick={() => setActiveTab("all")}
+          className={`pb-2 -mb-[10px] transition-all cursor-pointer whitespace-nowrap ${
+            activeTab === "all"
+              ? "text-blue-600 font-bold border-b-2 border-blue-600"
+              : "text-slate-600 font-medium hover:text-slate-900 border-b-2 border-transparent"
+          }`}
+        >
+          All Courses ({totalAllCount})
+        </button>
+
+        <button
           onClick={() => setActiveTab("enrolled")}
           className={`pb-2 -mb-[10px] transition-all cursor-pointer whitespace-nowrap ${
             activeTab === "enrolled"
@@ -329,17 +249,6 @@ export function CoursesClient({
           }`}
         >
           Available Courses ({exploreCoursesCatalog.length})
-        </button>
-
-        <button
-          onClick={() => setActiveTab("all")}
-          className={`pb-2 -mb-[10px] transition-all cursor-pointer whitespace-nowrap ${
-            activeTab === "all"
-              ? "text-blue-600 font-bold border-b-2 border-blue-600"
-              : "text-slate-600 font-medium hover:text-slate-900 border-b-2 border-transparent"
-          }`}
-        >
-          All Courses ({totalAllCount})
         </button>
       </div>
 
@@ -488,14 +397,16 @@ export function CoursesClient({
         </section>
       )}
 
-      {/* 4. Section: Explore More Courses */}
-      {(activeTab === "available" || activeTab === "all") && (
+      {/* 4. Section: Available Courses */}
+      {(activeTab === "available" || activeTab === "all" || activeTab === "enrolled") && (
         <section className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs space-y-3.5">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2.5">
             <div>
-              <h2 className="text-xs sm:text-sm font-bold text-slate-900">Explore More Courses</h2>
+              <h2 className="text-xs sm:text-sm font-bold text-slate-900">
+                Available Courses ({exploreCoursesCatalog.length})
+              </h2>
               <p className="text-[11px] text-slate-400 font-medium mt-0.5">
-                Discover new skills and upgrade your career with our popular courses.
+                Explore additional institute courses, syllabus & certifications to expand your skills.
               </p>
             </div>
 
@@ -552,107 +463,117 @@ export function CoursesClient({
           </div>
 
           {/* Explore Courses Cards Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-            {filteredExploreCourses.map((course) => (
-              <div
-                key={course.id}
-                className="bg-white rounded-xl border border-slate-200/80 hover:border-slate-300 p-3.5 space-y-3 shadow-2xs transition-all hover:shadow-xs flex flex-col justify-between"
-              >
-                <div className="space-y-2.5">
-                  {/* Top: Icon + Badges */}
-                  <div className="flex items-start justify-between gap-2">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-2xs ${course.iconBg}`}>
-                      {course.iconType === "cap" && <GraduationCap size={20} />}
-                      {course.iconType === "html" && <Code2 size={20} />}
-                      {course.iconType === "python" && <Code2 size={20} />}
-                      {course.iconType === "shield" && <ShieldCheck size={20} />}
+          {filteredExploreCourses.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+              {filteredExploreCourses.map((course) => (
+                <div
+                  key={course.id}
+                  className="bg-white rounded-xl border border-slate-200/80 hover:border-slate-300 p-3.5 space-y-3 shadow-2xs transition-all hover:shadow-xs flex flex-col justify-between"
+                >
+                  <div className="space-y-2.5">
+                    {/* Top: Icon + Badges */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-2xs ${course.iconBg}`}>
+                        {course.iconType === "cap" && <GraduationCap size={20} />}
+                        {course.iconType === "html" && <Code2 size={20} />}
+                        {course.iconType === "python" && <Code2 size={20} />}
+                        {course.iconType === "shield" && <ShieldCheck size={20} />}
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        {course.isPopular && (
+                          <span className="text-[9px] font-bold text-amber-700 bg-amber-50 border border-amber-200/70 px-1.5 py-0.5 rounded">
+                            Popular
+                          </span>
+                        )}
+                        {course.isNew && (
+                          <span className="text-[9px] font-bold text-sky-700 bg-sky-50 border border-sky-200/70 px-1.5 py-0.5 rounded">
+                            New
+                          </span>
+                        )}
+                        <span className="text-[9px] font-bold text-rose-600 bg-rose-50 border border-rose-100 px-1.5 py-0.5 rounded">
+                          {course.isPaid ? "Paid" : "Free"}
+                        </span>
+                      </div>
                     </div>
 
-                    <div className="flex items-center gap-1">
-                      {course.isPopular && (
-                        <span className="text-[9px] font-bold text-amber-700 bg-amber-50 border border-amber-200/70 px-1.5 py-0.5 rounded">
-                          Popular
-                        </span>
-                      )}
-                      {course.isNew && (
-                        <span className="text-[9px] font-bold text-sky-700 bg-sky-50 border border-sky-200/70 px-1.5 py-0.5 rounded">
-                          New
-                        </span>
-                      )}
-                      <span className="text-[9px] font-bold text-rose-600 bg-rose-50 border border-rose-100 px-1.5 py-0.5 rounded">
-                        {course.isPaid ? "Paid" : "Free"}
+                    {/* Title & Subtitle */}
+                    <div>
+                      <h3 className="text-xs sm:text-sm font-bold text-slate-900 leading-snug">
+                        {course.title}
+                      </h3>
+                      <p className="text-[10px] text-slate-400 font-medium mt-0.5 line-clamp-2">
+                        {course.subtitle}
+                      </p>
+                    </div>
+
+                    {/* Meta: Duration, Modules, Lessons */}
+                    <div className="flex items-center justify-between text-[10px] font-medium text-slate-500 pt-1 border-t border-slate-100/80">
+                      <span className="flex items-center gap-0.5">
+                        <Clock size={10} className="text-blue-600" />
+                        <span>{course.duration}</span>
+                      </span>
+                      <span className="flex items-center gap-0.5">
+                        <BookOpen size={10} className="text-blue-600" />
+                        <span>{course.modules} Modules</span>
+                      </span>
+                      <span className="flex items-center gap-0.5">
+                        <FileText size={10} className="text-blue-600" />
+                        <span>{course.lessons}+ Lessons</span>
+                      </span>
+                    </div>
+
+                    {/* Key Features List */}
+                    <div className="space-y-1 pt-1">
+                      {course.features.map((feat: string, fIdx: number) => (
+                        <div key={fIdx} className="flex items-center gap-1.5 text-[10px] text-slate-600 font-medium">
+                          <Check size={11} className="text-emerald-500 shrink-0" />
+                          <span className="truncate">{feat}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Pricing row */}
+                    <div className="flex items-baseline gap-1.5 pt-1">
+                      <span className="text-sm font-black text-slate-900">{course.price}</span>
+                      <span className="text-[10px] text-slate-400 line-through font-medium">{course.originalPrice}</span>
+                      <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.2 rounded">
+                        {course.discount}
                       </span>
                     </div>
                   </div>
 
-                  {/* Title & Subtitle */}
-                  <div>
-                    <h3 className="text-xs sm:text-sm font-bold text-slate-900 leading-snug">
-                      {course.title}
-                    </h3>
-                    <p className="text-[10px] text-slate-400 font-medium mt-0.5 line-clamp-2">
-                      {course.subtitle}
-                    </p>
-                  </div>
+                  {/* Bottom Action Buttons: Buy Now & View Details */}
+                  <div className="grid grid-cols-2 gap-1.5 pt-2 border-t border-slate-100/80">
+                    <button 
+                      onClick={() => {
+                        alert(`Enrollment / Payment inquiry for ${course.title} submitted. Institute admin will verify.`);
+                      }}
+                      className="w-full bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold py-1.5 px-2 rounded-lg text-xs transition-all flex items-center justify-center gap-1 shadow-2xs cursor-pointer"
+                    >
+                      <ShoppingBag size={11} />
+                      <span>Buy Now</span>
+                    </button>
 
-                  {/* Meta: Duration, Modules, Lessons */}
-                  <div className="flex items-center justify-between text-[10px] font-medium text-slate-500 pt-1 border-t border-slate-100/80">
-                    <span className="flex items-center gap-0.5">
-                      <Clock size={10} className="text-blue-600" />
-                      <span>{course.duration}</span>
-                    </span>
-                    <span className="flex items-center gap-0.5">
-                      <BookOpen size={10} className="text-blue-600" />
-                      <span>{course.modules} Modules</span>
-                    </span>
-                    <span className="flex items-center gap-0.5">
-                      <FileText size={10} className="text-blue-600" />
-                      <span>{course.lessons}+ Lessons</span>
-                    </span>
-                  </div>
-
-                  {/* Key Features List */}
-                  <div className="space-y-1 pt-1">
-                    {course.features.map((feat: string, fIdx: number) => (
-                      <div key={fIdx} className="flex items-center gap-1.5 text-[10px] text-slate-600 font-medium">
-                        <Check size={11} className="text-emerald-500 shrink-0" />
-                        <span className="truncate">{feat}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Pricing row */}
-                  <div className="flex items-baseline gap-1.5 pt-1">
-                    <span className="text-sm font-black text-slate-900">{course.price}</span>
-                    <span className="text-[10px] text-slate-400 line-through font-medium">{course.originalPrice}</span>
-                    <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.2 rounded">
-                      {course.discount}
-                    </span>
+                    <Link
+                      href={`/curriculum?course=${course.id}&tab=syllabus`}
+                      className="w-full bg-slate-50 hover:bg-slate-100 active:scale-95 text-slate-700 border border-slate-200/80 font-bold py-1.5 px-2 rounded-lg text-xs transition-all flex items-center justify-center text-center"
+                    >
+                      <span>View Details</span>
+                    </Link>
                   </div>
                 </div>
-
-                {/* Bottom Action Buttons: Buy Now & View Details */}
-                <div className="grid grid-cols-2 gap-1.5 pt-2 border-t border-slate-100/80">
-                  <button 
-                    onClick={() => {
-                      alert(`Enrollment / Payment inquiry for ${course.title} submitted. Institute admin will verify.`);
-                    }}
-                    className="w-full bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold py-1.5 px-2 rounded-lg text-xs transition-all flex items-center justify-center gap-1 shadow-2xs cursor-pointer"
-                  >
-                    <ShoppingBag size={11} />
-                    <span>Buy Now</span>
-                  </button>
-
-                  <Link
-                    href={`/curriculum?course=${course.id}&tab=syllabus`}
-                    className="w-full bg-slate-50 hover:bg-slate-100 active:scale-95 text-slate-700 border border-slate-200/80 font-bold py-1.5 px-2 rounded-lg text-xs transition-all flex items-center justify-center text-center"
-                  >
-                    <span>View Details</span>
-                  </Link>
-                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="py-8 text-center space-y-1.5">
+              <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-300 mx-auto">
+                <BookOpen size={20} />
               </div>
-            ))}
-          </div>
+              <p className="text-xs font-semibold text-slate-700">No additional courses available</p>
+              <p className="text-[11px] text-slate-400">You are enrolled in all available courses or matching your search criteria.</p>
+            </div>
+          )}
         </section>
       )}
     </div>

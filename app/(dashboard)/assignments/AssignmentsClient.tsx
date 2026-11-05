@@ -23,6 +23,7 @@ import {
   Presentation
 } from "lucide-react";
 import { createClient as createPublicSupabaseClient } from "@/lib/supabase-browser";
+import { notifyAdminOnSubmission } from "@/app/actions/submissions";
 
 const getCategoryConfig = (category: string = "") => {
   const cat = category.toLowerCase().trim();
@@ -349,6 +350,18 @@ export default function AssignmentsClient({
           ...prev.filter(s => s.assignment_id !== activeAssignment.id),
           { assignment_id: activeAssignment.id, student_id: studentId, content_url: contentString, status }
         ]);
+      }
+
+      // Notify Admins
+      try {
+        notifyAdminOnSubmission({
+          studentId,
+          assignmentTitle: activeAssignment.title || "Project",
+          assignmentId: activeAssignment.source !== "lesson" ? activeAssignment.id : undefined,
+          lessonId: activeAssignment.source === "lesson" ? activeAssignment.id : undefined,
+        });
+      } catch (notifyErr) {
+        console.warn("Could not dispatch admin notification:", notifyErr);
       }
 
       setIsSubmittingModal(false);

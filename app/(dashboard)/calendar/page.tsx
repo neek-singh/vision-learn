@@ -38,9 +38,18 @@ async function CalendarContent({ userId }: { userId: string }) {
   const courseTitle = enrollments[0]?.courses?.title || "Web Development";
 
   // 2. Fetch Events and Schedules in parallel
+  let schedulesQuery = supabase
+    .from("schedules")
+    .select("*, courses(title)")
+    .order("date", { ascending: true });
+
+  if (courseIds.length > 0) {
+    schedulesQuery = schedulesQuery.in("course_id", courseIds);
+  }
+
   const [eventsRes, schedulesRes] = await Promise.all([
     supabase.from("events").select("*, courses(title)").order("event_date", { ascending: true }),
-    supabase.from("schedules").select("*, courses(title)").in("course_id", courseIds)
+    schedulesQuery
   ]);
 
   const events = eventsRes.data || [];

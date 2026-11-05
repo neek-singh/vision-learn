@@ -16,8 +16,8 @@ export default async function DashboardPage() {
   const userId = payload.id;
   const supabase = createPublicSupabaseClient();
 
-  // 1. Fetch Student Info, Enrollments, and Progress Records in parallel
-  const [studentRes, enrollmentsRes, progressRes, notificationsRes] = await Promise.all([
+  // 1. Fetch Student Info, Enrollments, Progress Records, Attendance, Test Results, and Modules in parallel
+  const [studentRes, enrollmentsRes, progressRes, notificationsRes, attendanceRes, testResultsRes, allModulesRes] = await Promise.all([
     supabase.from("students").select("*").eq("id", userId).single(),
     supabase.from("enrollments").select(`
       id,
@@ -30,13 +30,66 @@ export default async function DashboardPage() {
     supabase.from("user_notifications").select(`
       id,
       notifications (title, message)
-    `).eq("user_id", userId).eq("is_read", false).order("created_at", { ascending: false }).limit(1)
+    `).eq("user_id", userId).eq("is_read", false).order("created_at", { ascending: false }).limit(1),
+    supabase.from("attendance").select("status, date").eq("student_id", userId),
+    supabase.from("test_results").select("id, score, passed, created_at, tests(title)").eq("student_id", userId),
+    supabase.from("lms_modules").select(`id, course_id, title, order_index, batches, lessons (id, title, order_index, type, lesson_type, batches)`).order("order_index")
   ]);
 
   const student = studentRes.data;
   const enrollments = enrollmentsRes.data || [];
   const progressRecords = progressRes.data || [];
   const notifications = notificationsRes.data || [];
+  const attendanceRows = attendanceRes.data || [];
+  const testResultsRows = testResultsRes.data || [];
+  const allFetchedModules = allModulesRes.data || [];
+
+  const completedLessonIds = new Set(progressRecords.map((p: any) => p.lesson_id));
+
+  // Map module lessons per course
+  const courseLessonsMap: Record<string, any[]> = {};
+  const courseLessonIdsMap: Record<string, string[]> = {};
+  allFetchedModules.forEach((m: any) => {
+    if (m.course_id) {
+      if (!courseLessonsMap[m.course_id]) courseLessonsMap[m.course_id] = [];
+      if (!courseLessonIdsMap[m.course_id]) courseLessonIdsMap[m.course_id] = [];
+      (m.lessons || []).forEach((l: any) => {
+        courseLessonsMap[m.course_id].push(l);
+        courseLessonIdsMap[m.course_id].push(l.id);
+      });
+    }
+  });
+
+  // Real enrolled courses list with live calculated progress
+  const enrolledCourses = enrollments.map((e: any) => {
+    const lessonIds = courseLessonIdsMap[e.course_id] || [];
+    const total = lessonIds.length;
+    const completed = lessonIds.filter(id => completedLessonIds.has(id)).length;
+    const progress = total > 0 ? Math.round((completed / total) * 100) : (e.progress_percentage || 0);
+    return {
+      id: e.courses?.id || e.course_id,
+      title: e.courses?.title || "Enrolled Course",
+      code: e.courses?.course_code || "",
+      totalLessons: total,
+      completedLessons: completed,
+      progress: Math.min(100, Math.max(0, progress))
+    };
+  });
+
+  // Compute real attendance metrics
+  const totalAttendance = attendanceRows.length;
+  const presentAttendance = attendanceRows.filter((r: any) => {
+    const s = (r.status || "").toLowerCase();
+    return s === "present" || s === "late";
+  }).length;
+  const attendancePercentage = totalAttendance > 0
+    ? Math.round((presentAttendance / totalAttendance) * 100)
+    : 0;
+
+  // Compute real certificates count (courses >= 100% or tests passed >= 70%)
+  const completedCourseCertificates = enrolledCourses.filter((c: any) => c.progress >= 100).length;
+  const passedTestsCertificates = testResultsRows.filter((r: any) => (r.score || 0) >= 70 || r.passed).length;
+  const certificatesCount = completedCourseCertificates + passedTestsCertificates;
 
   const mainEnrollment = enrollments[0];
   const mainCourse = mainEnrollment?.courses;
@@ -58,6 +111,7 @@ export default async function DashboardPage() {
   let totalLessonsCount = 0;
   let progressPercentage = 0;
   let remainingCount = 0;
+  let recentAssignments: any[] = [];
 
   // 3. Find next available lesson (scheduled/unscheduled)
   let nextLesson: any = null;
@@ -70,22 +124,48 @@ export default async function DashboardPage() {
     const activeBatch = (student?.batch || mainEnrollment?.batch)?.trim().toLowerCase();
     let activeBatchId: string | null = null;
     const courseIds = enrollments.map(e => e.course_id).filter(Boolean);
-    const [modulesRes, schedulesRes, batchesRes, lessonsRes, assignmentsRes, submissionsRes] = await Promise.all([
-      supabase.from("lms_modules").select(`id, title, order_index, batches, lessons (id, title, order_index, type, batches)`).eq("course_id", mainEnrollment.course_id).order("order_index"),
+    const [schedulesRes, batchesRes, assignmentsRes, submissionsRes] = await Promise.all([
       supabase.from("schedules").select("title, batch, type, date, start_time").eq("course_id", mainEnrollment.course_id),
       supabase.from("batches").select("id, title, timing").eq("course_id", mainEnrollment.course_id),
-      supabase.from("lessons").select("id, title, type, lesson_type").eq("course_id", mainEnrollment.course_id),
       supabase.from("assignments").select("*, assignment_courses!inner(course_id)").in("assignment_courses.course_id", courseIds).eq("is_published", true),
       supabase.from("submissions").select("assignment_id, status").eq("student_id", userId).eq("status", "submitted")
     ]);
 
-    const modules = modulesRes.data || [];
+    const modules = allFetchedModules.filter((m: any) => m.course_id === mainEnrollment.course_id);
     const schedules = schedulesRes.data || [];
     const batches = batchesRes.data || [];
-    const rawLessons = lessonsRes.data || [];
     const rawAssignments = assignmentsRes.data || [];
     const rawSubmissions = submissionsRes.data || [];
 
+    const mainCourseLessons = courseLessonsMap[mainEnrollment.course_id] || [];
+
+    const getFormatType = (l: any) => {
+      return (l.lesson_type || l.type || 'video').toLowerCase();
+    };
+
+    classLessons = mainCourseLessons.filter(l => {
+      const t = getFormatType(l);
+      return t === 'video' || t === 'notes' || t === 'article' || t === 'document';
+    });
+    quizLessons = mainCourseLessons.filter(l => getFormatType(l) === 'mcq' || getFormatType(l) === 'quiz');
+    assignmentLessons = mainCourseLessons.filter(l => getFormatType(l) === 'assignment');
+    projectLessons = mainCourseLessons.filter(l => getFormatType(l) === 'project');
+
+    completedClasses = classLessons.filter(l => completedLessonIds.has(l.id));
+    completedQuizzes = quizLessons.filter(l => completedLessonIds.has(l.id));
+    completedAssignments = assignmentLessons.filter(l => completedLessonIds.has(l.id));
+    completedProjects = projectLessons.filter(l => completedLessonIds.has(l.id));
+
+    // Dynamic, verified progress calculation for active course
+    const activeCourseLessonList = classLessons.length > 0 ? classLessons : mainCourseLessons;
+    const activeCompletedList = classLessons.length > 0 ? completedClasses : mainCourseLessons.filter(l => completedLessonIds.has(l.id));
+
+    completedCount = activeCompletedList.length;
+    totalLessonsCount = activeCourseLessonList.length;
+    progressPercentage = totalLessonsCount > 0
+      ? Math.round((completedCount / totalLessonsCount) * 100)
+      : 0;
+    remainingCount = Math.max(0, totalLessonsCount - completedCount);
     if (activeBatch) {
       const match = batches.find((b: any) => {
         const title = b.title?.trim().toLowerCase();
@@ -108,42 +188,6 @@ export default async function DashboardPage() {
     };
     const normalizedActiveBatch = activeBatch?.trim().toLowerCase();
 
-    // Filter course lessons by student's batch schedules
-    allLessons = rawLessons.filter((l: any) => {
-      const lTitle = normalize(l.title || '');
-      const lessonSchedules = schedules.filter((s: any) => {
-        const sTitle = s.title || '';
-        const parts = sTitle.split(':');
-        const lessonPart = parts[parts.length - 1].trim();
-        return normalize(lessonPart) === lTitle && isScheduleTypeMatch(s, l);
-      });
-
-      const hasScheduleForMyBatch = lessonSchedules.some((s: any) => {
-        const sBatch = s.batch?.trim().toLowerCase();
-        return !sBatch || sBatch === "all batches" || sBatch === "all" || !normalizedActiveBatch || sBatch === normalizedActiveBatch;
-      });
-      return hasScheduleForMyBatch;
-    });
-
-    const getFormatType = (l: any) => {
-      return (l.lesson_type || l.type || 'video').toLowerCase();
-    };
-
-    classLessons = allLessons.filter(l => {
-      const t = getFormatType(l);
-      return t === 'video' || t === 'notes' || t === 'article' || t === 'document';
-    });
-    quizLessons = allLessons.filter(l => getFormatType(l) === 'mcq');
-    assignmentLessons = allLessons.filter(l => getFormatType(l) === 'assignment');
-    projectLessons = allLessons.filter(l => getFormatType(l) === 'project');
-
-    const completedIds = progressRecords.map(p => p.lesson_id);
-
-    completedClasses = classLessons.filter(l => completedIds.includes(l.id));
-    completedQuizzes = quizLessons.filter(l => completedIds.includes(l.id));
-    completedAssignments = assignmentLessons.filter(l => completedIds.includes(l.id));
-    completedProjects = projectLessons.filter(l => completedIds.includes(l.id));
-
     // Calculate traditional project counts from assignments table
     const filteredTraditionalAssignments = (rawAssignments || []).filter((a: any) => {
       if (a.batches && a.batches.length > 0) {
@@ -164,12 +208,16 @@ export default async function DashboardPage() {
     const submittedTraditionalIds = (rawSubmissions || []).map((s: any) => s.assignment_id);
     completedProjectsCount = filteredTraditionalAssignments.filter((a: any) => submittedTraditionalIds.includes(a.id)).length;
 
-    completedCount = completedClasses.length;
-    totalLessonsCount = classLessons.length;
-    progressPercentage = totalLessonsCount > 0
-      ? Math.round((completedCount / totalLessonsCount) * 100)
-      : 0;
-    remainingCount = Math.max(0, totalLessonsCount - completedCount);
+    recentAssignments = filteredTraditionalAssignments.slice(0, 4).map((a: any) => {
+      const isSubmitted = submittedTraditionalIds.includes(a.id);
+      return {
+        id: a.id,
+        title: a.title,
+        module: a.assignment_courses?.[0]?.courses?.title || "Assignment",
+        status: isSubmitted ? "submitted" : "pending",
+        dueDate: a.due_date || a.end_date || a.deadline || null
+      };
+    });
 
     const now = new Date();
 
@@ -213,7 +261,7 @@ export default async function DashboardPage() {
     for (const module of allModulesWithLessons) {
       const lessons = (module.lessons || []).sort((a: any, b: any) => a.order_index - b.order_index);
       for (const lesson of lessons) {
-        if (completedIds.includes(lesson.id)) continue;
+        if (completedLessonIds.has(lesson.id)) continue;
 
         const mTitle = normalize(module.title);
         const lTitle = normalize(lesson.title);
@@ -371,7 +419,7 @@ export default async function DashboardPage() {
         const date = new Date(dateStr);
         const diffTime = Math.abs(currentDate.getTime() - date.getTime());
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
+
         if (diffDays <= 1) {
           streak++;
           currentDate = date;
@@ -392,7 +440,7 @@ export default async function DashboardPage() {
 
   const progressHistory = past7Days.map(day => {
     const dayStr = day.toDateString();
-    const count = progressRecords.filter(r => 
+    const count = progressRecords.filter(r =>
       r.last_watched_at && new Date(r.last_watched_at).toDateString() === dayStr
     ).length || 0;
     return {
@@ -412,6 +460,14 @@ export default async function DashboardPage() {
       student={student ? { ...student, batchTiming } : null}
       mainCourse={mainCourse}
       otherCourses={otherCourses}
+      enrolledCourses={enrolledCourses}
+      recentAssignments={recentAssignments}
+      attendanceStats={{
+        total: totalAttendance,
+        present: presentAttendance,
+        percentage: attendancePercentage
+      }}
+      certificatesCount={certificatesCount}
       stats={{
         completedCount,
         totalLessonsCount,
