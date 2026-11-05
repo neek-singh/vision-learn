@@ -32,11 +32,33 @@ export function PWARegistration() {
               });
             }
           });
+          // Pre-warm the offline cache with critical student pages
+          if ("caches" in window) {
+            caches.open("app-pages").then((cache) => {
+              cache.addAll([
+                "/dashboard",
+                "/courses",
+                "/attendance",
+                "/fees",
+                "/tests",
+                "/offline"
+              ]).catch(() => {});
+            });
+          }
         })
         .catch(function (err) {
           console.log("Service Worker registration failed: ", err);
         });
     }
+
+    const handleOnline = () => {
+      // Broadcast online event so components can revalidate
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("vision_online_reconnected"));
+      }
+    };
+    window.addEventListener("online", handleOnline);
+    return () => window.removeEventListener("online", handleOnline);
   }, []);
 
   // Completely removed the "Naya Update Available!" banner UI

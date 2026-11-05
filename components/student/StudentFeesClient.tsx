@@ -30,16 +30,18 @@ export function StudentFeesClient({ fee: initialFee }: { fee: any }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterMode, setFilterMode] = useState("all");
 
-  // Read from offline cache if initialFee is missing (offline cold launch)
-  const [fee, setFee] = useState<any>(() => {
-    return initialFee || getOfflineData<any>(OFFLINE_KEYS.FEES);
-  });
+  // Safe offline hydration inside useEffect to prevent React 19 hydration mismatch
+  const [fee, setFee] = useState<any>(initialFee || null);
 
-  // Auto-cache fee record when valid server data is provided
   useEffect(() => {
     if (initialFee) {
       setFee(initialFee);
       saveOfflineData(OFFLINE_KEYS.FEES, initialFee);
+    } else {
+      const cached = getOfflineData<any>(OFFLINE_KEYS.FEES);
+      if (cached) {
+        setFee(cached);
+      }
     }
   }, [initialFee]);
 

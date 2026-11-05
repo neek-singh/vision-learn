@@ -74,13 +74,17 @@ export default function DashboardClient({
   upcomingEvents: initialUpcomingEvents = [],
   recentActivities: initialRecentActivities = []
 }: DashboardClientProps) {
-  // Check cached offline data if initial props are missing
-  const [cachedData] = useState(() => {
+  // Safe offline hydration inside useEffect to prevent React 19 hydration mismatch
+  const [cachedData, setCachedData] = useState<any>(null);
+
+  useEffect(() => {
     if (!initialStudent) {
-      return getOfflineData<any>(OFFLINE_KEYS.DASHBOARD);
+      const cached = getOfflineData<any>(OFFLINE_KEYS.DASHBOARD);
+      if (cached) {
+        setCachedData(cached);
+      }
     }
-    return null;
-  });
+  }, [initialStudent]);
 
   const student = initialStudent || cachedData?.student;
   const mainCourse = initialMainCourse || cachedData?.mainCourse;

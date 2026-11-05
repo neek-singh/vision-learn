@@ -163,9 +163,48 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isClassesSubmenuOpen, setIsClassesSubmenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [student, setStudent] = useState<any>(() => getOfflineData(OFFLINE_KEYS.PROFILE));
+  const [student, setStudent] = useState<any>(null);
   const supabase = createClient();
   const { permission, requestPermission } = usePushNotifications(student?.id);
+
+  // Auto-refresh when internet is restored so user never has to manually refresh
+  useEffect(() => {
+    const handleReconnected = () => {
+      router.refresh();
+    };
+
+    window.addEventListener("online", handleReconnected);
+    window.addEventListener("vision_online_reconnected", handleReconnected);
+    return () => {
+      window.removeEventListener("online", handleReconnected);
+      window.removeEventListener("vision_online_reconnected", handleReconnected);
+    };
+  }, [router]);
+
+  // Pre-warm offline cache with authenticated student pages so cold offline launch is instant
+  useEffect(() => {
+    if (typeof window !== "undefined" && "caches" in window && navigator.onLine) {
+      caches.open("app-pages").then((cache) => {
+        cache.addAll([
+          "/dashboard",
+          "/courses",
+          "/attendance",
+          "/fees",
+          "/tests",
+          "/curriculum",
+          "/offline"
+        ]).catch(() => {});
+      });
+    }
+  }, []);
+
+  // Safe client-side offline hydration (prevents React 19 hydration mismatch)
+  useEffect(() => {
+    const cached = getOfflineData<any>(OFFLINE_KEYS.PROFILE);
+    if (cached) {
+      setStudent(cached);
+    }
+  }, []);
 
   // Auto-request permission on first login if not denied
   useEffect(() => {

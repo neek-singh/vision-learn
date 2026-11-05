@@ -54,13 +54,17 @@ export default function StudentAttendanceClient({
   const [currentMonth, setCurrentMonth] = useState(now.getMonth());
   const [currentYear, setCurrentYear] = useState(now.getFullYear());
 
-  // Cached fallback if initial records are empty (e.g. offline cold launch)
-  const [cachedData] = useState(() => {
+  // Safe offline hydration inside useEffect to prevent React 19 hydration mismatch
+  const [cachedData, setCachedData] = useState<any>(null);
+
+  useEffect(() => {
     if (!propRecords || propRecords.length === 0) {
-      return getOfflineData<any>(OFFLINE_KEYS.ATTENDANCE);
+      const cached = getOfflineData<any>(OFFLINE_KEYS.ATTENDANCE);
+      if (cached) {
+        setCachedData(cached);
+      }
     }
-    return null;
-  });
+  }, [propRecords]);
 
   const initialRecords = (propRecords && propRecords.length > 0) ? propRecords : (cachedData?.records || []);
   const courseTitle = propCourseTitle !== "My Course" ? propCourseTitle : (cachedData?.courseTitle || propCourseTitle);

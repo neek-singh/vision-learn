@@ -203,13 +203,17 @@ export function CurriculumClient({
   const courseId = initialCourseId || propModules[0]?.course_id || "default";
   const courseKey = OFFLINE_KEYS.CURRICULUM_PREFIX + courseId;
 
-  // Cached fallback if initialModules is empty
-  const [cachedCurriculum] = useState(() => {
+  // Safe offline hydration inside useEffect to prevent React 19 hydration mismatch
+  const [cachedCurriculum, setCachedCurriculum] = useState<any>(null);
+
+  useEffect(() => {
     if (!propModules || propModules.length === 0) {
-      return getOfflineData<any>(courseKey);
+      const cached = getOfflineData<any>(courseKey);
+      if (cached) {
+        setCachedCurriculum(cached);
+      }
     }
-    return null;
-  });
+  }, [courseKey, propModules]);
 
   const initialModules = (propModules && propModules.length > 0) ? propModules : (cachedCurriculum?.modules || []);
   const initialProgress = (propProgress && propProgress.length > 0) ? propProgress : (cachedCurriculum?.progress || []);

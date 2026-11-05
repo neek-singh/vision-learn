@@ -141,13 +141,17 @@ export default function TestsClient({
   initialCompletedLessons?: string[],
   courseTitle?: string
 }) {
-  // Offline cache fallback if initialTests is empty
-  const [cachedData] = useState(() => {
+  // Safe offline hydration inside useEffect to prevent React 19 hydration mismatch
+  const [cachedData, setCachedData] = useState<any>(null);
+
+  useEffect(() => {
     if (!propTests || propTests.length === 0) {
-      return getOfflineData<any>(OFFLINE_KEYS.TESTS);
+      const cached = getOfflineData<any>(OFFLINE_KEYS.TESTS);
+      if (cached) {
+        setCachedData(cached);
+      }
     }
-    return null;
-  });
+  }, [propTests]);
 
   const initialTests = (propTests && propTests.length > 0) ? propTests : (cachedData?.initialTests || []);
   const modules = (propModules && propModules.length > 0) ? propModules : (cachedData?.modules || []);

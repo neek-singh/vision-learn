@@ -41,13 +41,17 @@ export function CoursesClient({
   const [exploreFilter, setExploreFilter] = useState<"all" | "free" | "paid" | "popular">("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Cached fallback if initial enrollments are empty (offline cold launch)
-  const [cachedData] = useState(() => {
+  // Safe offline hydration inside useEffect to prevent React 19 hydration mismatch
+  const [cachedData, setCachedData] = useState<any>(null);
+
+  useEffect(() => {
     if (!propEnrollments || propEnrollments.length === 0) {
-      return getOfflineData<any>(OFFLINE_KEYS.COURSES);
+      const cached = getOfflineData<any>(OFFLINE_KEYS.COURSES);
+      if (cached) {
+        setCachedData(cached);
+      }
     }
-    return null;
-  });
+  }, [propEnrollments]);
 
   const initialEnrollments: any[] = (propEnrollments && propEnrollments.length > 0) ? propEnrollments : (cachedData?.initialEnrollments || []);
   const allCourses: any[] = (propAllCourses && propAllCourses.length > 0) ? propAllCourses : (cachedData?.allCourses || []);
