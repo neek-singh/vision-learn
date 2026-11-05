@@ -34,11 +34,11 @@ export default function OfflinePage() {
             </button>
             
             <Link
-              href="/"
+              href="/dashboard"
               className="w-full flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 px-6 rounded-xl transition-all"
             >
               <Home className="w-5 h-5" />
-              Back to Home
+              Open Saved Dashboard
             </Link>
           </div>
         </div>
