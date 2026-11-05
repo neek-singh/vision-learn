@@ -64,7 +64,7 @@ const withPWA = require('next-pwa')({
       handler: 'NetworkFirst',
       options: {
         cacheName: 'api-responses',
-        networkTimeoutSeconds: 5,
+        networkTimeoutSeconds: 3,
         expiration: {
           maxEntries: 100,
           maxAgeSeconds: 60 * 60 * 24 // 24 hours
@@ -78,13 +78,26 @@ const withPWA = require('next-pwa')({
       }
     },
     {
-      urlPattern: /^\/(?:dashboard|courses|lessons|curriculum|materials|offline|login|$)(?:\/.*)?$/i,
+      urlPattern: /^\/(?:dashboard|courses|lessons|curriculum|materials|tests|attendance|fees|calendar|certificates|settings|notifications|profile|offline|login|$)(?:\/.*)?$/i,
       handler: 'NetworkFirst',
       options: {
         cacheName: 'app-pages',
-        networkTimeoutSeconds: 10,
+        networkTimeoutSeconds: 3,
         expiration: {
           maxEntries: 100,
+          maxAgeSeconds: 60 * 60 * 24 // 24 hours
+        }
+      }
+    },
+    {
+      // RSC Payload Caching for seamless client-side navigation in Next.js App Router
+      urlPattern: /\/_next\/data\/.+\.json$|.*_rsc=.*/i,
+      handler: 'NetworkFirst',
+      options: {
+        cacheName: 'next-rsc-payloads',
+        networkTimeoutSeconds: 3,
+        expiration: {
+          maxEntries: 150,
           maxAgeSeconds: 60 * 60 * 24 // 24 hours
         }
       }
