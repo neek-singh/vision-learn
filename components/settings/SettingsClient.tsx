@@ -19,16 +19,13 @@ import {
   Zap, 
   Lock, 
   Download, 
-  Power, 
-  Trash2, 
   Check, 
   AlertCircle,
   Share2,
   Bell,
   Globe,
   SlidersHorizontal,
-  KeyRound,
-  ShieldAlert
+  KeyRound
 } from "lucide-react";
 
 const settingsNavItems = [
@@ -84,8 +81,6 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
 
   // Modal States
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [showDeactivateModal, setShowDeactivateModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [passwordState, setPasswordState] = useState({ current: "", newPass: "", confirm: "" });
   const [passwordSuccess, setPasswordSuccess] = useState(false);
 
@@ -629,50 +624,6 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
                 </div>
                 <ChevronRight size={14} className="text-slate-400 group-hover:text-blue-600 transition-colors shrink-0" />
               </button>
-
-              {/* 3. Deactivate Account */}
-              <button
-                type="button"
-                onClick={() => setShowDeactivateModal(true)}
-                className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-rose-50/50 border border-transparent hover:border-rose-100 transition-all text-left group"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-8 h-8 rounded-lg bg-rose-50 text-rose-500 border border-rose-100 flex items-center justify-center shrink-0">
-                    <Power size={15} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-slate-800 group-hover:text-rose-600 transition-colors truncate">
-                      Deactivate Account
-                    </p>
-                    <p className="text-[10px] text-slate-400 truncate">
-                      Temporarily deactivate your account
-                    </p>
-                  </div>
-                </div>
-                <ChevronRight size={14} className="text-slate-400 group-hover:text-rose-600 transition-colors shrink-0" />
-              </button>
-
-              {/* 4. Delete Account */}
-              <button
-                type="button"
-                onClick={() => setShowDeleteModal(true)}
-                className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-rose-50/50 border border-transparent hover:border-rose-100 transition-all text-left group"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-8 h-8 rounded-lg bg-rose-50 text-rose-500 border border-rose-100 flex items-center justify-center shrink-0">
-                    <Trash2 size={15} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-slate-800 group-hover:text-rose-600 transition-colors truncate">
-                      Delete Account
-                    </p>
-                    <p className="text-[10px] text-slate-400 truncate">
-                      Permanently delete your account
-                    </p>
-                  </div>
-                </div>
-                <ChevronRight size={14} className="text-slate-400 group-hover:text-rose-600 transition-colors shrink-0" />
-              </button>
             </div>
           </div>
 
@@ -887,82 +838,6 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
                 </div>
               </form>
             )}
-          </div>
-        </div>
-      )}
-
-      {/* MODAL 2: Deactivate Account Modal */}
-      {showDeactivateModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-md w-full p-6 space-y-4 animate-in zoom-in-95 duration-150">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-                <AlertCircle size={22} />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-slate-900">Deactivate Account?</h3>
-                <p className="text-xs text-slate-500 mt-1">
-                  Your profile and enrolled courses will be hidden temporarily. You can reactivate anytime by logging back in.
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => setShowDeactivateModal(false)}
-                className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-semibold hover:bg-slate-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  alert("Account deactivation requested.");
-                  setShowDeactivateModal(false);
-                }}
-                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-semibold transition-all shadow-xs"
-              >
-                Deactivate
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL 3: Delete Account Modal */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-md w-full p-6 space-y-4 animate-in zoom-in-95 duration-150">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
-                <ShieldAlert size={22} />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-slate-900">Delete Account Permanently?</h3>
-                <p className="text-xs text-slate-500 mt-1">
-                  This action is irreversible. All your course progress, test scores, certificates, and submissions will be deleted.
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => setShowDeleteModal(false)}
-                className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-semibold hover:bg-slate-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  alert("Please contact your institute admin to permanently delete your student record.");
-                  setShowDeleteModal(false);
-                }}
-                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold transition-all shadow-xs"
-              >
-                Delete Account
-              </button>
-            </div>
           </div>
         </div>
       )}
