@@ -3,7 +3,7 @@
   "name": "Vision Learn",
   "short_name": "VisionLearn",
   "description": "Premium Learning Management System for Vision IT Computer Institute students. Access courses, attendance, and tests offline.",
-  "start_url": "/",
+  "start_url": "/dashboard",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
@@ -40,7 +40,7 @@
   "shortcuts": [
     {
       "name": "My Courses",
-      "url": "/dashboard/courses",
+      "url": "/courses",
       "description": "View and manage your enrolled courses",
       "icons": [
         {
@@ -52,8 +52,20 @@
     },
     {
       "name": "Attendance",
-      "url": "/dashboard/attendance",
+      "url": "/attendance",
       "description": "Track your daily institute attendance",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "My Fees",
+      "url": "/fees",
+      "description": "Check fees breakdown and receipts",
       "icons": [
         {
           "src": "/icons/icon-192.png",
