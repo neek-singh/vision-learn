@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ShieldCheck, AlertCircle, Loader2, User, Lock, Eye, EyeOff } from "lucide-react";
 import Image from "next/image";
+import { clearAllOfflineData } from "@/lib/offline-store";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -32,6 +33,9 @@ export default function LoginPage() {
         setIsLoading(false);
         return;
       }
+
+      // Purge any residual offline data from previous student to prevent data bleed on shared devices
+      await clearAllOfflineData();
 
       router.push("/dashboard");
       router.refresh();

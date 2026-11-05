@@ -7,6 +7,8 @@ export async function POST(request: Request) {
   });
 
   response.cookies.delete("vision_learn_session");
+  // Instruct browser to wipe cached pages & HTTP cache for this origin on logout
+  response.headers.set("Clear-Site-Data", '"cache"');
 
   return response;
 }
@@ -18,6 +20,7 @@ export async function GET(request: Request) {
   });
 
   response.cookies.delete("vision_learn_session");
+  response.headers.set("Clear-Site-Data", '"cache"');
 
   return response;
 }

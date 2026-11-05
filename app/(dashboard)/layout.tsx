@@ -32,7 +32,7 @@ import {
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { SyncStatus } from "@/components/SyncStatus";
 import { GlobalSearch } from "@/components/GlobalSearch";
-import { getOfflineData, saveOfflineData, OFFLINE_KEYS } from "@/lib/offline-store";
+import { getOfflineData, saveOfflineData, OFFLINE_KEYS, handleStudentLogout } from "@/lib/offline-store";
 
 const sidebarLinks = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -164,8 +164,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isClassesSubmenuOpen, setIsClassesSubmenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [student, setStudent] = useState<any>(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const supabase = createClient();
   const { permission, requestPermission } = usePushNotifications(student?.id);
+
+  const onLogoutClick = async (e: React.MouseEvent | React.FormEvent) => {
+    e.preventDefault();
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    await handleStudentLogout();
+  };
 
   // Auto-refresh when internet is restored so user never has to manually refresh
   useEffect(() => {
@@ -182,6 +190,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [router]);
 
   // Pre-warm offline cache with authenticated student pages so cold offline launch is instant
+  // Strictly verifies !response.redirected so /login is never cached under /dashboard
   useEffect(() => {
     if (typeof window !== "undefined" && "caches" in window && navigator.onLine) {
       caches.open("app-pages").then((cache) => {
@@ -197,7 +206,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         pagesToWarm.forEach((url) => {
           fetch(url, { credentials: "same-origin" })
             .then((response) => {
-              if (response.ok) {
+              if (response.ok && !response.redirected && response.status === 200) {
                 cache.put(url, response);
               }
             })
@@ -431,13 +440,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </nav>
 
         <div className="p-3 border-t border-slate-50">
-          <form action="/api/logout" method="POST">
+          <form action="/api/logout" method="POST" onSubmit={onLogoutClick}>
             <button
               type="submit"
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-red-500 hover:bg-red-50 transition-all font-bold group text-sm"
+              disabled={isLoggingOut}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-red-500 hover:bg-red-50 transition-all font-bold group text-sm disabled:opacity-50"
             >
               <LogOut size={18} className="text-red-400 group-hover:text-red-500" />
-              Logout
+              {isLoggingOut ? "Logging out..." : "Logout"}
             </button>
           </form>
         </div>
@@ -504,13 +514,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           })}
         </nav>
         <div className="p-4 border-t border-slate-50 shrink-0">
-          <form action="/api/logout" method="POST">
+          <form action="/api/logout" method="POST" onSubmit={onLogoutClick}>
             <button
               type="submit"
-              className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-red-500 hover:bg-red-50 transition-all font-bold group text-base"
+              disabled={isLoggingOut}
+              className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-red-500 hover:bg-red-50 transition-all font-bold group text-base disabled:opacity-50"
             >
               <LogOut size={20} className="text-red-400 group-hover:text-red-500" />
-              Logout
+              {isLoggingOut ? "Logging out..." : "Logout"}
             </button>
           </form>
         </div>

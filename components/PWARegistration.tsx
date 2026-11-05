@@ -6,6 +6,37 @@ export function PWARegistration() {
   useEffect(() => {
     if (process.env.NODE_ENV === "development") return;
 
+    // Remote Kill-switch / Recovery: visit any page with ?sw_reset=1 or call window.__vision_reset_pwa()
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      const shouldReset = urlParams.get("sw_reset") === "1" || urlParams.get("kill_sw") === "1";
+
+      const executeReset = async () => {
+        console.warn("[PWA] Kill-switch triggered: unregistering workers and clearing all caches...");
+        if ("serviceWorker" in navigator) {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          for (const r of registrations) {
+            await r.unregister();
+          }
+        }
+        if ("caches" in window) {
+          const keys = await caches.keys();
+          for (const k of keys) {
+            await caches.delete(k);
+          }
+        }
+        window.localStorage.clear();
+        window.location.href = "/login";
+      };
+
+      (window as any).__vision_reset_pwa = executeReset;
+
+      if (shouldReset) {
+        executeReset();
+        return;
+      }
+    }
+
     // Register service worker immediately during initial parse/mount without waiting for window.load
     if (
       typeof window !== "undefined" &&
@@ -33,6 +64,7 @@ export function PWARegistration() {
             }
           });
           // Resilient pre-warming of critical student pages (independent caching so one failure doesn't abort others)
+          // Strictly checks !response.redirected so /login is never cached under /dashboard
           if ("caches" in window && navigator.onLine) {
             caches.open("app-pages").then((cache) => {
               const pagesToWarm = [
@@ -47,7 +79,7 @@ export function PWARegistration() {
               pagesToWarm.forEach((url) => {
                 fetch(url, { credentials: "same-origin" })
                   .then((response) => {
-                    if (response.ok) {
+                    if (response.ok && !response.redirected && response.status === 200) {
                       cache.put(url, response);
                     }
                   })

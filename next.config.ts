@@ -60,6 +60,12 @@ const withPWA = require('next-pwa')({
       }
     },
     {
+      // Exclude authentication, session and logout endpoints from Workbox caching
+      urlPattern: /^https?:\/\/[^/]+\/api\/(?:auth|logout)(?:\/.*)?$/i,
+      handler: 'NetworkOnly',
+      options: {},
+    },
+    {
       urlPattern: /\/api\/.*$/i,
       handler: 'NetworkFirst',
       options: {
@@ -68,6 +74,9 @@ const withPWA = require('next-pwa')({
         expiration: {
           maxEntries: 100,
           maxAgeSeconds: 60 * 60 * 24 // 24 hours
+        },
+        cacheableResponse: {
+          statuses: [0, 200]
         },
         backgroundSync: {
           name: 'api-sync',
@@ -78,7 +87,7 @@ const withPWA = require('next-pwa')({
       }
     },
     {
-      // App Pages Caching: StaleWhileRevalidate for instant 0ms offline launch without network freeze
+      // App Pages Caching: StaleWhileRevalidate for instant offline launch
       // Uses exact same-origin URL regex matching url.href (https://domain.com/dashboard)
       urlPattern: /^https?:\/\/[^/]+(?:\/(?:[?#].*)?$|\/?$|\/(?:dashboard|courses|lessons|curriculum|materials|tests|attendance|fees|calendar|certificates|settings|notifications|profile|offline|login)(?:$|[/?]))/i,
       handler: 'StaleWhileRevalidate',
@@ -87,6 +96,9 @@ const withPWA = require('next-pwa')({
         expiration: {
           maxEntries: 100,
           maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+        },
+        cacheableResponse: {
+          statuses: [0, 200]
         }
       }
     },
@@ -99,6 +111,9 @@ const withPWA = require('next-pwa')({
         expiration: {
           maxEntries: 150,
           maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+        },
+        cacheableResponse: {
+          statuses: [0, 200]
         }
       }
     }

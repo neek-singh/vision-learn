@@ -98,6 +98,76 @@ export function isOnline(): boolean {
 }
 
 /**
+ * Completely purges all student-specific data from LocalStorage, Dexie IndexedDB,
+ * and dynamic Workbox CacheStorage caches upon logout to prevent cross-student
+ * data leakage on shared devices.
+ */
+export async function clearAllOfflineData(): Promise<void> {
+  if (typeof window === 'undefined') return;
+
+  // 1. Clear student-specific localStorage keys
+  try {
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const key = window.localStorage.key(i);
+      if (
+        key &&
+        (key.startsWith('vl_offline_') ||
+          key.startsWith('vision_') ||
+          key.startsWith('supabase.'))
+      ) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach((k) => window.localStorage.removeItem(k));
+  } catch (err) {
+    console.warn('[OfflineStore] Failed to clear localStorage on logout:', err);
+  }
+
+  // 2. Clear Dexie IndexedDB user tables
+  try {
+    await Promise.allSettled([
+      db.metadata.clear(),
+      db.progress.clear(),
+      db.notes.clear(),
+      db.quizzes.clear(),
+      db.sync_queue.clear(),
+    ]);
+  } catch (err) {
+    console.warn('[OfflineStore] Failed to clear IndexedDB tables:', err);
+  }
+
+  // 3. Purge dynamic user HTML and data caches (keep static assets and fonts)
+  if ('caches' in window) {
+    try {
+      await Promise.allSettled([
+        caches.delete('app-pages'),
+        caches.delete('next-rsc-payloads'),
+        caches.delete('api-responses'),
+      ]);
+    } catch (err) {
+      console.warn('[OfflineStore] Failed to clear dynamic caches on logout:', err);
+    }
+  }
+}
+
+/**
+ * Performs a safe logout by purging all student offline data first,
+ * calling the logout endpoint, and redirecting to /login.
+ */
+export async function handleStudentLogout(): Promise<void> {
+  await clearAllOfflineData();
+  try {
+    await fetch('/api/logout', { method: 'POST' });
+  } catch (err) {
+    console.warn('[OfflineStore] Network logout failed, proceeding with client redirect:', err);
+  }
+  if (typeof window !== 'undefined') {
+    window.location.href = '/login';
+  }
+}
+
+/**
  * Auto-sync trigger on reconnection
  */
 if (typeof window !== 'undefined') {
