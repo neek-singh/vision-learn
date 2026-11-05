@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
+import { getOfflineData, saveOfflineData, OFFLINE_KEYS } from "@/lib/offline-store";
 import { 
   Play, 
   BookOpen, 
@@ -30,19 +31,44 @@ interface CoursesClientProps {
 }
 
 export function CoursesClient({
-  initialEnrollments,
-  allCourses,
-  modulesCountMap,
-  lessonsCountMap,
+  initialEnrollments: propEnrollments,
+  allCourses: propAllCourses,
+  modulesCountMap: propModulesCountMap,
+  lessonsCountMap: propLessonsCountMap,
   studentId,
 }: CoursesClientProps) {
   const [activeTab, setActiveTab] = useState<"all" | "enrolled" | "available">("all");
   const [exploreFilter, setExploreFilter] = useState<"all" | "free" | "paid" | "popular">("all");
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Cached fallback if initial enrollments are empty (offline cold launch)
+  const [cachedData] = useState(() => {
+    if (!propEnrollments || propEnrollments.length === 0) {
+      return getOfflineData<any>(OFFLINE_KEYS.COURSES);
+    }
+    return null;
+  });
+
+  const initialEnrollments: any[] = (propEnrollments && propEnrollments.length > 0) ? propEnrollments : (cachedData?.initialEnrollments || []);
+  const allCourses: any[] = (propAllCourses && propAllCourses.length > 0) ? propAllCourses : (cachedData?.allCourses || []);
+  const modulesCountMap = propModulesCountMap || cachedData?.modulesCountMap || {};
+  const lessonsCountMap = propLessonsCountMap || cachedData?.lessonsCountMap || {};
+
+  // Auto-cache courses whenever valid server data is provided
+  useEffect(() => {
+    if (propEnrollments && propEnrollments.length > 0) {
+      saveOfflineData(OFFLINE_KEYS.COURSES, {
+        initialEnrollments: propEnrollments,
+        allCourses: propAllCourses,
+        modulesCountMap: propModulesCountMap,
+        lessonsCountMap: propLessonsCountMap,
+      });
+    }
+  }, [propEnrollments, propAllCourses, propModulesCountMap, propLessonsCountMap]);
+
   // Prepare Enrolled Courses data
   const enrolledCourses = useMemo(() => {
-    return (initialEnrollments || []).map((enrollment) => {
+    return (initialEnrollments || []).map((enrollment: any) => {
       const course = enrollment.courses || {};
       const courseId = enrollment.course_id;
       const progress = typeof enrollment.progress_percentage === "number"
@@ -92,15 +118,15 @@ export function CoursesClient({
 
   // Dynamic Explore courses derived 100% from Supabase courses
   const exploreCoursesCatalog = useMemo(() => {
-    const enrolledIds = new Set((initialEnrollments || []).map(e => e.course_id));
+    const enrolledIds = new Set((initialEnrollments || []).map((e: any) => e.course_id));
 
     if (!allCourses || allCourses.length === 0) {
       return [];
     }
 
     return allCourses
-      .filter(c => !enrolledIds.has(c.id))
-      .map((c, idx) => {
+      .filter((c: any) => !enrolledIds.has(c.id))
+      .map((c: any, idx: number) => {
         const titleLower = (c.title || "").toLowerCase();
         let iconBg = "bg-purple-100 text-purple-600";
         let iconType = "cap";
@@ -289,7 +315,7 @@ export function CoursesClient({
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
-              {enrolledCourses.map((course) => (
+              {enrolledCourses.map((course: any) => (
                 <div 
                   key={course.id}
                   className="bg-white rounded-xl border border-slate-200/80 hover:border-slate-300 p-3.5 space-y-3 shadow-2xs transition-all hover:shadow-xs flex flex-col justify-between"
@@ -465,7 +491,7 @@ export function CoursesClient({
           {/* Explore Courses Cards Grid */}
           {filteredExploreCourses.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-              {filteredExploreCourses.map((course) => (
+              {filteredExploreCourses.map((course: any) => (
                 <div
                   key={course.id}
                   className="bg-white rounded-xl border border-slate-200/80 hover:border-slate-300 p-3.5 space-y-3 shadow-2xs transition-all hover:shadow-xs flex flex-col justify-between"

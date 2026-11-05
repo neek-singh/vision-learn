@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { getOfflineData, saveOfflineData, OFFLINE_KEYS } from "@/lib/offline-store";
 import { 
   Home, 
   ChevronRight, 
@@ -36,11 +37,11 @@ export interface AttendanceRecord {
 }
 
 export default function StudentAttendanceClient({
-  initialRecords = [],
-  courseTitle = "My Course",
-  batchName = "My Batch",
-  batchTiming = "10:00 AM - 11:00 AM",
-  facultyName = "Instructor"
+  initialRecords: propRecords = [],
+  courseTitle: propCourseTitle = "My Course",
+  batchName: propBatchName = "My Batch",
+  batchTiming: propBatchTiming = "10:00 AM - 11:00 AM",
+  facultyName: propFacultyName = "Instructor"
 }: {
   initialRecords: any[];
   courseTitle?: string;
@@ -52,6 +53,33 @@ export default function StudentAttendanceClient({
   const now = new Date();
   const [currentMonth, setCurrentMonth] = useState(now.getMonth());
   const [currentYear, setCurrentYear] = useState(now.getFullYear());
+
+  // Cached fallback if initial records are empty (e.g. offline cold launch)
+  const [cachedData] = useState(() => {
+    if (!propRecords || propRecords.length === 0) {
+      return getOfflineData<any>(OFFLINE_KEYS.ATTENDANCE);
+    }
+    return null;
+  });
+
+  const initialRecords = (propRecords && propRecords.length > 0) ? propRecords : (cachedData?.records || []);
+  const courseTitle = propCourseTitle !== "My Course" ? propCourseTitle : (cachedData?.courseTitle || propCourseTitle);
+  const batchName = propBatchName !== "My Batch" ? propBatchName : (cachedData?.batchName || propBatchName);
+  const batchTiming = propBatchTiming !== "10:00 AM - 11:00 AM" ? propBatchTiming : (cachedData?.batchTiming || propBatchTiming);
+  const facultyName = propFacultyName !== "Instructor" ? propFacultyName : (cachedData?.facultyName || propFacultyName);
+
+  // Auto-cache attendance when valid server data is provided
+  useEffect(() => {
+    if (propRecords && propRecords.length > 0) {
+      saveOfflineData(OFFLINE_KEYS.ATTENDANCE, {
+        records: propRecords,
+        courseTitle: propCourseTitle,
+        batchName: propBatchName,
+        batchTiming: propBatchTiming,
+        facultyName: propFacultyName,
+      });
+    }
+  }, [propRecords, propCourseTitle, propBatchName, propBatchTiming, propFacultyName]);
 
   const monthNames = [
     "January", "February", "March", "April", "May", "June",
@@ -638,7 +666,7 @@ export default function StudentAttendanceClient({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {recentAttendanceRows.map((row, idx) => (
+                    {recentAttendanceRows.map((row: any, idx: number) => (
                       <tr 
                         key={idx}
                         onClick={() => setSelectedDate(row.dateStr)}

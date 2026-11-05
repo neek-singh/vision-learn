@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import { getOfflineData, saveOfflineData, OFFLINE_KEYS } from "@/lib/offline-store";
 import { supabase } from "@/lib/supabase";
 import { notifyAdminOnTestComplete } from "@/app/actions/tests";
 import { 
@@ -116,17 +117,17 @@ function parseMcqQuestions(notesContent?: string): any[] {
 }
 
 export default function TestsClient({ 
-  initialTests = [], 
-  modules = [],
-  schedules = [],
+  initialTests: propTests = [], 
+  modules: propModules = [],
+  schedules: propSchedules = [],
   activeBatch = "",
   activeBatchId = null,
   studentId = "", 
-  initialResults = [],
-  quizLessons = [],
-  quizSubmissions = [],
-  initialCompletedLessons = [],
-  courseTitle = "My Course"
+  initialResults: propResults = [],
+  quizLessons: propQuizLessons = [],
+  quizSubmissions: propQuizSubmissions = [],
+  initialCompletedLessons: propCompletedLessons = [],
+  courseTitle: propCourseTitle = "My Course"
 }: { 
   initialTests: any[], 
   modules?: any[],
@@ -140,6 +141,39 @@ export default function TestsClient({
   initialCompletedLessons?: string[],
   courseTitle?: string
 }) {
+  // Offline cache fallback if initialTests is empty
+  const [cachedData] = useState(() => {
+    if (!propTests || propTests.length === 0) {
+      return getOfflineData<any>(OFFLINE_KEYS.TESTS);
+    }
+    return null;
+  });
+
+  const initialTests = (propTests && propTests.length > 0) ? propTests : (cachedData?.initialTests || []);
+  const modules = (propModules && propModules.length > 0) ? propModules : (cachedData?.modules || []);
+  const schedules = (propSchedules && propSchedules.length > 0) ? propSchedules : (cachedData?.schedules || []);
+  const initialResults = (propResults && propResults.length > 0) ? propResults : (cachedData?.initialResults || []);
+  const quizLessons = (propQuizLessons && propQuizLessons.length > 0) ? propQuizLessons : (cachedData?.quizLessons || []);
+  const quizSubmissions = (propQuizSubmissions && propQuizSubmissions.length > 0) ? propQuizSubmissions : (cachedData?.quizSubmissions || []);
+  const initialCompletedLessons = (propCompletedLessons && propCompletedLessons.length > 0) ? propCompletedLessons : (cachedData?.initialCompletedLessons || []);
+  const courseTitle = propCourseTitle !== "My Course" ? propCourseTitle : (cachedData?.courseTitle || propCourseTitle);
+
+  // Auto-cache tests whenever valid data is provided
+  useEffect(() => {
+    if (propTests && propTests.length > 0) {
+      saveOfflineData(OFFLINE_KEYS.TESTS, {
+        initialTests: propTests,
+        modules: propModules,
+        schedules: propSchedules,
+        initialResults: propResults,
+        quizLessons: propQuizLessons,
+        quizSubmissions: propQuizSubmissions,
+        initialCompletedLessons: propCompletedLessons,
+        courseTitle: propCourseTitle,
+      });
+    }
+  }, [propTests, propModules, propSchedules, propResults, propQuizLessons, propQuizSubmissions, propCompletedLessons, propCourseTitle]);
+
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("all"); // all, upcoming, completed, practice, mock
   const [searchQuery, setSearchQuery] = useState("");
@@ -171,7 +205,7 @@ export default function TestsClient({
   // Module lookup map for clean titles
   const moduleMap = useMemo(() => {
     const map = new Map<string, string>();
-    (modules || []).forEach(m => {
+    (modules || []).forEach((m: any) => {
       if (m.id && m.title) map.set(m.id, m.title);
     });
     return map;

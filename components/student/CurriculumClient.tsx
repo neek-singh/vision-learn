@@ -56,6 +56,7 @@ import { CacheManager } from "@/lib/cache-manager";
 import { useCachedCurriculum } from "@/hooks/use-cached-curriculum";
 import { DownloadButton } from "@/components/DownloadButton";
 import { useSearchParams, useRouter } from "next/navigation";
+import { getOfflineData, saveOfflineData, OFFLINE_KEYS } from "@/lib/offline-store";
 
 const LessonViewer = dynamic(() => import("./LessonViewer"), {
   loading: () => <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center">
@@ -169,18 +170,18 @@ const getLatestScheduleForLesson = (currentSchedules: any[], lesson: any) => {
 };
 
 export function CurriculumClient({
-  initialModules,
-  initialProgress,
+  initialModules: propModules = [],
+  initialProgress: propProgress = [],
   studentId,
-  initialSchedules = [],
-  initialAllSchedules = [],
-  initialTests = [],
-  initialMaterials = [],
+  initialSchedules: propSchedules = [],
+  initialAllSchedules: propAllSchedules = [],
+  initialTests: propTests = [],
+  initialMaterials: propMaterials = [],
   initialBatch = null,
   initialCourseId = null,
   availableBatches = [],
-  initialChapters = [],
-  courseInfo = null,
+  initialChapters: propChapters = [],
+  courseInfo: propCourseInfo = null,
   assignmentsCount = 0,
   completedAssignmentsCount = 0
 }: {
@@ -199,7 +200,42 @@ export function CurriculumClient({
   assignmentsCount?: number,
   completedAssignmentsCount?: number
 }) {
-  const [courseId] = useState<string | null>(initialCourseId || initialModules[0]?.course_id || null);
+  const courseId = initialCourseId || propModules[0]?.course_id || "default";
+  const courseKey = OFFLINE_KEYS.CURRICULUM_PREFIX + courseId;
+
+  // Cached fallback if initialModules is empty
+  const [cachedCurriculum] = useState(() => {
+    if (!propModules || propModules.length === 0) {
+      return getOfflineData<any>(courseKey);
+    }
+    return null;
+  });
+
+  const initialModules = (propModules && propModules.length > 0) ? propModules : (cachedCurriculum?.modules || []);
+  const initialProgress = (propProgress && propProgress.length > 0) ? propProgress : (cachedCurriculum?.progress || []);
+  const initialSchedules = (propSchedules && propSchedules.length > 0) ? propSchedules : (cachedCurriculum?.schedules || []);
+  const initialAllSchedules = (propAllSchedules && propAllSchedules.length > 0) ? propAllSchedules : (cachedCurriculum?.allSchedules || []);
+  const initialTests = (propTests && propTests.length > 0) ? propTests : (cachedCurriculum?.tests || []);
+  const initialMaterials = (propMaterials && propMaterials.length > 0) ? propMaterials : (cachedCurriculum?.materials || []);
+  const initialChapters = (propChapters && propChapters.length > 0) ? propChapters : (cachedCurriculum?.chapters || []);
+  const courseInfo = propCourseInfo || cachedCurriculum?.courseInfo || null;
+
+  // Auto-cache curriculum whenever valid server data is provided
+  useEffect(() => {
+    if (propModules && propModules.length > 0) {
+      saveOfflineData(courseKey, {
+        modules: propModules,
+        progress: propProgress,
+        schedules: propSchedules,
+        allSchedules: propAllSchedules,
+        tests: propTests,
+        materials: propMaterials,
+        chapters: propChapters,
+        courseInfo: propCourseInfo,
+      });
+    }
+  }, [courseKey, propModules, propProgress, propSchedules, propAllSchedules, propTests, propMaterials, propChapters, propCourseInfo]);
+
   const [chapters] = useState<any[]>(initialChapters);
 
   // Use cached data
@@ -414,7 +450,7 @@ export function CurriculumClient({
     return match?.id || null;
   }, [activeBatch, availableBatches]);
 
-  const batchModules = useMemo(() => {
+  const batchModules = useMemo<any[]>(() => {
     const normalizedActiveBatch = activeBatch?.trim().toLowerCase();
     const normalize = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
 
@@ -519,19 +555,19 @@ export function CurriculumClient({
 
   const allLessons = useMemo(() => {
     return [...batchModules]
-      .sort((a, b) => a.order_index - b.order_index)
-      .flatMap(m => (m.lessons || []).sort((a: any, b: any) => a.order_index - b.order_index));
+      .sort((a: any, b: any) => a.order_index - b.order_index)
+      .flatMap((m: any) => (m.lessons || []).sort((a: any, b: any) => a.order_index - b.order_index));
   }, [batchModules]);
 
   const classLessons = useMemo(() => {
-    return allLessons.filter(l => {
+    return allLessons.filter((l: any) => {
       const t = (l.lesson_type || l.type || 'video').toLowerCase();
       return t === 'video' || t === 'notes' || t === 'article' || t === 'document';
     });
   }, [allLessons]);
 
   const completedClasses = useMemo(() => {
-    return classLessons.filter(l => userProgress.includes(l.id));
+    return classLessons.filter((l: any) => userProgress.includes(l.id));
   }, [classLessons, userProgress]);
 
   const totalProgress = useMemo(() => {
@@ -540,7 +576,7 @@ export function CurriculumClient({
   }, [classLessons, completedClasses]);
 
   const completedModulesCount = useMemo(() => {
-    return batchModules.filter(m => {
+    return batchModules.filter((m: any) => {
       const lessons = m.lessons || [];
       return lessons.length > 0 && lessons.every((l: any) => userProgress.includes(l.id));
     }).length;

@@ -1,32 +1,58 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import { db } from '@/lib/db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { CacheManager } from '@/lib/cache-manager';
 
 export function useSyncStatus() {
-  const [isOnline, setIsOnline] = useState(true); // Default to true, will update in useEffect
-  const [lastSynced, setLastSynced] = useState<number | null>(null);
+  const [isOnline, setIsOnline] = useState<boolean>(true);
+  const [justReconnected, setJustReconnected] = useState<boolean>(false);
 
-  const pendingCount = useLiveQuery(() => db.sync_queue.count()) || 0;
+  // Safely query pending queue count from Dexie
+  const pendingCount = useLiveQuery(
+    async () => {
+      try {
+        return await db.sync_queue.count();
+      } catch {
+        return 0;
+      }
+    },
+    [],
+    0
+  );
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     // 1. Initial online status
     setIsOnline(navigator.onLine);
 
     // 2. Event listeners
     const handleOnline = () => {
       setIsOnline(true);
-      CacheManager.syncPending();
+      setJustReconnected(true);
+      CacheManager.syncPending().catch(() => {});
+
+      // Clear "just reconnected" pill after 4 seconds
+      const timer = setTimeout(() => {
+        setJustReconnected(false);
+      }, 4000);
+      return () => clearTimeout(timer);
     };
-    const handleOffline = () => setIsOnline(false);
+
+    const handleOffline = () => {
+      setIsOnline(false);
+      setJustReconnected(false);
+    };
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
     // 3. Periodic sync attempt if online
     const interval = setInterval(() => {
-      if (navigator.onLine) {
-        CacheManager.syncPending();
+      if (typeof navigator !== 'undefined' && navigator.onLine) {
+        CacheManager.syncPending().catch(() => {});
       }
     }, 30000); // Every 30 seconds
 
@@ -39,7 +65,8 @@ export function useSyncStatus() {
 
   return {
     isOnline,
-    pendingCount,
-    isSyncing: pendingCount > 0 && isOnline,
+    justReconnected,
+    pendingCount: pendingCount || 0,
+    isSyncing: (pendingCount || 0) > 0 && isOnline,
   };
 }

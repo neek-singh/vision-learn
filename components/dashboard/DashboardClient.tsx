@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { getOfflineData, saveOfflineData, OFFLINE_KEYS } from "@/lib/offline-store";
 import {
   BookOpen,
   Award,
@@ -60,19 +61,73 @@ interface DashboardClientProps {
 }
 
 export default function DashboardClient({
-  student,
-  mainCourse,
-  otherCourses = [],
-  enrolledCourses = [],
-  recentAssignments = [],
-  attendanceStats = { total: 0, present: 0, percentage: 0 },
-  certificatesCount = 0,
-  stats,
-  nextLesson,
-  nextScheduledClass,
-  upcomingEvents = [],
-  recentActivities = []
+  student: initialStudent,
+  mainCourse: initialMainCourse,
+  otherCourses: initialOtherCourses = [],
+  enrolledCourses: initialEnrolledCourses = [],
+  recentAssignments: initialRecentAssignments = [],
+  attendanceStats: initialAttendanceStats = { total: 0, present: 0, percentage: 0 },
+  certificatesCount: initialCertificatesCount = 0,
+  stats: initialStats,
+  nextLesson: initialNextLesson,
+  nextScheduledClass: initialNextScheduledClass,
+  upcomingEvents: initialUpcomingEvents = [],
+  recentActivities: initialRecentActivities = []
 }: DashboardClientProps) {
+  // Check cached offline data if initial props are missing
+  const [cachedData] = useState(() => {
+    if (!initialStudent) {
+      return getOfflineData<any>(OFFLINE_KEYS.DASHBOARD);
+    }
+    return null;
+  });
+
+  const student = initialStudent || cachedData?.student;
+  const mainCourse = initialMainCourse || cachedData?.mainCourse;
+  const otherCourses = (initialOtherCourses && initialOtherCourses.length > 0) ? initialOtherCourses : (cachedData?.otherCourses || []);
+  const enrolledCourses = (initialEnrolledCourses && initialEnrolledCourses.length > 0) ? initialEnrolledCourses : (cachedData?.enrolledCourses || []);
+  const recentAssignments = (initialRecentAssignments && initialRecentAssignments.length > 0) ? initialRecentAssignments : (cachedData?.recentAssignments || []);
+  const attendanceStats = initialAttendanceStats?.total > 0 ? initialAttendanceStats : (cachedData?.attendanceStats || initialAttendanceStats);
+  const certificatesCount = initialCertificatesCount || cachedData?.certificatesCount || 0;
+  const stats = initialStats || cachedData?.stats;
+  const nextLesson = initialNextLesson || cachedData?.nextLesson;
+  const nextScheduledClass = initialNextScheduledClass || cachedData?.nextScheduledClass;
+  const upcomingEvents = (initialUpcomingEvents && initialUpcomingEvents.length > 0) ? initialUpcomingEvents : (cachedData?.upcomingEvents || []);
+  const recentActivities = (initialRecentActivities && initialRecentActivities.length > 0) ? initialRecentActivities : (cachedData?.recentActivities || []);
+
+  // Save to offline store whenever valid server data is provided
+  useEffect(() => {
+    if (initialStudent && initialStats) {
+      saveOfflineData(OFFLINE_KEYS.DASHBOARD, {
+        student: initialStudent,
+        mainCourse: initialMainCourse,
+        otherCourses: initialOtherCourses,
+        enrolledCourses: initialEnrolledCourses,
+        recentAssignments: initialRecentAssignments,
+        attendanceStats: initialAttendanceStats,
+        certificatesCount: initialCertificatesCount,
+        stats: initialStats,
+        nextLesson: initialNextLesson,
+        nextScheduledClass: initialNextScheduledClass,
+        upcomingEvents: initialUpcomingEvents,
+        recentActivities: initialRecentActivities,
+      });
+    }
+  }, [
+    initialStudent,
+    initialMainCourse,
+    initialOtherCourses,
+    initialEnrolledCourses,
+    initialRecentAssignments,
+    initialAttendanceStats,
+    initialCertificatesCount,
+    initialStats,
+    initialNextLesson,
+    initialNextScheduledClass,
+    initialUpcomingEvents,
+    initialRecentActivities
+  ]);
+
   const studentName = student?.name || "Student";
 
   // Pure real metrics calculated 100% from Supabase (zero mock / benchmark overrides)
@@ -303,7 +358,7 @@ export default function DashboardClient({
 
             <div className="space-y-3">
               {enrolledCourses && enrolledCourses.length > 0 ? (
-                enrolledCourses.slice(0, 3).map((c, idx) => (
+                enrolledCourses.slice(0, 3).map((c: any, idx: number) => (
                   <div key={c.id || idx} className={`flex items-center justify-between gap-3 p-1 ${idx > 0 ? "border-t border-slate-100 pt-2.5" : ""}`}>
                     <div className="flex items-center gap-3 min-w-0 flex-1">
                       <div className="w-10 h-10 rounded-xl bg-sky-50 text-blue-600 flex items-center justify-center shrink-0 border border-sky-100 relative">
@@ -362,7 +417,7 @@ export default function DashboardClient({
 
             <div className="space-y-3">
               {recentAssignments && recentAssignments.length > 0 ? (
-                recentAssignments.slice(0, 3).map((a, idx) => (
+                recentAssignments.slice(0, 3).map((a: any, idx: number) => (
                   <div key={a.id || idx} className={`flex items-center justify-between gap-2 p-1 ${idx > 0 ? "border-t border-slate-100 pt-2.5" : ""}`}>
                     <div className="flex items-center gap-3 min-w-0 flex-1">
                       <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100">
@@ -601,7 +656,7 @@ export default function DashboardClient({
             <div className="space-y-2.5 pt-2 border-t border-slate-100">
               <h5 className="text-[11px] font-bold text-slate-900">Enrolled Courses Progress</h5>
               {enrolledCourses && enrolledCourses.length > 0 ? (
-                enrolledCourses.map((c, idx) => (
+                enrolledCourses.map((c: any, idx: number) => (
                   <div key={c.id || idx} className="space-y-1">
                     <div className="flex items-center justify-between text-xs">
                       <span className="font-medium text-slate-700 text-[11px] truncate">{c.title}</span>

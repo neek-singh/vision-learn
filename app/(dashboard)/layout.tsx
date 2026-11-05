@@ -32,6 +32,7 @@ import {
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { SyncStatus } from "@/components/SyncStatus";
 import { GlobalSearch } from "@/components/GlobalSearch";
+import { getOfflineData, saveOfflineData, OFFLINE_KEYS } from "@/lib/offline-store";
 
 const sidebarLinks = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -162,7 +163,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isClassesSubmenuOpen, setIsClassesSubmenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [student, setStudent] = useState<any>(null);
+  const [student, setStudent] = useState<any>(() => getOfflineData(OFFLINE_KEYS.PROFILE));
   const supabase = createClient();
   const { permission, requestPermission } = usePushNotifications(student?.id);
 
@@ -217,6 +218,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         if (res.ok) {
           const studentData = await res.json();
           setStudent(studentData);
+          saveOfflineData(OFFLINE_KEYS.PROFILE, studentData);
           await setupRealtime(studentData.id);
         }
       } catch (err) {
@@ -515,6 +517,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
         </header>
+
+        {/* Global Offline / Sync Status Pill */}
+        <SyncStatus />
 
         <main className="p-3 sm:p-3.5 lg:p-4 max-w-7xl pb-24 lg:pb-6 overflow-x-hidden min-w-0 flex-1">
           {children}

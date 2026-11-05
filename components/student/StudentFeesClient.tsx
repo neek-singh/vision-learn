@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
+import { getOfflineData, saveOfflineData, OFFLINE_KEYS } from "@/lib/offline-store";
 import { 
   Home,
   ChevronRight,
@@ -25,28 +26,44 @@ import {
   CalendarCheck
 } from "lucide-react";
 
-export function StudentFeesClient({ fee }: { fee: any }) {
+export function StudentFeesClient({ fee: initialFee }: { fee: any }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterMode, setFilterMode] = useState("all");
 
-  const totalPaid = useMemo(() => {
-    return fee.payments?.reduce((acc: number, p: any) => acc + Number(p.amount), 0) || 0;
-  }, [fee.payments]);
+  // Read from offline cache if initialFee is missing (offline cold launch)
+  const [fee, setFee] = useState<any>(() => {
+    return initialFee || getOfflineData<any>(OFFLINE_KEYS.FEES);
+  });
 
-  const finalFee = Number(fee.final_fee || 0);
-  const baseFee = Number(fee.total_fee || finalFee);
-  const discountAmount = Number(fee.discount || 0);
+  // Auto-cache fee record when valid server data is provided
+  useEffect(() => {
+    if (initialFee) {
+      setFee(initialFee);
+      saveOfflineData(OFFLINE_KEYS.FEES, initialFee);
+    }
+  }, [initialFee]);
+
+  const totalPaid = useMemo(() => {
+    if (!fee) return 0;
+    return fee.payments?.reduce((acc: number, p: any) => acc + Number(p.amount), 0) || 0;
+  }, [fee]);
+
+  const finalFee = Number(fee?.final_fee || 0);
+  const baseFee = Number(fee?.total_fee || finalFee);
+  const discountAmount = Number(fee?.discount || 0);
   const balance = Math.max(0, finalFee - totalPaid);
   const progress = finalFee > 0 ? Math.min((totalPaid / finalFee) * 100, 100) : 0;
   
   const overdueInstallment = useMemo(() => {
+    if (!fee) return null;
     return fee.installments?.find(
       (i: any) => i.status === 'overdue' || (i.status === 'pending' && new Date(i.due_date) < new Date())
     );
-  }, [fee.installments]);
+  }, [fee]);
 
   // Filter payments by search query and mode
   const filteredPayments = useMemo(() => {
+    if (!fee) return [];
     return (fee.payments || []).filter((pay: any) => {
       if (filterMode !== "all" && pay.payment_mode?.toLowerCase() !== filterMode.toLowerCase()) {
         return false;
@@ -307,6 +324,18 @@ export function StudentFeesClient({ fee }: { fee: any }) {
     printWindow.document.write(receiptHtml);
     printWindow.document.close();
   };
+
+  if (!fee) {
+    return (
+      <div className="max-w-xl mx-auto my-12 p-8 sm:p-12 text-center bg-white rounded-3xl border border-slate-200/80 shadow-2xs">
+        <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-indigo-100">
+          <Wallet size={28} />
+        </div>
+        <h3 className="text-lg font-bold text-slate-900 tracking-tight">Financial Records Pending</h3>
+        <p className="text-xs text-slate-500 font-medium mt-1">Your course fee structure hasn't been configured by the institute admin yet. Please check back later or contact the accounts office.</p>
+      </div>
+    );
+  }
 
   const statusLabel = (fee.status || "partial").toUpperCase();
   const isPaid = statusLabel === "PAID" || balance <= 0;
