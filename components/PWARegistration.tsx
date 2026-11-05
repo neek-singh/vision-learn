@@ -32,17 +32,27 @@ export function PWARegistration() {
               });
             }
           });
-          // Pre-warm the offline cache with critical student pages
-          if ("caches" in window) {
+          // Resilient pre-warming of critical student pages (independent caching so one failure doesn't abort others)
+          if ("caches" in window && navigator.onLine) {
             caches.open("app-pages").then((cache) => {
-              cache.addAll([
+              const pagesToWarm = [
                 "/dashboard",
                 "/courses",
                 "/attendance",
                 "/fees",
                 "/tests",
+                "/curriculum",
                 "/offline"
-              ]).catch(() => {});
+              ];
+              pagesToWarm.forEach((url) => {
+                fetch(url, { credentials: "same-origin" })
+                  .then((response) => {
+                    if (response.ok) {
+                      cache.put(url, response);
+                    }
+                  })
+                  .catch(() => {});
+              });
             });
           }
         })
@@ -51,6 +61,16 @@ export function PWARegistration() {
         });
     }
 
+    // Check for Service Worker updates whenever app is brought to foreground
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible" && "serviceWorker" in navigator) {
+        navigator.serviceWorker.getRegistration().then((reg) => {
+          reg?.update().catch(() => {});
+        });
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
     const handleOnline = () => {
       // Broadcast online event so components can revalidate
       if (typeof window !== "undefined") {
@@ -58,7 +78,10 @@ export function PWARegistration() {
       }
     };
     window.addEventListener("online", handleOnline);
-    return () => window.removeEventListener("online", handleOnline);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("online", handleOnline);
+    };
   }, []);
 
   // Completely removed the "Naya Update Available!" banner UI

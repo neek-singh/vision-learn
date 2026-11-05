@@ -79,7 +79,8 @@ const withPWA = require('next-pwa')({
     },
     {
       // App Pages Caching: StaleWhileRevalidate for instant 0ms offline launch without network freeze
-      urlPattern: /^\/(?:dashboard|courses|lessons|curriculum|materials|tests|attendance|fees|calendar|certificates|settings|notifications|profile|offline|login|$)(?:\/.*)?$/i,
+      // Uses exact same-origin URL regex matching url.href (https://domain.com/dashboard)
+      urlPattern: /^https?:\/\/[^/]+(?:\/(?:[?#].*)?$|\/?$|\/(?:dashboard|courses|lessons|curriculum|materials|tests|attendance|fees|calendar|certificates|settings|notifications|profile|offline|login)(?:$|[/?]))/i,
       handler: 'StaleWhileRevalidate',
       options: {
         cacheName: 'app-pages',

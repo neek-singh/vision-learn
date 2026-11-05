@@ -185,7 +185,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     if (typeof window !== "undefined" && "caches" in window && navigator.onLine) {
       caches.open("app-pages").then((cache) => {
-        cache.addAll([
+        const pagesToWarm = [
           "/dashboard",
           "/courses",
           "/attendance",
@@ -193,7 +193,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           "/tests",
           "/curriculum",
           "/offline"
-        ]).catch(() => {});
+        ];
+        pagesToWarm.forEach((url) => {
+          fetch(url, { credentials: "same-origin" })
+            .then((response) => {
+              if (response.ok) {
+                cache.put(url, response);
+              }
+            })
+            .catch(() => {});
+        });
       });
     }
   }, []);
