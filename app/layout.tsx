@@ -16,6 +16,7 @@ const geistMono = Geist_Mono({
 
 import { PWARegistration } from "@/components/PWARegistration";
 import { InstallButton } from "@/components/InstallButton";
+import { SplashScreen } from "@/components/SplashScreen";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://learn.visionitinstitute.com"),
@@ -67,6 +68,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
+        <SplashScreen />
         <PWARegistration />
         <InstallButton />
         {children}

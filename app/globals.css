@@ -58,6 +58,56 @@ body {
   animation: shimmer 2s infinite linear;
 }
 
+@keyframes splashPop {
+  0% {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.04);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes splashPulse {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 10px 20px rgba(79, 70, 229, 0.12));
+  }
+  50% {
+    transform: scale(1.03);
+    filter: drop-shadow(0 16px 30px rgba(79, 70, 229, 0.22));
+  }
+}
+
+@keyframes splashBar {
+  0% {
+    width: 0%;
+  }
+  60% {
+    width: 75%;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+.animate-splash-pop {
+  animation: splashPop 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-splash-pulse {
+  animation: splashPulse 2.2s ease-in-out infinite;
+}
+
+.animate-splash-bar {
+  animation: splashBar 1.05s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
 .custom-scrollbar::-webkit-scrollbar {
   width: 5px;
 }
