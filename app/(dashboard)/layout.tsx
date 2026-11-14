@@ -332,25 +332,36 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         accumulatedSeconds += 1;
 
         // Also update local storage so it reflects instantly on dashboard
-        const key = `vision_active_seconds_${studentId}`;
-        const currentTotal = parseInt(localStorage.getItem(key) || '0', 10);
-        const newTotal = currentTotal + 1;
-        localStorage.setItem(key, String(newTotal));
-
-        const dailyKey = `vision_daily_active_${studentId}`;
-        let dailyMap: Record<string, number> = {};
+        let newTotal = accumulatedSeconds;
+        let todaySecs = 0;
         try {
-          dailyMap = JSON.parse(localStorage.getItem(dailyKey) || '{}');
-        } catch (e) {
-          dailyMap = {};
+          const key = `vision_active_seconds_${studentId}`;
+          const currentTotal = parseInt(localStorage.getItem(key) || '0', 10);
+          newTotal = currentTotal + 1;
+          localStorage.setItem(key, String(newTotal));
+
+          const dailyKey = `vision_daily_active_${studentId}`;
+          let dailyMap: Record<string, number> = {};
+          try {
+            dailyMap = JSON.parse(localStorage.getItem(dailyKey) || '{}');
+          } catch (e) {
+            dailyMap = {};
+          }
+          dailyMap[todayStr] = (dailyMap[todayStr] || 0) + 1;
+          localStorage.setItem(dailyKey, JSON.stringify(dailyMap));
+          todaySecs = dailyMap[todayStr];
+        } catch (storageErr) {
+          // localStorage may be disabled or restricted in private browsing mode
         }
-        dailyMap[todayStr] = (dailyMap[todayStr] || 0) + 1;
-        localStorage.setItem(dailyKey, JSON.stringify(dailyMap));
 
         // Dispatch tick event for curriculum minutes learnt card
-        window.dispatchEvent(new CustomEvent("vision_active_time_tick", {
-          detail: { totalSeconds: newTotal, todaySeconds: dailyMap[todayStr] }
-        }));
+        try {
+          window.dispatchEvent(new CustomEvent("vision_active_time_tick", {
+            detail: { totalSeconds: newTotal, todaySeconds: todaySecs }
+          }));
+        } catch (eventErr) {
+          // ignore event errors in restricted contexts
+        }
 
         // Periodically sync every 60 seconds (prevents request flooding and server lockup)
         if (accumulatedSeconds >= 60 && !isSyncing) {

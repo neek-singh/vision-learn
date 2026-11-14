@@ -14,6 +14,55 @@ interface MCQQuestion {
   explanation: string;
 }
 
+export function parseScore(score: any, totalQuestions = 0): { correct: number; total: number; percentage: number; display: string } | null {
+  if (score === null || score === undefined || score === "") return null;
+
+  if (typeof score === "number") {
+    const total = totalQuestions > 0 ? totalQuestions : score;
+    const pct = total > 0 ? Math.round((score / total) * 100) : 0;
+    return {
+      correct: score,
+      total,
+      percentage: pct,
+      display: totalQuestions > 0 ? `${score}/${totalQuestions}` : `${score}`
+    };
+  }
+
+  if (typeof score === "string") {
+    if (score.includes("/")) {
+      const parts = score.split("/");
+      const correct = parseInt(parts[0], 10) || 0;
+      const total = parseInt(parts[1], 10) || totalQuestions || 0;
+      const pct = total > 0 ? Math.round((correct / total) * 100) : 0;
+      return {
+        correct,
+        total,
+        percentage: pct,
+        display: score
+      };
+    }
+    const num = parseFloat(score);
+    if (!isNaN(num)) {
+      const total = totalQuestions > 0 ? totalQuestions : num;
+      const pct = total > 0 ? Math.round((num / total) * 100) : 0;
+      return {
+        correct: num,
+        total,
+        percentage: pct,
+        display: totalQuestions > 0 ? `${num}/${totalQuestions}` : `${num}`
+      };
+    }
+    return {
+      correct: 0,
+      total: totalQuestions,
+      percentage: 0,
+      display: score
+    };
+  }
+
+  return null;
+}
+
 interface LessonViewerProps {
   lesson: any;
   isFullScreen: boolean;
@@ -471,7 +520,7 @@ export default function LessonViewer({
           <div className="max-w-4xl mx-auto">
              {lessonType === 'video' ? (
                <div className="space-y-4 mb-10">
-                 <div className="flex justify-end">
+                 <div className="hidden md:flex justify-end">
                    <button 
                      onClick={() => setTheaterMode(!theaterMode)}
                      className={`px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
@@ -549,7 +598,10 @@ export default function LessonViewer({
                               </span>
                             </div>
                             <p className="text-xs text-slate-500 mt-0.5 font-medium">
-                              Your submitted score is <span className="font-extrabold text-slate-900">{submission.score || 'Recorded'}</span>.
+                              Your submitted score is <span className="font-extrabold text-slate-900">{(() => {
+                                const parsed = parseScore(submission.score, questions.length);
+                                return parsed ? parsed.display : String(submission.score || 'Recorded');
+                              })()}</span>.
                             </p>
                             <p className="text-[10px] text-slate-400 mt-0.5">
                               {submission.submitted_at 
@@ -560,40 +612,36 @@ export default function LessonViewer({
                         </div>
 
                         <div className="flex items-center gap-4 self-stretch sm:self-auto justify-between sm:justify-end bg-slate-50/60 sm:bg-transparent p-2 sm:p-0 rounded-xl border border-slate-100 sm:border-0">
-                          {submission.score && submission.score.includes('/') && (
-                            <div className="text-left sm:text-right">
-                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Accuracy</span>
-                              <p className="text-2xl font-black text-slate-900 leading-none">
-                                {(() => {
-                                  const parts = submission.score.split('/');
-                                  const correct = parseInt(parts[0]);
-                                  const total = parseInt(parts[1]);
-                                  return total > 0 ? Math.round((correct / total) * 100) : 0;
-                                })()}%
-                              </p>
-                            </div>
-                          )}
+                          {(() => {
+                            const parsed = parseScore(submission.score, questions.length);
+                            if (!parsed || parsed.total <= 0) return null;
+                            return (
+                              <div className="text-left sm:text-right">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Accuracy</span>
+                                <p className="text-2xl font-black text-slate-900 leading-none">
+                                  {parsed.percentage}%
+                                </p>
+                              </div>
+                            );
+                          })()}
                         </div>
                       </div>
 
                       {/* Smooth Animated Accuracy Bar */}
-                      {submission.score && submission.score.includes('/') && (
-                        <div className="space-y-1">
-                          <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-indigo-600 rounded-full transition-all duration-700 ease-out"
-                              style={{ 
-                                width: `${(() => {
-                                  const parts = submission.score.split('/');
-                                  const correct = parseInt(parts[0]);
-                                  const total = parseInt(parts[1]);
-                                  return total > 0 ? Math.round((correct / total) * 100) : 0;
-                                })()}%` 
-                              }}
-                            />
+                      {(() => {
+                        const parsed = parseScore(submission.score, questions.length);
+                        if (!parsed || parsed.total <= 0) return null;
+                        return (
+                          <div className="space-y-1">
+                            <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-indigo-600 rounded-full transition-all duration-700 ease-out"
+                                style={{ width: `${parsed.percentage}%` }}
+                              />
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        );
+                      })()}
 
                       {/* Clean Action Row */}
                       <div className="flex items-center justify-between pt-1">
@@ -915,9 +963,11 @@ export default function LessonViewer({
               {lessonType !== 'mcq' && lessonType !== 'quiz' && (
                 <div className="mt-16 pt-10 border-t border-slate-100 space-y-10">
                 {initialTests.filter(t => {
-                   const hasTitle = t.title.toLowerCase().includes(lesson.title.toLowerCase());
+                   const lessonTitle = (lesson?.title || "").toLowerCase();
+                   const tTitle = (t?.title || "").toLowerCase();
+                   const hasTitle = lessonTitle && tTitle ? tTitle.includes(lessonTitle) : false;
                    if (!hasTitle) return false;
-                   const sched = currentSchedules.find(s => s.type === 'test' && s.title.toLowerCase().includes(t.title.toLowerCase()));
+                   const sched = currentSchedules.find(s => s.type === 'test' && (s?.title || "").toLowerCase().includes(tTitle));
                    if (!sched) return false;
                    const sDate = new Date(sched.date);
                    const [h, mins] = (sched.start_time || "00:00").split(':');
@@ -931,11 +981,15 @@ export default function LessonViewer({
                     </div>
                     <div className="grid grid-cols-1 gap-4">
                       {initialTests
-                        .filter(t => t.title.toLowerCase().includes(lesson.title.toLowerCase()))
+                        .filter(t => {
+                          const lessonTitle = (lesson?.title || "").toLowerCase();
+                          const tTitle = (t?.title || "").toLowerCase();
+                          return lessonTitle && tTitle ? tTitle.includes(lessonTitle) : false;
+                        })
                         .map(test => (
                           <Link 
                             key={test.id}
-                            href={`/test/${test.id}`}
+                            href={`/tests?testId=${test.id}`}
                             className="group flex items-center justify-between p-5 bg-gradient-to-br from-slate-50 to-white hover:from-rose-50/40 hover:to-rose-50/10 rounded-2xl transition-all border border-slate-100 hover:border-rose-100/50 hover:shadow-lg hover:shadow-rose-500/5 hover:-translate-y-0.5"
                           >
                             <div className="flex items-center gap-4">
@@ -957,9 +1011,11 @@ export default function LessonViewer({
                 )}
 
                 {initialMaterials.filter(m => {
-                   const hasTitle = m.title.toLowerCase().includes(lesson.title.toLowerCase());
+                   const lessonTitle = (lesson?.title || "").toLowerCase();
+                   const mTitle = (m?.title || "").toLowerCase();
+                   const hasTitle = lessonTitle && mTitle ? mTitle.includes(lessonTitle) : false;
                    if (!hasTitle) return false;
-                   const sched = currentSchedules.find(s => s.type === 'assignment' && s.title.toLowerCase().includes(m.title.toLowerCase()));
+                   const sched = currentSchedules.find(s => s.type === 'assignment' && (s?.title || "").toLowerCase().includes(mTitle));
                    if (!sched) return false;
                    const sDate = new Date(sched.date);
                    const [h, mins] = (sched.start_time || "00:00").split(':');
@@ -973,7 +1029,11 @@ export default function LessonViewer({
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {initialMaterials
-                        .filter(m => m.title.toLowerCase().includes(lesson.title.toLowerCase()))
+                        .filter(m => {
+                          const lessonTitle = (lesson?.title || "").toLowerCase();
+                          const mTitle = (m?.title || "").toLowerCase();
+                          return lessonTitle && mTitle ? mTitle.includes(lessonTitle) : false;
+                        })
                         .map(material => (
                           <a 
                             key={material.id}

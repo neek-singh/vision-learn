@@ -1988,7 +1988,7 @@ export function CurriculumClient({
           </div>
 
           {/* Card 2: Course Information */}
-          <div className="bg-white rounded-xl border border-slate-200/80 p-3 shadow-2xs space-y-2">
+          <div className="hidden lg:block bg-white rounded-xl border border-slate-200/80 p-3 shadow-2xs space-y-2">
             <h3 className="text-xs font-semibold text-slate-800 tracking-tight">Course Information</h3>
 
             <div className="space-y-2 text-xs">
@@ -2098,7 +2098,7 @@ export function CurriculumClient({
           </div>
 
           {/* Card 4: Quote Card */}
-          <div className="bg-sky-50/60 border border-sky-100/90 rounded-2xl p-3.5 text-xs text-slate-700 space-y-1.5">
+          <div className="hidden lg:block bg-sky-50/60 border border-sky-100/90 rounded-2xl p-3.5 text-xs text-slate-700 space-y-1.5">
             <div className="flex items-start gap-2">
               <span className="text-xl font-serif text-blue-500 leading-none select-none">“</span>
               <p className="font-medium text-slate-700 leading-snug italic text-[11px]">

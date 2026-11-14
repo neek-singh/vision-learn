@@ -27,11 +27,11 @@ export default async function TestsPage() {
   const activeBatch = (student?.batch || enrollments[0]?.batch || "").trim();
 
   // 2. Fetch Schedules, Batches, and Modules for these courses in parallel
-  const [schedulesRes, batchesRes, modulesRes] = await Promise.all([
+  const [schedulesRes, batchesRes, modulesRes] = courseIds.length > 0 ? await Promise.all([
     supabase.from("schedules").select("*").in("course_id", courseIds),
     supabase.from("batches").select("id, title").in("course_id", courseIds),
     supabase.from("lms_modules").select("id, title, course_id").in("course_id", courseIds)
-  ]);
+  ]) : [{ data: [] }, { data: [] }, { data: [] }];
 
   const schedules = schedulesRes.data || [];
   const batches = batchesRes.data || [];
@@ -45,7 +45,7 @@ export default async function TestsPage() {
   const activeBatchId = activeBatchMatch?.id || null;
 
   // 3. Fetch Tests (from tests table)
-  const { data: rawTests } = await supabase
+  const rawTests = courseIds.length > 0 ? (await supabase
     .from("tests")
     .select(`
       *,
@@ -53,7 +53,7 @@ export default async function TestsPage() {
       test_questions(id)
     `)
     .in("course_id", courseIds)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })).data : [];
 
   const tests = (rawTests || []).filter(t => {
     // Hide unpublished tests
@@ -77,11 +77,11 @@ export default async function TestsPage() {
   });
 
   // 4. Fetch curriculum quiz lessons (mcq type)
-  const { data: rawQuizLessons } = await supabase
+  const rawQuizLessons = courseIds.length > 0 ? (await supabase
     .from("lessons")
     .select("id, title, course_id, module_id, notes_content, lesson_type, type, batches, created_at, courses(title)")
     .in("course_id", courseIds)
-    .or("lesson_type.eq.mcq,type.eq.mcq");
+    .or("lesson_type.eq.mcq,type.eq.mcq")).data : [];
 
   // Filter quiz lessons by student's batch
   const quizLessons = (rawQuizLessons || []).filter((ql: any) => {

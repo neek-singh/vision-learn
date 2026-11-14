@@ -60,6 +60,8 @@ supabase/.temp/
 # Internal plans, agent notes, prompts & documentation
 *.md
 !README.md
+!CRASH_AUDIT.md
+!MOBILE_UI_AUDIT.md
 .agents/
 .planning/
 *.log

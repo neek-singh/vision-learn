@@ -89,18 +89,43 @@ export default function CertificatesClient({
   const [copiedLink, setCopiedLink] = useState(false);
 
   // 1. Generate 100% Real Unlocked Certificates from real course completions & passed test results
+  const safeFormatDate = (input: any) => {
+    if (!input) {
+      const now = new Date();
+      return {
+        formattedDate: now.toLocaleDateString("en-IN", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric"
+        }),
+        isoDate: now.toISOString()
+      };
+    }
+    const d = new Date(input);
+    if (isNaN(d.getTime())) {
+      const now = new Date();
+      return {
+        formattedDate: "N/A",
+        isoDate: now.toISOString()
+      };
+    }
+    return {
+      formattedDate: d.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric"
+      }),
+      isoDate: d.toISOString()
+    };
+  };
+
   const unlockedCertificates = useMemo<CertificateItem[]>(() => {
     const list: CertificateItem[] = [];
 
     // Course Certificates (from completed courses)
     coursesProgress.forEach((c) => {
       if (c.isCompleted) {
-        const rawDate = c.enrolledAt ? new Date(c.enrolledAt) : new Date();
-        const formattedDate = rawDate.toLocaleDateString("en-IN", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric"
-        });
+        const { formattedDate, isoDate } = safeFormatDate(c.enrolledAt);
 
         list.push({
           id: `cert-crs-${c.courseId}`,
@@ -110,7 +135,7 @@ export default function CertificatesClient({
           description: `All ${c.totalLessons} curriculum lessons and practical assessments fulfilled`,
           type: "Course",
           issuedDate: formattedDate,
-          issuedDateRaw: rawDate.toISOString(),
+          issuedDateRaw: isoDate,
           iconType: "blue_cert",
           skills: ["Curriculum Mastery", "Practical Projects", "Technical Assessment"],
           grade: c.progress >= 95 ? "Grade A+" : "Grade A"
@@ -125,12 +150,7 @@ export default function CertificatesClient({
       const scorePct = totalQ > 0 ? Math.round((score / totalQ) * 100) : 0;
 
       if (scorePct >= 70) {
-        const rawDate = t.completed_at ? new Date(t.completed_at) : new Date();
-        const formattedDate = rawDate.toLocaleDateString("en-IN", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric"
-        });
+        const { formattedDate, isoDate } = safeFormatDate(t.completed_at);
         const testTitle = t.tests?.title || "Curriculum Assessment";
 
         list.push({
@@ -141,7 +161,7 @@ export default function CertificatesClient({
           description: `${totalQ} Questions | ${score} Correct (${scorePct}% Accuracy)`,
           type: "Test",
           issuedDate: formattedDate,
-          issuedDateRaw: rawDate.toISOString(),
+          issuedDateRaw: isoDate,
           iconType: scorePct >= 85 ? "rose_trophy" : "purple_trophy",
           skills: ["Timed Evaluation", "Knowledge Assessment", "Conceptual Understanding"],
           grade: `Score: ${score}/${totalQ} (${scorePct}%)`
@@ -246,15 +266,15 @@ export default function CertificatesClient({
             <h1 className="text-base sm:text-xl font-bold text-slate-900 leading-tight">
               My Verified Certificates
             </h1>
-            <p className="text-xs text-slate-500 mt-0.5 font-normal truncate">
+            <p className="hidden sm:block text-xs text-slate-500 mt-0.5 font-normal truncate">
               Earn accredited certificates by completing courses and passing test evaluations
             </p>
             <div className="flex flex-wrap items-center gap-2 mt-2 text-[11px] text-slate-600 font-medium">
-              <span className="inline-flex items-center gap-1 bg-white/70 px-2 py-0.5 rounded-md border border-blue-100">
+              <span className="hidden sm:inline-flex items-center gap-1 bg-white/70 px-2 py-0.5 rounded-md border border-blue-100">
                 <ShieldCheck size={11} className="text-blue-600" />
                 Verified Credentials
               </span>
-              <span className="inline-flex items-center gap-1 bg-white/70 px-2 py-0.5 rounded-md border border-blue-100">
+              <span className="hidden sm:inline-flex items-center gap-1 bg-white/70 px-2 py-0.5 rounded-md border border-blue-100">
                 <Download size={11} className="text-blue-600" />
                 Instant PDF Export
               </span>
@@ -282,7 +302,7 @@ export default function CertificatesClient({
               {stats.total}
             </div>
             <div className="text-[11px] sm:text-xs font-semibold text-slate-700 mt-1 truncate">Earned</div>
-            <div className="text-[10px] text-slate-400 mt-0.5 truncate">Unlocked credentials</div>
+            <div className="hidden sm:block text-[10px] text-slate-400 mt-0.5 truncate">Unlocked credentials</div>
           </div>
         </div>
 
@@ -296,7 +316,7 @@ export default function CertificatesClient({
               {stats.coursesCount}
             </div>
             <div className="text-[11px] sm:text-xs font-semibold text-slate-700 mt-1 truncate">Courses</div>
-            <div className="text-[10px] text-slate-400 mt-0.5 truncate">Full programs</div>
+            <div className="hidden sm:block text-[10px] text-slate-400 mt-0.5 truncate">Full programs</div>
           </div>
         </div>
 
@@ -310,7 +330,7 @@ export default function CertificatesClient({
               {stats.testsCount}
             </div>
             <div className="text-[11px] sm:text-xs font-semibold text-slate-700 mt-1 truncate">Tests</div>
-            <div className="text-[10px] text-slate-400 mt-0.5 truncate">Scored ≥70%</div>
+            <div className="hidden sm:block text-[10px] text-slate-400 mt-0.5 truncate">Scored ≥70%</div>
           </div>
         </div>
 
@@ -324,7 +344,7 @@ export default function CertificatesClient({
               {stats.inProgressCount}
             </div>
             <div className="text-[11px] sm:text-xs font-semibold text-slate-700 mt-1 truncate">In Progress</div>
-            <div className="text-[10px] text-slate-400 mt-0.5 truncate">To be unlocked</div>
+            <div className="hidden sm:block text-[10px] text-slate-400 mt-0.5 truncate">To be unlocked</div>
           </div>
         </div>
       </div>
@@ -441,7 +461,8 @@ export default function CertificatesClient({
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-500 font-medium truncate">
-                    {cert.subtitle} • {cert.description}
+                    <span>{cert.subtitle}</span>
+                    <span className="hidden sm:inline"> • {cert.description}</span>
                   </p>
                   <div className="flex flex-wrap items-center gap-3 mt-1.5 text-[11px] text-slate-400">
                     <span className="font-mono text-[10px] text-slate-500">#{cert.certCode}</span>

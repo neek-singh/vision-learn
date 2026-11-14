@@ -173,7 +173,7 @@ export default function DashboardClient({
             Welcome back, <br className="hidden sm:inline" />
             <span className="text-slate-900">{studentName}!</span>
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 font-normal mt-1.5 leading-relaxed">
+          <p className="hidden sm:block text-xs sm:text-sm text-slate-500 font-normal mt-1.5 leading-relaxed">
             Keep learning, keep practicing and move closer to your goals.
           </p>
         </div>
@@ -222,7 +222,7 @@ export default function DashboardClient({
         </div>
 
         {/* Right Floating Card: Motivational Quote */}
-        <div className="bg-white/95 backdrop-blur-xs rounded-2xl border border-slate-200/80 p-4 shadow-sm w-full md:w-auto md:min-w-[240px] max-w-[270px] relative shrink-0">
+        <div className="hidden md:flex flex-col bg-white/95 backdrop-blur-xs rounded-2xl border border-slate-200/80 p-4 shadow-sm w-full md:w-auto md:min-w-[240px] max-w-[270px] relative shrink-0">
           <div className="text-blue-600 text-2xl font-serif font-black leading-none mb-1">
             “
           </div>
@@ -251,7 +251,6 @@ export default function DashboardClient({
               {totalCourses}
             </div>
             <div className="text-xs font-semibold text-slate-700 mt-1 truncate">Enrolled Courses</div>
-            <div className="text-[10px] text-slate-400 mt-0.5 truncate">Keep Learning</div>
           </div>
         </Link>
 
@@ -565,9 +564,6 @@ export default function DashboardClient({
                         </p>
                       </div>
                     </div>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
-                      Upcoming
-                    </span>
                   </Link>
                 ))
               ) : (
@@ -737,7 +733,8 @@ export default function DashboardClient({
                   <BookOpen size={18} />
                 </div>
                 <span className="text-[11px] font-semibold text-slate-700 group-hover:text-amber-700">
-                  Notes & Materials
+                  <span className="sm:hidden">Materials</span>
+                  <span className="hidden sm:inline">Notes & Materials</span>
                 </span>
               </Link>
 

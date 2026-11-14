@@ -194,7 +194,7 @@ export default function MaterialsClient({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search notes, shortcuts, formulas..."
+            placeholder="Search notes..."
             className="w-full pl-8.5 pr-8 py-2 text-xs bg-white rounded-xl border border-slate-200/80 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 text-slate-800 placeholder-slate-400 transition-all shadow-2xs"
           />
           {searchQuery && (

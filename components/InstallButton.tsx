@@ -56,7 +56,7 @@ export function InstallButton() {
           <div className="flex-1 min-w-0">
             <h3 className="text-sm font-bold text-slate-900">Install Vision Learn</h3>
             <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">
-              Add to your home screen for the best learning experience and offline access.
+              Add to home screen for fast offline access.
             </p>
           </div>
           <button 

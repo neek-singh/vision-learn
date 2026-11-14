@@ -375,15 +375,11 @@ export function StudentFeesClient({ fee: initialFee }: { fee: any }) {
                 <h1 className="text-base sm:text-xl font-bold text-slate-900 leading-tight">
                   Fees & Billing Ledger
                 </h1>
-                <p className="text-xs text-slate-500 mt-0.5 font-normal truncate">
+                <p className="hidden sm:block text-xs text-slate-500 mt-0.5 font-normal truncate">
                   Course: <span className="font-semibold text-slate-700">{fee.courses?.title || "Course"}</span> • Student: <span className="font-semibold text-slate-700">{fee.students?.name || "Student"}</span>
                 </p>
                 <div className="flex flex-wrap items-center gap-2 mt-2 text-[11px] text-slate-600 font-medium">
-                  <span className="inline-flex items-center gap-1 bg-white/70 px-2 py-0.5 rounded-md border border-indigo-100">
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />
-                    Real DB Billing
-                  </span>
-                  <span className="inline-flex items-center gap-1 bg-white/70 px-2 py-0.5 rounded-md border border-indigo-100">
+                  <span className="hidden sm:inline-flex items-center gap-1 bg-white/70 px-2 py-0.5 rounded-md border border-indigo-100">
                     <ShieldCheck size={11} className="text-emerald-600" />
                     Encrypted Ledger
                   </span>
@@ -758,7 +754,7 @@ export function StudentFeesClient({ fee: initialFee }: { fee: any }) {
         <div className="lg:col-span-4 space-y-3.5 sm:space-y-4">
           
           {/* Right Card 1: Student & Enrollment Summary */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-2xs space-y-4">
+          <div className="hidden lg:block bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-2xs space-y-4">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
               <FileCheck2 size={14} className="text-indigo-600" />
               <span>Enrollment Details</span>
@@ -819,7 +815,7 @@ export function StudentFeesClient({ fee: initialFee }: { fee: any }) {
           </div>
 
           {/* Right Card 3: Security & Verification Seal */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-4 shadow-2xs flex items-center gap-3">
+          <div className="hidden lg:flex bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-4 shadow-2xs items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center shrink-0">
               <ShieldCheck size={18} />
             </div>

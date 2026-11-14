@@ -336,10 +336,6 @@ export default function StudentAttendanceClient({
                 </p>
                 <div className="flex flex-wrap items-center gap-2 mt-2 text-[11px] text-slate-600 font-medium">
                   <span className="inline-flex items-center gap-1 bg-white/70 px-2 py-0.5 rounded-md border border-emerald-100">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    Real Attendance Log
-                  </span>
-                  <span className="inline-flex items-center gap-1 bg-white/70 px-2 py-0.5 rounded-md border border-emerald-100">
                     <ShieldCheck size={11} className="text-emerald-600" />
                     Overall {stats.allTimePct}% Attendance
                   </span>
@@ -389,7 +385,7 @@ export default function StudentAttendanceClient({
                   {stats.absent}
                 </div>
                 <div className="text-[11px] sm:text-xs font-semibold text-slate-700 mt-1 truncate">Absent</div>
-                <div className="text-[10px] text-slate-400 mt-0.5 truncate">missed classes</div>
+                <div className="hidden sm:block text-[10px] text-slate-400 mt-0.5 truncate">missed classes</div>
               </div>
             </div>
 
@@ -407,7 +403,7 @@ export default function StudentAttendanceClient({
                   {stats.leave}
                 </div>
                 <div className="text-[11px] sm:text-xs font-semibold text-slate-700 mt-1 truncate">Leave</div>
-                <div className="text-[10px] text-slate-400 mt-0.5 truncate">approved leaves</div>
+                <div className="hidden sm:block text-[10px] text-slate-400 mt-0.5 truncate">approved leaves</div>
               </div>
             </div>
 
@@ -663,10 +659,10 @@ export default function StudentAttendanceClient({
                   <thead>
                     <tr className="border-b border-slate-100 text-slate-400 font-semibold text-[11px]">
                       <th className="py-2.5 font-medium">Date</th>
-                      <th className="py-2.5 font-medium">Day</th>
+                      <th className="hidden sm:table-cell py-2.5 font-medium">Day</th>
                       <th className="py-2.5 font-medium">Topic / Remarks</th>
                       <th className="py-2.5 font-medium">Status</th>
-                      <th className="py-2.5 font-medium text-right">Mode</th>
+                      <th className="hidden sm:table-cell py-2.5 font-medium text-right">Mode</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -681,7 +677,7 @@ export default function StudentAttendanceClient({
                         <td className="py-2.5 font-semibold text-slate-900 whitespace-nowrap">
                           {row.dateFormatted}
                         </td>
-                        <td className="py-2.5 text-slate-400 font-medium">
+                        <td className="hidden sm:table-cell py-2.5 text-slate-400 font-medium">
                           {row.dayOfWeek}
                         </td>
                         <td className="py-2.5 font-medium text-slate-800 truncate max-w-[180px] sm:max-w-[280px]">
@@ -700,7 +696,7 @@ export default function StudentAttendanceClient({
                             {row.status}
                           </span>
                         </td>
-                        <td className="py-2.5 text-right text-slate-500 font-medium">
+                        <td className="hidden sm:table-cell py-2.5 text-right text-slate-500 font-medium">
                           {row.mode}
                         </td>
                       </tr>
@@ -838,7 +834,7 @@ export default function StudentAttendanceClient({
           </div>
 
           {/* Card 3: Attendance Guidance Tip */}
-          <div className="bg-amber-50/70 border border-amber-200/70 rounded-2xl p-4 shadow-2xs flex items-start gap-3">
+          <div className="hidden md:flex bg-amber-50/70 border border-amber-200/70 rounded-2xl p-4 shadow-2xs items-start gap-3">
             <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
               <Lightbulb size={16} className="stroke-[2.2]" />
             </div>

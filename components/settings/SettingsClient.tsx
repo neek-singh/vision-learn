@@ -184,14 +184,11 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
 
   return (
     <div className="space-y-4 animate-in fade-in duration-300 pb-16">
-      {/* 1. Breadcrumb navigation matching screenshot */}
-      <nav className="flex items-center gap-2 text-xs font-medium text-slate-400">
-        <Link href="/dashboard" className="text-slate-400 hover:text-blue-600 transition-colors flex items-center">
+      {/* 1. Breadcrumb navigation */}
+      <nav className="hidden sm:flex items-center gap-2 text-xs font-medium text-slate-400">
+        <Link href="/dashboard" className="text-slate-400 hover:text-blue-600 transition-colors flex items-center gap-1">
           <Home size={13} />
-        </Link>
-        <ChevronRight size={11} className="text-slate-300" />
-        <Link href="/dashboard" className="text-slate-500 hover:text-blue-600 transition-colors">
-          Dashboard
+          <span>Dashboard</span>
         </Link>
         <ChevronRight size={11} className="text-slate-300" />
         <span className="text-slate-700 font-semibold">Settings</span>
@@ -208,7 +205,7 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
       {/* Settings Layout: Left Sub-Navigation Menu (Sidebar ke right me) + Content Area */}
       <div className="flex flex-col lg:flex-row gap-5 items-start">
         {/* Left Settings Sub-Sidebar Navigation */}
-        <aside className="w-full lg:w-56 shrink-0 bg-white rounded-2xl border border-slate-200/80 p-2 sm:p-2.5 shadow-2xs space-y-1">
+        <aside className="w-full lg:w-56 shrink-0 bg-white rounded-2xl border border-slate-200/80 p-2 sm:p-2.5 shadow-2xs flex flex-row overflow-x-auto scrollbar-hide lg:flex-col gap-1.5 lg:space-y-1">
           {settingsNavItems.map((item) => {
             const isActive = activeTab === item.id;
             const Icon = item.icon;
@@ -217,14 +214,14 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
                 key={item.id}
                 type="button"
                 onClick={() => setActiveTab(item.id)}
-                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium text-xs sm:text-sm transition-all duration-150 text-left ${
+                className={`flex items-center gap-2 sm:gap-3 px-3 py-2 lg:py-2.5 rounded-xl font-medium text-xs sm:text-sm transition-all duration-150 text-left shrink-0 whitespace-nowrap lg:w-full ${
                   isActive
                     ? "bg-blue-50 text-blue-700 font-bold shadow-2xs"
                     : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
                 }`}
               >
-                <Icon size={18} className={isActive ? "text-blue-600 stroke-[2.2]" : "text-slate-400"} />
-                <span className="truncate">{item.label}</span>
+                <Icon size={16} className={isActive ? "text-blue-600 stroke-[2.2]" : "text-slate-400"} />
+                <span>{item.label}</span>
               </button>
             );
           })}
@@ -536,7 +533,7 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
             {/* Right Column: Account Status + Quick Actions + Learning Preferences */}
             <div className="xl:col-span-5 space-y-4 sm:space-y-5">
           {/* Card 1: Account Status */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-3.5">
+          <div className="hidden md:block bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-3.5">
             {/* Header */}
             <div className="flex items-start gap-2.5">
               <ShieldCheck size={20} className="text-emerald-500 shrink-0 mt-0.5" />

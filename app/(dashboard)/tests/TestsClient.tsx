@@ -788,10 +788,6 @@ export default function TestsClient({
                 </p>
                 <div className="flex flex-wrap items-center gap-2 mt-2 text-[11px] text-slate-600 font-medium">
                   <span className="inline-flex items-center gap-1 bg-white/70 px-2 py-0.5 rounded-md border border-purple-100">
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />
-                    Real DB Tests
-                  </span>
-                  <span className="inline-flex items-center gap-1 bg-white/70 px-2 py-0.5 rounded-md border border-purple-100">
                     <CheckSquare size={11} className="text-purple-600" />
                     Auto Evaluation
                   </span>
@@ -819,7 +815,7 @@ export default function TestsClient({
                   {stats.total}
                 </div>
                 <div className="text-[11px] sm:text-xs font-semibold text-slate-700 mt-1 truncate">Total Tests</div>
-                <div className="text-[10px] text-slate-400 mt-0.5 truncate">All modules</div>
+                <div className="hidden sm:block text-[10px] text-slate-400 mt-0.5 truncate">All modules</div>
               </div>
             </div>
 
@@ -833,7 +829,7 @@ export default function TestsClient({
                   {stats.completed}
                 </div>
                 <div className="text-[11px] sm:text-xs font-semibold text-slate-700 mt-1 truncate">Completed</div>
-                <div className="text-[10px] text-slate-400 mt-0.5 truncate">{stats.completionRate}% completion</div>
+                <div className="hidden sm:block text-[10px] text-slate-400 mt-0.5 truncate">{stats.completionRate}% completion</div>
               </div>
             </div>
 
@@ -847,7 +843,7 @@ export default function TestsClient({
                   {stats.pending}
                 </div>
                 <div className="text-[11px] sm:text-xs font-semibold text-slate-700 mt-1 truncate">Pending</div>
-                <div className="text-[10px] text-slate-400 mt-0.5 truncate">To be taken</div>
+                <div className="hidden sm:block text-[10px] text-slate-400 mt-0.5 truncate">To be taken</div>
               </div>
             </div>
 
@@ -861,7 +857,7 @@ export default function TestsClient({
                   {stats.avgScore}%
                 </div>
                 <div className="text-[11px] sm:text-xs font-semibold text-slate-700 mt-1 truncate">Average Score</div>
-                <div className="text-[10px] text-slate-400 mt-0.5 truncate">
+                <div className="hidden sm:block text-[10px] text-slate-400 mt-0.5 truncate">
                   {stats.completed > 0 ? `${stats.completed} attempts` : "No attempts"}
                 </div>
               </div>

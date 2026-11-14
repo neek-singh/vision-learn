@@ -31,10 +31,10 @@ export default async function AssignmentsPage() {
   const activeBatch = (student?.batch || enrollments[0]?.batch || "").trim();
 
   // 2. Fetch schedules and batches for these courses in parallel
-  const [schedulesRes, batchesRes] = await Promise.all([
+  const [schedulesRes, batchesRes] = courseIds.length > 0 ? await Promise.all([
     supabase.from("schedules").select("*").in("course_id", courseIds),
     supabase.from("batches").select("id, title").in("course_id", courseIds)
-  ]);
+  ]) : [{ data: [] }, { data: [] }];
 
   const schedulesRaw = schedulesRes.data || [];
   const batches = batchesRes.data || [];
@@ -66,11 +66,11 @@ export default async function AssignmentsPage() {
   });
 
   // 3. Fetch curriculum lessons that are assignment or project type
-  const { data: taskLessons } = await supabase
+  const taskLessons = courseIds.length > 0 ? (await supabase
     .from("lessons")
     .select("id, title, course_id, notes_content, assignment_file, lesson_type, type, batches, created_at")
     .in("course_id", courseIds)
-    .or("lesson_type.eq.assignment,type.eq.assignment,lesson_type.eq.project,type.eq.project");
+    .or("lesson_type.eq.assignment,type.eq.assignment,lesson_type.eq.project,type.eq.project")).data : [];
 
   const normalize = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, "").trim();
 
@@ -90,12 +90,12 @@ export default async function AssignmentsPage() {
   });
 
   // 4. Fetch traditional Assignments table entries (published)
-  const { data: assignments } = await supabase
+  const assignments = courseIds.length > 0 ? (await supabase
     .from("assignments")
     .select("*, courses:courses!assignments_course_id_fkey(title), assignment_courses!inner(course_id)")
     .in("assignment_courses.course_id", courseIds)
     .eq("is_published", true)
-    .order("due_date", { ascending: true });
+    .order("due_date", { ascending: true })).data : [];
 
   const filteredTraditionalAssignments = (assignments || []).filter(a => {
     // If it has a batches array, filter by student's batch
@@ -152,7 +152,7 @@ export default async function AssignmentsPage() {
       <div className="bg-white rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs flex items-center justify-between gap-3">
         <div className="min-w-0">
           <h1 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">Active Projects</h1>
-          <p className="text-xs text-slate-500 font-medium">Manage tasks, assignments & deliverables</p>
+          <p className="hidden sm:block text-xs text-slate-500 font-medium">Manage tasks, assignments & deliverables</p>
         </div>
         <div className="shrink-0">
           <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-150 px-2.5 py-1 rounded-full">

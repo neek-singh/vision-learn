@@ -438,7 +438,7 @@ export default function CalendarClient({
             <h1 className="text-lg sm:text-xl font-bold text-slate-900 leading-tight">
               Learning Calendar
             </h1>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="hidden sm:block text-xs text-slate-500 mt-0.5">
               Your class schedule, live sessions, tests, assignments and important dates.
             </p>
 
@@ -873,7 +873,7 @@ export default function CalendarClient({
                       {/* Date, Day & Time */}
                       <div className="flex items-center gap-2.5 sm:w-56 shrink-0 text-xs">
                         <span className="font-semibold text-slate-900 whitespace-nowrap">{item.dateFormatted}</span>
-                        <span className="text-slate-400 font-medium whitespace-nowrap">{item.dayOfWeek}</span>
+                        <span className="hidden sm:inline text-slate-400 font-medium whitespace-nowrap">{item.dayOfWeek}</span>
                         <span className="text-slate-600 font-medium whitespace-nowrap ml-auto sm:ml-0">{item.timeFormatted}</span>
                       </div>
 

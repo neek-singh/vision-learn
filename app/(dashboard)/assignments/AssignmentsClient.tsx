@@ -448,7 +448,7 @@ export default function AssignmentsClient({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search projects and tasks..."
+            placeholder="Search assignments..."
             className="w-full pl-8.5 pr-8 py-2 text-xs bg-white rounded-xl border border-slate-200/80 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 text-slate-800 placeholder-slate-400 transition-all shadow-2xs"
           />
           {searchQuery && (
@@ -596,12 +596,12 @@ export default function AssignmentsClient({
                     <span className="text-slate-300">•</span>
                     <span className="font-semibold text-slate-600">{progress}%</span>
                     {(isGraded || isSubmitted || isDraft) && (
-                      <>
+                      <span className="hidden sm:inline-flex items-center gap-1.5">
                         <span className="text-slate-300">•</span>
                         <span className={`font-bold ${isGraded ? 'text-indigo-600' : isSubmitted ? 'text-emerald-600' : 'text-amber-600'}`}>
                           {isGraded ? `Graded (${submission.score || 'Done'})` : isSubmitted ? 'Submitted' : 'Draft'}
                         </span>
-                      </>
+                      </span>
                     )}
                   </div>
                 </div>

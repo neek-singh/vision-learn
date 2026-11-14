@@ -224,7 +224,7 @@ export function CoursesClient({
         </div>
 
         {/* Small Inspirational Hero Banner */}
-        <div className="bg-gradient-to-r from-sky-100/80 via-sky-50 to-blue-100/70 border border-sky-200/60 rounded-xl p-3 sm:px-4 sm:py-2.5 relative overflow-hidden flex items-center justify-between gap-3 shadow-2xs w-full md:w-auto md:min-w-[420px]">
+        <div className="hidden md:flex bg-gradient-to-r from-sky-100/80 via-sky-50 to-blue-100/70 border border-sky-200/60 rounded-xl p-3 sm:px-4 sm:py-2.5 relative overflow-hidden items-center justify-between gap-3 shadow-2xs w-full md:w-auto md:min-w-[420px]">
           <div className="relative z-10 min-w-0">
             <h2 className="text-xs sm:text-sm font-black text-slate-900 tracking-tight leading-tight">
               Learn • Practice • Succeed
@@ -267,7 +267,8 @@ export function CoursesClient({
               : "text-slate-600 font-medium hover:text-slate-900 border-b-2 border-transparent"
           }`}
         >
-          My Enrolled Courses ({enrolledCourses.length})
+          <span className="sm:hidden">Enrolled ({enrolledCourses.length})</span>
+          <span className="hidden sm:inline">My Enrolled Courses ({enrolledCourses.length})</span>
         </button>
 
         <button
@@ -278,7 +279,8 @@ export function CoursesClient({
               : "text-slate-600 font-medium hover:text-slate-900 border-b-2 border-transparent"
           }`}
         >
-          Available Courses ({exploreCoursesCatalog.length})
+          <span className="sm:hidden">Available ({exploreCoursesCatalog.length})</span>
+          <span className="hidden sm:inline">Available Courses ({exploreCoursesCatalog.length})</span>
         </button>
       </div>
 
@@ -408,7 +410,8 @@ export function CoursesClient({
                       ) : (
                         <>
                           <Play size={10} className="fill-current" />
-                          <span>Continue Learning</span>
+                          <span className="sm:hidden">Continue</span>
+                          <span className="hidden sm:inline">Continue Learning</span>
                         </>
                       )}
                     </Link>
@@ -554,7 +557,7 @@ export function CoursesClient({
                     </div>
 
                     {/* Key Features List */}
-                    <div className="space-y-1 pt-1">
+                    <div className="hidden sm:block space-y-1 pt-1">
                       {course.features.map((feat: string, fIdx: number) => (
                         <div key={fIdx} className="flex items-center gap-1.5 text-[10px] text-slate-600 font-medium">
                           <Check size={11} className="text-emerald-500 shrink-0" />

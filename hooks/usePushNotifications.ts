@@ -11,12 +11,18 @@ export function usePushNotifications(userId: string | null) {
   const supabase = createClient();
 
   useEffect(() => {
-    if ("Notification" in window) {
-      setPermission(Notification.permission);
+    if (typeof window === "undefined" || !("Notification" in window) || !("serviceWorker" in navigator)) {
+      return;
     }
 
-    if (userId && Notification.permission === 'granted') {
-      registerAndSubscribe();
+    try {
+      setPermission(window.Notification.permission);
+
+      if (userId && window.Notification.permission === 'granted') {
+        registerAndSubscribe();
+      }
+    } catch (e) {
+      console.warn("Notification API not available in this context:", e);
     }
   }, [userId]);
 
@@ -62,12 +68,16 @@ export function usePushNotifications(userId: string | null) {
   };
 
   const requestPermission = async () => {
-    if (!("Notification" in window)) return;
+    if (typeof window === "undefined" || !("Notification" in window)) return;
     
-    const result = await Notification.requestPermission();
-    setPermission(result);
-    if (result === 'granted') {
-      await registerAndSubscribe();
+    try {
+      const result = await window.Notification.requestPermission();
+      setPermission(result);
+      if (result === 'granted') {
+        await registerAndSubscribe();
+      }
+    } catch (error) {
+      console.error('Failed to request notification permission:', error);
     }
   };
 

@@ -40,6 +40,11 @@ export function GlobalSearch() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  // Reset selectedIndex whenever search query changes
+  useEffect(() => {
+    setSelectedIndex(0);
+  }, [query]);
+
   // Focus input when opened
   useEffect(() => {
     if (isOpen) {
@@ -180,12 +185,16 @@ export function GlobalSearch() {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setSelectedIndex(prev => (prev + 1) % flatResults.length);
+      if (flatResults.length > 0) {
+        setSelectedIndex(prev => (prev + 1) % flatResults.length);
+      }
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      setSelectedIndex(prev => (prev - 1 + flatResults.length) % flatResults.length);
+      if (flatResults.length > 0) {
+        setSelectedIndex(prev => (prev - 1 + flatResults.length) % flatResults.length);
+      }
     } else if (e.key === "Enter") {
-      if (flatResults[selectedIndex]) {
+      if (flatResults.length > 0 && flatResults[selectedIndex]) {
         router.push(flatResults[selectedIndex].href);
         setIsOpen(false);
       }
@@ -199,7 +208,8 @@ export function GlobalSearch() {
     >
       <Search size={15} className="text-slate-400 group-hover:text-blue-600 shrink-0 transition-colors" />
       <span className="text-xs text-slate-400 font-medium truncate flex-1">
-        Search lessons, topics or anything...
+        <span className="sm:hidden">Search...</span>
+        <span className="hidden sm:inline">Search lessons, topics or anything...</span>
       </span>
       <kbd className="hidden lg:flex items-center gap-0.5 px-1.5 py-0.5 bg-white border border-slate-200/90 rounded text-[9px] font-bold text-slate-400 shrink-0 shadow-2xs">
         <Command size={9} /> K
@@ -322,7 +332,7 @@ export function GlobalSearch() {
           )}
         </div>
 
-        <div className="px-4 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest">
+        <div className="hidden sm:flex px-4 py-3 bg-slate-50 border-t border-slate-100 items-center justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest">
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1"><kbd className="bg-white border border-slate-200 px-1 rounded">↵</kbd> Select</span>
             <span className="flex items-center gap-1"><kbd className="bg-white border border-slate-200 px-1 rounded">↑↓</kbd> Navigate</span>

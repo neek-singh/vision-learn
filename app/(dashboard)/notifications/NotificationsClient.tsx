@@ -121,7 +121,7 @@ export default function StudentNotificationsClient({
               </span>
             )}
           </div>
-          <p className="text-xs text-slate-500 font-medium mt-0.5">
+          <p className="hidden sm:block text-xs text-slate-500 font-medium mt-0.5">
             Official messages and updates from Vision Institute
           </p>
         </div>

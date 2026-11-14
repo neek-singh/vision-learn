@@ -25,22 +25,22 @@ export function SyncStatus() {
               <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
             </span>
             <WifiOff size={13} className="text-amber-700 shrink-0" />
-            <span>Offline Mode — Viewing saved records</span>
+            <span>Offline Mode<span className="hidden sm:inline"> — Viewing saved records</span></span>
             {pendingCount > 0 && (
               <span className="text-[11px] font-normal text-amber-700/90 pl-1 border-l border-amber-300/60">
-                {pendingCount} action{pendingCount > 1 ? 's' : ''} saved locally
+                {pendingCount} action{pendingCount > 1 ? 's' : ''} saved<span className="hidden sm:inline"> locally</span>
               </span>
             )}
           </div>
         ) : isSyncing ? (
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/25 text-blue-900 text-xs font-semibold backdrop-blur-md shadow-xs">
             <RefreshCw size={13} className="animate-spin text-blue-600 shrink-0" />
-            <span>Syncing offline updates to cloud...</span>
+            <span>Syncing<span className="hidden sm:inline"> offline updates to cloud...</span></span>
           </div>
         ) : justReconnected ? (
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-900 text-xs font-semibold backdrop-blur-md shadow-xs">
             <CheckCircle2 size={13} className="text-emerald-600 shrink-0" />
-            <span>Back Online — Everything up to date</span>
+            <span>Back Online<span className="hidden sm:inline"> — Everything up to date</span></span>
           </div>
         ) : null}
       </div>
