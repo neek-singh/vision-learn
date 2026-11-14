@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { WelcomeOnboarding } from "@/components/auth/WelcomeOnboarding";
 
 export default async function Home() {
   const cookieStore = await cookies();
@@ -7,7 +8,7 @@ export default async function Home() {
 
   if (token) {
     redirect("/dashboard");
-  } else {
-    redirect("/login");
   }
+
+  return <WelcomeOnboarding />;
 }
