@@ -108,6 +108,49 @@ body {
   animation: splashBar 1.05s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
+@keyframes floatSlow {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-14px) rotate(6deg);
+  }
+}
+
+@keyframes floatMedium {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-18px) rotate(-6deg);
+  }
+}
+
+@keyframes floatFast {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(4deg);
+  }
+}
+
+.animate-float-slow {
+  animation: floatSlow 5s ease-in-out infinite;
+}
+
+.animate-float-medium {
+  animation: floatMedium 3.8s ease-in-out infinite;
+}
+
+.animate-float-fast {
+  animation: floatFast 3s ease-in-out infinite;
+}
+
+html.splash-already-seen #vision-learn-splash {
+  display: none !important;
+}
+
 .custom-scrollbar::-webkit-scrollbar {
   width: 5px;
 }

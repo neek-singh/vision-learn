@@ -16,6 +16,7 @@ const geistMono = Geist_Mono({
 
 import { PWARegistration } from "@/components/PWARegistration";
 import { InstallButton } from "@/components/InstallButton";
+import { SplashScreen } from "@/components/SplashScreen";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://learn.visionitinstitute.com"),
@@ -66,7 +67,21 @@ export default function RootLayout({
       data-scroll-behavior="smooth"
       suppressHydrationWarning
     >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                if (sessionStorage.getItem('vision_learn_splash_seen')) {
+                  document.documentElement.classList.add('splash-already-seen');
+                }
+              } catch (e) {}
+            `,
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col">
+        <SplashScreen />
         <PWARegistration />
         <InstallButton />
         {children}
