@@ -44,7 +44,7 @@ async function CalendarContent({ userId }: { userId: string }) {
     .order("date", { ascending: true });
 
   if (courseIds.length > 0) {
-    schedulesQuery = schedulesQuery.in("course_id", courseIds);
+    schedulesQuery = schedulesQuery.or(`course_id.in.(${courseIds.join(",")}),course_id.is.null`);
   }
 
   const [eventsRes, schedulesRes] = await Promise.all([

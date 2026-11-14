@@ -26,14 +26,18 @@ export default async function TestsPage() {
   const courseIds = enrollments.map(e => e.course_id).filter(Boolean);
   const activeBatch = (student?.batch || enrollments[0]?.batch || "").trim();
 
-  // 2. Fetch Schedules, Batches, and Modules for these courses in parallel
-  const [schedulesRes, batchesRes, modulesRes] = courseIds.length > 0 ? await Promise.all([
-    supabase.from("schedules").select("*").in("course_id", courseIds),
-    supabase.from("batches").select("id, title").in("course_id", courseIds),
-    supabase.from("lms_modules").select("id, title, course_id").in("course_id", courseIds)
-  ]) : [{ data: [] }, { data: [] }, { data: [] }];
+  // 2. Fetch Batches, Modules, and Schedules for these courses in parallel
+  const schedulesQuery = courseIds.length > 0
+    ? supabase.from("schedules").select("*, courses(title)").or(`course_id.in.(${courseIds.join(",")}),course_id.is.null`).order("date", { ascending: true })
+    : supabase.from("schedules").select("*, courses(title)").is("course_id", null).order("date", { ascending: true });
 
-  const schedules = schedulesRes.data || [];
+  const [schedulesRes, batchesRes, modulesRes] = await Promise.all([
+    schedulesQuery,
+    courseIds.length > 0 ? supabase.from("batches").select("id, title").in("course_id", courseIds) : { data: [] },
+    courseIds.length > 0 ? supabase.from("lms_modules").select("id, title, course_id").in("course_id", courseIds) : { data: [] }
+  ]);
+
+  const rawSchedules = schedulesRes.data || [];
   const batches = batchesRes.data || [];
   const modules = modulesRes.data || [];
 
@@ -43,6 +47,13 @@ export default async function TestsPage() {
     return title && (title.includes(activeBatchLower) || activeBatchLower.includes(title));
   });
   const activeBatchId = activeBatchMatch?.id || null;
+
+  // Filter schedules by student's active batch or all batches
+  const schedules = rawSchedules.filter((s: any) => {
+    const sBatch = (s.batch || "").trim().toLowerCase();
+    const batchMatch = !sBatch || sBatch === "all batches" || sBatch === "all" || !activeBatchLower || sBatch === activeBatchLower || (activeBatchId && sBatch === activeBatchId.toLowerCase());
+    return batchMatch;
+  });
 
   // 3. Fetch Tests (from tests table)
   const rawTests = courseIds.length > 0 ? (await supabase
@@ -56,21 +67,21 @@ export default async function TestsPage() {
     .order("created_at", { ascending: false })).data : [];
 
   const tests = (rawTests || []).filter(t => {
-    // Hide unpublished tests
+    // Hide unpublished tests (keep undefined/null as visible so tests are not hidden prematurely)
     if (t.is_published === false) return false;
 
     // Filter by batches array if defined
     if (Array.isArray(t.batches) && t.batches.length > 0) {
-      const activeBatchLower = activeBatch.toLowerCase();
       return t.batches.some((b: string) => {
         const bLower = (b || "").trim().toLowerCase();
-        return bLower === activeBatchLower || bLower === "all" || bLower === "all batches";
+        return bLower === activeBatchLower || bLower === "all" || bLower === "all batches" || (activeBatchId && (b === activeBatchId || bLower === activeBatchId.toLowerCase()));
       });
     }
 
     // Filter by single batch string if defined
     if (t.batch && t.batch !== "All Batches" && t.batch.trim().toLowerCase() !== "all") {
-      return t.batch.trim().toLowerCase() === activeBatch.toLowerCase();
+      const tBatchLower = t.batch.trim().toLowerCase();
+      return tBatchLower === activeBatchLower || (activeBatchId && (t.batch === activeBatchId || tBatchLower === activeBatchId.toLowerCase()));
     }
 
     return true;

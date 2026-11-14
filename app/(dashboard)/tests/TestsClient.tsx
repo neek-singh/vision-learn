@@ -33,7 +33,10 @@ import {
   Award,
   Play,
   RotateCcw,
-  PenTool
+  PenTool,
+  Lock,
+  Radio,
+  CalendarDays
 } from "lucide-react";
 
 export interface TestItem {
@@ -41,23 +44,156 @@ export interface TestItem {
   title: string;
   module: string;
   description: string;
-  type: string; // "MCQ", "Timed Test", "Mock Test", "Practice Quiz"
-  category: "all" | "upcoming" | "completed" | "practice" | "mock";
+  type: string; // "MCQ", "Timed Test", "Mock Test", "Practice Quiz", "Scheduled Test"
+  category: "all" | "upcoming" | "completed" | "practice" | "mock" | "scheduled";
   questionsCount: number;
   durationMinutes: number;
   totalMarks: number;
-  status: "Completed" | "Pending" | "Not Attempted";
+  status: "Completed" | "Pending" | "Not Attempted" | "Scheduled" | "Live";
   scoreText: string;
   scoreValue: number | null;
   totalQuestions: number;
   dueText: string;
   dueDate?: string;
   iconColor: "blue" | "amber" | "purple" | "emerald" | "rose";
-  action: "start_test" | "view_result";
+  action: "start_test" | "view_result" | "scheduled_locked";
   isDbItem?: boolean;
   isQuizLesson?: boolean;
+  isScheduleOnly?: boolean;
   notes_content?: string;
   completedAt?: string;
+  // Schedule integration fields
+  isScheduled?: boolean;
+  scheduleDate?: string;
+  startTime?: string;
+  endTime?: string;
+  isLive?: boolean;
+  isLocked?: boolean;
+  lockReason?: string;
+  scheduleId?: string;
+  scheduleChipText?: string;
+}
+
+/**
+ * Calculates start/end timestamps and current schedule window state
+ */
+function parseScheduleWindow(dateStr?: string, startTimeStr?: string, endTimeStr?: string, durationMinutes = 30) {
+  if (!dateStr) return null;
+  const parts = dateStr.split("-").map(p => parseInt(p, 10));
+  if (parts.length < 3) return null;
+  const [year, month, day] = parts;
+
+  const parseTime = (tStr?: string, defaultHour = 9, defaultMin = 0) => {
+    if (!tStr) return { hour: defaultHour, minute: defaultMin };
+    const ampmMatch = tStr.match(/(\d+):(\d+)(?::\d+)?\s*(AM|PM)?/i);
+    if (ampmMatch) {
+      let h = parseInt(ampmMatch[1], 10);
+      const m = parseInt(ampmMatch[2], 10);
+      const mer = ampmMatch[3]?.toUpperCase();
+      if (mer === "PM" && h < 12) h += 12;
+      if (mer === "AM" && h === 12) h = 0;
+      return { hour: h, minute: m };
+    }
+    return { hour: defaultHour, minute: defaultMin };
+  };
+
+  const startParsed = parseTime(startTimeStr, 9, 0);
+  const startObj = new Date(year, month - 1, day, startParsed.hour, startParsed.minute, 0);
+
+  let endObj: Date;
+  if (endTimeStr) {
+    const endParsed = parseTime(endTimeStr, startParsed.hour, startParsed.minute + durationMinutes);
+    endObj = new Date(year, month - 1, day, endParsed.hour, endParsed.minute, 0);
+  } else {
+    endObj = new Date(startObj.getTime() + durationMinutes * 60 * 1000);
+  }
+
+  const now = new Date();
+  const isFuture = now.getTime() < startObj.getTime();
+  const isLive = now.getTime() >= startObj.getTime() && now.getTime() <= endObj.getTime();
+  const isPast = now.getTime() > endObj.getTime();
+
+  const monthShort = startObj.toLocaleDateString("en-US", { month: "short" });
+  const dayNum = startObj.getDate();
+  const formattedChipDate = `${monthShort} ${dayNum}`; // e.g. "Oct 24"
+  const formattedStartTime = startObj.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+  const formattedEndTime = endObj.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+
+  return {
+    startObj,
+    endObj,
+    isFuture,
+    isLive,
+    isPast,
+    formattedDate: startObj.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }),
+    formattedChipDate,
+    formattedStartTime,
+    formattedEndTime,
+    chipText: `${formattedChipDate}, ${formattedStartTime}`
+  };
+}
+
+/**
+ * Downloads an .ics calendar file for the scheduled test
+ */
+function exportTestToIcs(test: TestItem, onSuccess?: (msg: string) => void) {
+  if (!test.scheduleDate) return;
+  const dateParts = test.scheduleDate.split("-").map(p => parseInt(p, 10));
+  if (dateParts.length < 3) return;
+  const [year, month, day] = dateParts;
+
+  const parseTime = (tStr?: string, defaultHour = 9, defaultMin = 0) => {
+    if (!tStr) return { hour: defaultHour, minute: defaultMin };
+    const match = tStr.match(/(\d+):(\d+)(?::\d+)?\s*(AM|PM)?/i);
+    if (match) {
+      let h = parseInt(match[1], 10);
+      const m = parseInt(match[2], 10);
+      const mer = match[3]?.toUpperCase();
+      if (mer === "PM" && h < 12) h += 12;
+      if (mer === "AM" && h === 12) h = 0;
+      return { hour: h, minute: m };
+    }
+    return { hour: defaultHour, minute: defaultMin };
+  };
+
+  const startParsed = parseTime(test.startTime, 9, 0);
+  const startD = new Date(Date.UTC(year, month - 1, day, startParsed.hour, startParsed.minute));
+  const endD = new Date(startD.getTime() + (test.durationMinutes || 30) * 60 * 1000);
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const fmtUtc = (d: Date) => `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}00Z`;
+
+  const icsContent = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Vision Learn//Academic Schedule//EN",
+    "CALSCALE:GREGORIAN",
+    "BEGIN:VEVENT",
+    `UID:${test.id}-${Date.now()}@visionlearn.edu`,
+    `DTSTAMP:${fmtUtc(new Date())}`,
+    `DTSTART:${fmtUtc(startD)}`,
+    `DTEND:${fmtUtc(endD)}`,
+    `SUMMARY:Scheduled Test: ${test.title}`,
+    `DESCRIPTION:${test.description || "Course Assessment"} - Duration: ${test.durationMinutes} min`,
+    `LOCATION:Online Test Portal`,
+    "STATUS:CONFIRMED",
+    "END:VEVENT",
+    "END:VCALENDAR"
+  ].join("\r\n");
+
+  const blob = new Blob([icsContent], { type: "text/calendar;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${test.title.replace(/[^a-zA-Z0-9_-]/g, "_")}_schedule.ics`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  if (onSuccess) {
+    onSuccess(`Scheduled test saved to calendar (.ics downloaded)`);
+  }
 }
 
 /**
@@ -202,6 +338,16 @@ export default function TestsClient({
   // Result View Modal State
   const [viewingResult, setViewingResult] = useState<TestItem | null>(null);
 
+  // Toast notification state
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const triggerToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage(prev => (prev === msg ? null : prev));
+    }, 3800);
+  };
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -215,20 +361,52 @@ export default function TestsClient({
     return map;
   }, [modules]);
 
-  // Combine 100% real database tests & curriculum quiz lessons
+  // Combine 100% real database tests, schedules & curriculum quiz lessons
   const combinedTests = useMemo<TestItem[]>(() => {
     const list: TestItem[] = [];
+
+    const testSchedules = (schedules || []).filter((s: any) => {
+      const type = (s.type || "").toLowerCase();
+      return type === "test" || type === "quiz" || type === "exam";
+    });
+
+    const matchedScheduleIds = new Set<string>();
 
     // 1. Real official tests from `tests` table
     (initialTests || []).forEach((t: any) => {
       const res = results.find((r: any) => r.test_id === t.id);
       const isCompleted = !!res;
-      const isMock = (t.test_type || "").toLowerCase().includes("mock");
-      const isPractice = (t.test_type || "").toLowerCase().includes("practice") || (t.test_type || "").toLowerCase().includes("mcq");
+      const isMock = (t.test_type || t.type || "").toLowerCase().includes("mock");
+      const isPractice = (t.test_type || t.type || "").toLowerCase().includes("practice") || (t.test_type || t.type || "").toLowerCase().includes("mcq");
+
+      // Match against academic schedules
+      const matchedSchedule = testSchedules.find((s: any) => {
+        if (s.curriculum_item_id && s.curriculum_item_id === t.id) return true;
+        const sTitle = (s.title || "").toLowerCase().replace(/^test:\s*/i, "").trim();
+        const tTitle = (t.title || "").toLowerCase().trim();
+        if (sTitle && tTitle && (sTitle === tTitle || sTitle.includes(tTitle) || tTitle.includes(sTitle))) return true;
+        if (s.description && tTitle && s.description.toLowerCase().includes(tTitle)) return true;
+        return false;
+      });
+
+      if (matchedSchedule) {
+        matchedScheduleIds.add(matchedSchedule.id);
+      }
+
+      const scheduleDate = matchedSchedule?.date || (t.due_date ? String(t.due_date).split("T")[0] : undefined);
+      const startTime = matchedSchedule?.start_time || undefined;
+      const endTime = matchedSchedule?.end_time || undefined;
+      const window = scheduleDate ? parseScheduleWindow(scheduleDate, startTime, endTime, t.duration_minutes || 30) : null;
+
+      const isScheduled = !!matchedSchedule || !!(scheduleDate && window?.isFuture);
+      const isLive = !isCompleted && !!window?.isLive;
+      const isLocked = !isCompleted && !!window?.isFuture;
 
       let category: TestItem["category"] = "all";
       if (isCompleted) {
         category = "completed";
+      } else if (isScheduled) {
+        category = "upcoming";
       } else if (isMock) {
         category = "mock";
       } else if (isPractice) {
@@ -237,34 +415,105 @@ export default function TestsClient({
         category = "upcoming";
       }
 
+      const status: TestItem["status"] = isCompleted ? "Completed" : isLive ? "Live" : isScheduled ? "Scheduled" : "Pending";
+
+      let dueText = "";
+      if (window) {
+        if (window.isFuture) dueText = `Opens ${window.formattedDate} at ${window.formattedStartTime}`;
+        else if (window.isLive) dueText = `Live Now • Closes at ${window.formattedEndTime}`;
+        else dueText = `Ended ${window.formattedDate}`;
+      } else if (t.due_date) {
+        dueText = `Due: ${new Date(t.due_date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}`;
+      }
+
       const totalQ = res?.total_questions || t.test_questions?.length || 20;
       const scoreVal = res?.score ?? null;
       const scorePct = isCompleted && totalQ > 0 ? Math.round(((scoreVal || 0) / totalQ) * 100) : 0;
+
+      const action: TestItem["action"] = isCompleted ? "view_result" : isLocked ? "scheduled_locked" : "start_test";
 
       list.push({
         id: t.id,
         title: t.title || "Course Test",
         module: t.courses?.title || courseTitle || "General",
-        description: t.description || "Official course evaluation test",
-        type: t.test_type || (isMock ? "Mock Test" : "Timed Test"),
+        description: t.description || matchedSchedule?.description || "Official course evaluation test",
+        type: t.test_type || (isMock ? "Mock Test" : isScheduled ? "Scheduled Test" : "Timed Test"),
         category,
         questionsCount: totalQ,
         durationMinutes: t.duration_minutes || 30,
         totalMarks: t.total_marks || totalQ,
-        status: isCompleted ? "Completed" : "Pending",
+        status,
         scoreText: isCompleted ? `Score: ${scoreVal}/${totalQ} (${scorePct}%)` : "",
         scoreValue: scoreVal,
         totalQuestions: totalQ,
-        dueText: t.due_date ? `Due: ${new Date(t.due_date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}` : "",
-        dueDate: t.due_date,
-        iconColor: isCompleted ? "emerald" : isMock ? "rose" : "amber",
-        action: isCompleted ? "view_result" : "start_test",
+        dueText,
+        dueDate: scheduleDate || t.due_date,
+        iconColor: isCompleted ? "emerald" : isLive ? "rose" : isScheduled ? "amber" : isMock ? "rose" : "amber",
+        action,
         isDbItem: true,
-        completedAt: res?.completed_at
+        completedAt: res?.completed_at,
+        isScheduled,
+        scheduleDate,
+        startTime,
+        endTime,
+        isLive,
+        isLocked,
+        lockReason: isLocked && window ? `This test is scheduled to open on ${window.formattedDate} at ${window.formattedStartTime}.` : undefined,
+        scheduleId: matchedSchedule?.id,
+        scheduleChipText: window?.chipText || (isScheduled ? "Upcoming" : undefined)
       });
     });
 
-    // 2. Real MCQ Quiz lessons from `lessons` table
+    // 2. Standalone test schedules from `schedules` table without a row in `tests` table
+    testSchedules.forEach((s: any) => {
+      if (matchedScheduleIds.has(s.id)) return;
+
+      const window = parseScheduleWindow(s.date, s.start_time, s.end_time, 30);
+      const isLive = !!window?.isLive;
+      const isLocked = !!window?.isFuture;
+
+      let dueText = "";
+      if (window) {
+        if (window.isFuture) dueText = `Opens ${window.formattedDate} at ${window.formattedStartTime}`;
+        else if (window.isLive) dueText = `Live Now • Closes at ${window.formattedEndTime}`;
+        else dueText = `Ended ${window.formattedDate}`;
+      } else if (s.date) {
+        dueText = `Scheduled: ${s.date}`;
+      }
+
+      list.push({
+        id: s.id,
+        title: s.title ? s.title.replace(/^Test:\s*/i, "") : "Scheduled Test",
+        module: s.courses?.title || courseTitle || "Scheduled Test",
+        description: s.description || "Official scheduled examination",
+        type: "Scheduled Test",
+        category: "upcoming",
+        questionsCount: 0,
+        durationMinutes: 30,
+        totalMarks: 50,
+        status: isLive ? "Live" : "Scheduled",
+        scoreText: "",
+        scoreValue: null,
+        totalQuestions: 0,
+        dueText,
+        dueDate: s.date,
+        iconColor: isLive ? "rose" : "amber",
+        action: isLive ? "start_test" : "scheduled_locked",
+        isDbItem: false,
+        isScheduleOnly: true,
+        isScheduled: true,
+        scheduleDate: s.date,
+        startTime: s.start_time,
+        endTime: s.end_time,
+        isLive,
+        isLocked,
+        lockReason: isLocked && window ? `This test is scheduled to open on ${window.formattedDate} at ${window.formattedStartTime}.` : undefined,
+        scheduleId: s.id,
+        scheduleChipText: window?.chipText || "Upcoming"
+      });
+    });
+
+    // 3. Real MCQ Quiz lessons from `lessons` table
     (quizLessons || []).forEach((ql: any) => {
       const sub = submissions.find((s: any) => s.lesson_id === ql.id);
       const res = results.find((r: any) => r.test_id === ql.id);
@@ -317,7 +566,7 @@ export default function TestsClient({
     });
 
     return list;
-  }, [initialTests, quizLessons, results, submissions, completedLessonIds, moduleMap, courseTitle]);
+  }, [initialTests, quizLessons, results, submissions, completedLessonIds, moduleMap, courseTitle, schedules]);
 
   // Pure dynamic stats computed strictly from real data
   const stats = useMemo(() => {
@@ -326,6 +575,8 @@ export default function TestsClient({
     const completed = completedList.length;
     const pendingList = combinedTests.filter(t => t.status === "Pending");
     const pending = pendingList.length;
+    const scheduledCount = combinedTests.filter(t => t.isScheduled || t.status === "Scheduled").length;
+    const liveCount = combinedTests.filter(t => t.isLive || t.status === "Live").length;
 
     let totalPct = 0;
     let highestPct = 0;
@@ -351,6 +602,8 @@ export default function TestsClient({
       pending,
       avgScore,
       completionRate,
+      scheduledCount,
+      liveCount,
       highestScore: completed > 0 ? Math.round(highestPct) : null,
       lowestScore: completed > 0 ? Math.round(lowestPct) : null,
       passedCount,
@@ -372,8 +625,10 @@ export default function TestsClient({
   const filteredTests = useMemo(() => {
     return combinedTests.filter(test => {
       // 1. Tab filter
-      if (activeTab === "upcoming") {
-        if (test.status !== "Pending") return false;
+      if (activeTab === "scheduled") {
+        if (!test.isScheduled && test.status !== "Scheduled") return false;
+      } else if (activeTab === "upcoming") {
+        if (test.status === "Completed") return false;
       } else if (activeTab === "completed") {
         if (test.status !== "Completed") return false;
       } else if (activeTab === "practice") {
@@ -410,19 +665,31 @@ export default function TestsClient({
 
       return true;
     }).sort((a, b) => {
-      // 1. Tests that are completed ("jo test de diya gya hai") go to the LAST/BOTTOM
+      // 1. Live tests go to the absolute top
+      const aLive = a.status === "Live" || !!a.isLive;
+      const bLive = b.status === "Live" || !!b.isLive;
+      if (aLive !== bLive) return aLive ? -1 : 1;
+
+      // 2. Tests that are completed go to the LAST/BOTTOM
       const aDone = a.status === "Completed";
       const bDone = b.status === "Completed";
       if (aDone !== bDone) {
         return aDone ? 1 : -1;
       }
 
-      // 2. If both are completed, show recently completed first among the completed section
+      // 3. If both are completed, show recently completed first among the completed section
       if (aDone && bDone && a.completedAt && b.completedAt) {
         return new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime();
       }
 
-      // 3. Secondary sort within the same completion group
+      // 4. Scheduled upcoming tests sorted by schedule date/time ascending
+      if (a.scheduleDate && b.scheduleDate && !aDone && !bDone) {
+        const aTime = new Date(`${a.scheduleDate}T${a.startTime || "00:00"}`).getTime();
+        const bTime = new Date(`${b.scheduleDate}T${b.startTime || "00:00"}`).getTime();
+        if (aTime !== bTime) return aTime - bTime;
+      }
+
+      // 5. Secondary sort within the same group
       if (sortOrder === "marks") return b.totalMarks - a.totalMarks;
       if (sortOrder === "oldest") return a.title.localeCompare(b.title);
       return 0; // newest default
@@ -431,6 +698,11 @@ export default function TestsClient({
 
   // Start test handler
   const handleStartTest = async (test: TestItem) => {
+    if (test.isLocked) {
+      triggerToast(test.lockReason || `🔒 Opens on ${test.scheduleDate || "scheduled date"} at ${test.startTime || "scheduled time"}.`);
+      return;
+    }
+
     setActiveTest(test);
     setTestCompleted(false);
     setCurrentQuestion(0);
@@ -439,6 +711,13 @@ export default function TestsClient({
     setLoadError(null);
 
     try {
+      if (test.isScheduleOnly) {
+        setLoadError("This scheduled test questions are being finalized by your instructor. Please check back at exam time or refer to your classroom schedule.");
+        setQuestions([]);
+        setIsLoading(false);
+        return;
+      }
+
       if (test.isQuizLesson) {
         // Parse from lesson notes_content
         const parsed = parseMcqQuestions(test.notes_content);
@@ -577,9 +856,18 @@ export default function TestsClient({
     }
   };
 
+  // Next scheduled test spotlight (prioritize live, then upcoming scheduled)
+  const nextScheduledTest = useMemo(() => {
+    return combinedTests.find(t => t.status === "Live") ||
+      combinedTests.find(t => t.isScheduled && t.status !== "Completed") ||
+      null;
+  }, [combinedTests]);
+
   // Next upcoming pending test for the sidebar
   const upcomingTest = useMemo(() => {
-    return combinedTests.find(t => t.status === "Pending") || null;
+    return combinedTests.find(t => t.status === "Pending" && !t.isScheduled) ||
+      combinedTests.find(t => t.status === "Pending") ||
+      null;
   }, [combinedTests]);
 
   // Recent test activities for the sidebar
@@ -804,6 +1092,72 @@ export default function TestsClient({
             </div>
           </div>
 
+          {/* Mobile Quick Scheduled Spotlight Card */}
+          {nextScheduledTest && (
+            <div className="sm:hidden bg-gradient-to-r from-amber-500/10 via-amber-50/80 to-orange-50/50 border border-amber-200/90 rounded-2xl p-3 shadow-2xs space-y-2 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between gap-2">
+                <span className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                  nextScheduledTest.status === "Live" 
+                    ? "bg-rose-100 text-rose-700" 
+                    : "text-amber-800 bg-amber-100/90"
+                }`}>
+                  {nextScheduledTest.status === "Live" ? (
+                    <Radio size={10} className="text-rose-600 animate-pulse" />
+                  ) : (
+                    <Calendar size={10} className="text-amber-700" />
+                  )}
+                  {nextScheduledTest.status === "Live" ? "Live Examination" : "Next Scheduled Test"}
+                </span>
+                {nextScheduledTest.scheduleChipText && (
+                  <span className="text-[11px] font-bold text-amber-900 truncate">
+                    {nextScheduledTest.scheduleChipText}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-xs font-bold text-slate-900 truncate">
+                    {nextScheduledTest.title}
+                  </h4>
+                  <p className="text-[11px] text-slate-500 truncate">
+                    {nextScheduledTest.module} • {nextScheduledTest.durationMinutes} min
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {nextScheduledTest.scheduleDate && (
+                    <button
+                      type="button"
+                      onClick={() => exportTestToIcs(nextScheduledTest, (msg) => triggerToast(msg))}
+                      className="p-2 min-h-[38px] min-w-[38px] flex items-center justify-center bg-white border border-amber-200 rounded-xl text-amber-700 shadow-2xs active:scale-95 touch-manipulation cursor-pointer"
+                      title="Add to Calendar (.ics)"
+                      aria-label="Add to Calendar"
+                    >
+                      <CalendarDays size={14} />
+                    </button>
+                  )}
+                  {nextScheduledTest.status === "Live" ? (
+                    <button
+                      type="button"
+                      onClick={() => handleStartTest(nextScheduledTest)}
+                      className="px-3.5 py-1.5 min-h-[38px] bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-2xs active:scale-95 flex items-center gap-1 touch-manipulation cursor-pointer animate-pulse"
+                    >
+                      <Play size={11} className="fill-white" /> Start
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => triggerToast(nextScheduledTest.lockReason || `Opens at ${nextScheduledTest.startTime || "scheduled time"}`)}
+                      className="px-2.5 py-1.5 min-h-[38px] bg-white border border-slate-200 text-slate-600 font-semibold text-[11px] rounded-xl shadow-2xs flex items-center gap-1 touch-manipulation cursor-pointer"
+                    >
+                      <Lock size={11} className="text-slate-400" />
+                      <span>{nextScheduledTest.startTime || "Locked"}</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* 3. Top 4 Metric Summary Cards (2x2 grid on mobile) */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
             {/* Card 1: Total Tests */}
@@ -873,7 +1227,7 @@ export default function TestsClient({
             <button
               type="button"
               onClick={() => setActiveTab("all")}
-              className={`pb-2 px-2.5 sm:px-3 whitespace-nowrap transition-all border-b-2 cursor-pointer min-h-[36px] flex items-center ${
+              className={`pb-2 px-2.5 sm:px-3 whitespace-nowrap transition-all border-b-2 cursor-pointer min-h-[38px] flex items-center touch-manipulation ${
                 activeTab === "all"
                   ? "border-blue-600 text-blue-600 font-bold"
                   : "border-transparent text-slate-500 hover:text-slate-800"
@@ -884,8 +1238,20 @@ export default function TestsClient({
             </button>
             <button
               type="button"
+              onClick={() => setActiveTab("scheduled")}
+              className={`pb-2 px-2.5 sm:px-3 whitespace-nowrap transition-all border-b-2 cursor-pointer min-h-[38px] flex items-center gap-1.5 touch-manipulation ${
+                activeTab === "scheduled"
+                  ? "border-amber-600 text-amber-700 font-bold"
+                  : "border-transparent text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              <Calendar size={13} className={activeTab === "scheduled" ? "text-amber-600" : "text-slate-400"} />
+              <span>Scheduled ({stats.scheduledCount})</span>
+            </button>
+            <button
+              type="button"
               onClick={() => setActiveTab("upcoming")}
-              className={`pb-2 px-2.5 sm:px-3 whitespace-nowrap transition-all border-b-2 cursor-pointer min-h-[36px] flex items-center ${
+              className={`pb-2 px-2.5 sm:px-3 whitespace-nowrap transition-all border-b-2 cursor-pointer min-h-[38px] flex items-center touch-manipulation ${
                 activeTab === "upcoming"
                   ? "border-blue-600 text-blue-600 font-bold"
                   : "border-transparent text-slate-500 hover:text-slate-800"
@@ -896,7 +1262,7 @@ export default function TestsClient({
             <button
               type="button"
               onClick={() => setActiveTab("completed")}
-              className={`pb-2 px-2.5 sm:px-3 whitespace-nowrap transition-all border-b-2 cursor-pointer min-h-[36px] flex items-center ${
+              className={`pb-2 px-2.5 sm:px-3 whitespace-nowrap transition-all border-b-2 cursor-pointer min-h-[38px] flex items-center touch-manipulation ${
                 activeTab === "completed"
                   ? "border-blue-600 text-blue-600 font-bold"
                   : "border-transparent text-slate-500 hover:text-slate-800"
@@ -907,7 +1273,7 @@ export default function TestsClient({
             <button
               type="button"
               onClick={() => setActiveTab("practice")}
-              className={`pb-2 px-2.5 sm:px-3 whitespace-nowrap transition-all border-b-2 cursor-pointer min-h-[36px] flex items-center ${
+              className={`pb-2 px-2.5 sm:px-3 whitespace-nowrap transition-all border-b-2 cursor-pointer min-h-[38px] flex items-center touch-manipulation ${
                 activeTab === "practice"
                   ? "border-blue-600 text-blue-600 font-bold"
                   : "border-transparent text-slate-500 hover:text-slate-800"
@@ -920,7 +1286,7 @@ export default function TestsClient({
               <button
                 type="button"
                 onClick={() => setActiveTab("mock")}
-                className={`pb-2 px-2.5 sm:px-3 whitespace-nowrap transition-all border-b-2 cursor-pointer min-h-[36px] flex items-center ${
+                className={`pb-2 px-2.5 sm:px-3 whitespace-nowrap transition-all border-b-2 cursor-pointer min-h-[38px] flex items-center touch-manipulation ${
                   activeTab === "mock"
                     ? "border-blue-600 text-blue-600 font-bold"
                     : "border-transparent text-slate-500 hover:text-slate-800"
@@ -1007,30 +1373,56 @@ export default function TestsClient({
           {/* Test Cards List */}
           <div className="space-y-2.5 sm:space-y-3">
             {filteredTests.length === 0 ? (
-              /* Clean Empty State */
-              <div className="bg-white rounded-2xl border border-slate-200/80 p-8 sm:p-12 text-center shadow-2xs space-y-3">
-                <div className="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto border border-indigo-100">
-                  <PenTool size={26} />
+              activeTab === "scheduled" ? (
+                /* Clean Empty State for Scheduled Tab */
+                <div className="bg-white rounded-2xl border border-slate-200/80 p-8 sm:p-12 text-center shadow-2xs space-y-3">
+                  <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto border border-amber-100 shadow-2xs">
+                    <Calendar size={26} />
+                  </div>
+                  <div className="space-y-1 max-w-sm mx-auto">
+                    <h3 className="text-sm sm:text-base font-bold text-slate-900">
+                      No Scheduled Tests
+                    </h3>
+                    <p className="text-xs text-slate-500 leading-relaxed font-normal">
+                      Upcoming tests, online exams, and date-locked evaluations scheduled by your teacher will appear here.
+                    </p>
+                  </div>
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("all")}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 min-h-[38px] bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow-2xs cursor-pointer touch-manipulation"
+                    >
+                      View All Available Tests
+                    </button>
+                  </div>
                 </div>
-                <div className="space-y-1 max-w-sm mx-auto">
-                  <h3 className="text-sm sm:text-base font-bold text-slate-900">
-                    {activeTab === "all" ? "No Tests or Quizzes Available" : `No ${activeTab} tests found`}
-                  </h3>
-                  <p className="text-xs text-slate-500 leading-relaxed font-normal">
-                    {searchQuery 
-                      ? "No test matching your search criteria. Try clearing filters."
-                      : "There are currently no assessments scheduled for your batch. Check back soon or continue your course modules."}
-                  </p>
+              ) : (
+                /* Clean Empty State */
+                <div className="bg-white rounded-2xl border border-slate-200/80 p-8 sm:p-12 text-center shadow-2xs space-y-3">
+                  <div className="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto border border-indigo-100">
+                    <PenTool size={26} />
+                  </div>
+                  <div className="space-y-1 max-w-sm mx-auto">
+                    <h3 className="text-sm sm:text-base font-bold text-slate-900">
+                      {activeTab === "all" ? "No Tests or Quizzes Available" : `No ${activeTab} tests found`}
+                    </h3>
+                    <p className="text-xs text-slate-500 leading-relaxed font-normal">
+                      {searchQuery 
+                        ? "No test matching your search criteria. Try clearing filters."
+                        : "There are currently no assessments scheduled for your batch. Check back soon or continue your course modules."}
+                    </p>
+                  </div>
+                  <div className="pt-2">
+                    <Link
+                      href="/curriculum"
+                      className="inline-flex items-center gap-1.5 px-4 py-2 min-h-[38px] bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow-2xs"
+                    >
+                      Go to Curriculum <ArrowRight size={13} />
+                    </Link>
+                  </div>
                 </div>
-                <div className="pt-2">
-                  <Link
-                    href="/curriculum"
-                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow-2xs"
-                  >
-                    Go to Curriculum <ArrowRight size={13} />
-                  </Link>
-                </div>
-              </div>
+              )
             ) : (
               filteredTests.map((test) => {
                 let iconBg = "bg-blue-50 text-blue-600 border-blue-100";
@@ -1066,15 +1458,33 @@ export default function TestsClient({
                           <h3 className="text-xs sm:text-sm font-bold text-slate-900 leading-snug">
                             {test.title}
                           </h3>
-                          <span className={`px-1.5 sm:px-2 py-0.5 rounded-md text-[10px] font-semibold border ${
-                            test.type === "Mock Test" 
-                              ? "bg-purple-50 text-purple-700 border-purple-100"
-                              : test.type === "MCQ Practice"
-                              ? "bg-indigo-50 text-indigo-700 border-indigo-100"
-                              : "bg-blue-50 text-blue-700 border-blue-100"
-                          }`}>
-                            {test.type}
-                          </span>
+                          {/* Clear Scheduled / Upcoming / Live Status Chip */}
+                          {test.status === "Live" ? (
+                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 shadow-2xs">
+                              <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-ping shrink-0" />
+                              <span>Live Now</span>
+                            </span>
+                          ) : test.scheduleChipText ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200/80 shadow-2xs">
+                              <Calendar size={10} className="text-amber-600 shrink-0" />
+                              <span>{test.scheduleChipText}</span>
+                            </span>
+                          ) : test.isScheduled ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200/80 shadow-2xs">
+                              <Calendar size={10} className="text-amber-600 shrink-0" />
+                              <span>Upcoming</span>
+                            </span>
+                          ) : (
+                            <span className={`px-1.5 sm:px-2 py-0.5 rounded-md text-[10px] font-semibold border ${
+                              test.type === "Mock Test" 
+                                ? "bg-purple-50 text-purple-700 border-purple-100"
+                                : test.type === "MCQ Practice"
+                                ? "bg-indigo-50 text-indigo-700 border-indigo-100"
+                                : "bg-blue-50 text-blue-700 border-blue-100"
+                            }`}>
+                              {test.type}
+                            </span>
+                          )}
                         </div>
                         <p className="text-[11px] text-slate-500 font-medium truncate">
                           <span className="text-slate-600 font-semibold">{test.module}</span>
@@ -1093,9 +1503,23 @@ export default function TestsClient({
                             {test.durationMinutes} min
                           </span>
                           {test.dueText && (
-                            <span className="flex items-center gap-1 text-amber-600 font-medium bg-amber-50/60 sm:bg-transparent px-1.5 py-0.5 sm:p-0 rounded-md">
-                              <Calendar size={11} />
-                              {test.dueText}
+                            <span className={`flex items-center gap-1 font-medium px-1.5 py-0.5 sm:p-0 rounded-md ${
+                              test.status === "Live"
+                                ? "text-rose-600 bg-rose-50 sm:bg-transparent font-bold animate-pulse"
+                                : test.isLocked
+                                ? "text-amber-800 bg-amber-50/80 sm:bg-transparent font-semibold"
+                                : test.isScheduled
+                                ? "text-amber-700 bg-amber-50/70 sm:bg-transparent font-semibold"
+                                : "text-amber-600 bg-amber-50/60 sm:bg-transparent"
+                            }`}>
+                              {test.status === "Live" ? (
+                                <Radio size={11} className="shrink-0" />
+                              ) : test.isLocked ? (
+                                <Lock size={11} className="shrink-0" />
+                              ) : (
+                                <Calendar size={11} className="shrink-0" />
+                              )}
+                              <span>{test.dueText}</span>
                             </span>
                           )}
                           {isCompleted && test.scoreText && (
@@ -1107,21 +1531,53 @@ export default function TestsClient({
                       </div>
                     </div>
 
-                    {/* Right: Action Button (Full width on mobile) */}
+                    {/* Right: Action Buttons (Mobile-first, touch-friendly min-h-[42px]) */}
                     <div className="flex items-center gap-2 shrink-0 pt-2.5 sm:pt-0 border-t sm:border-t-0 border-slate-100 w-full sm:w-auto">
+                      {test.isScheduled && !isCompleted && test.scheduleDate && (
+                        <button
+                          type="button"
+                          onClick={() => exportTestToIcs(test, (msg) => triggerToast(msg))}
+                          className="min-h-[42px] sm:min-h-[38px] px-3 py-2 border border-amber-200/90 hover:border-amber-400 bg-amber-50/70 hover:bg-amber-100/70 active:scale-[0.98] text-amber-800 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs shrink-0 touch-manipulation"
+                          title="Add to Device Calendar (.ics)"
+                          aria-label="Add to Device Calendar"
+                        >
+                          <CalendarDays size={13} className="text-amber-600" />
+                          <span className="sm:hidden">Remind</span>
+                          <span className="hidden sm:inline">Add to Calendar</span>
+                        </button>
+                      )}
+
                       {isCompleted ? (
                         <button
                           type="button"
                           onClick={() => setViewingResult(test)}
-                          className="w-full sm:w-auto min-h-[42px] sm:min-h-[38px] px-4 py-2 border border-slate-200 hover:border-blue-400 bg-slate-50 hover:bg-blue-50 text-slate-700 hover:text-blue-700 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-[0.99]"
+                          className="flex-1 sm:flex-initial w-full sm:w-auto min-h-[42px] sm:min-h-[38px] px-4 py-2 border border-slate-200 hover:border-blue-400 bg-slate-50 hover:bg-blue-50 text-slate-700 hover:text-blue-700 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-[0.99] touch-manipulation"
                         >
                           <BarChart2 size={13} /> View Result
+                        </button>
+                      ) : test.isLocked ? (
+                        <button
+                          type="button"
+                          onClick={() => triggerToast(test.lockReason || `🔒 Opens on ${test.scheduleDate || "scheduled date"} at ${test.startTime || "scheduled time"}.`)}
+                          className="flex-1 sm:flex-initial w-full sm:w-auto min-h-[42px] sm:min-h-[38px] px-3.5 py-2 bg-slate-100 hover:bg-slate-200/80 text-slate-600 border border-slate-200/90 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-colors active:scale-[0.99] touch-manipulation"
+                          title={test.lockReason || "Locked until scheduled time"}
+                        >
+                          <Lock size={12} className="text-slate-500 shrink-0" />
+                          <span className="truncate">Opens at {test.startTime || "Time"}</span>
+                        </button>
+                      ) : test.isLive ? (
+                        <button
+                          type="button"
+                          onClick={() => handleStartTest(test)}
+                          className="flex-1 sm:flex-initial w-full sm:w-auto min-h-[42px] sm:min-h-[38px] px-5 py-2 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 active:scale-[0.98] text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm shadow-rose-200/70 cursor-pointer animate-pulse touch-manipulation"
+                        >
+                          <Radio size={13} className="text-white" /> Live Now • Start Test
                         </button>
                       ) : (
                         <button
                           type="button"
                           onClick={() => handleStartTest(test)}
-                          className="w-full sm:w-auto min-h-[42px] sm:min-h-[38px] px-5 py-2 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
+                          className="flex-1 sm:flex-initial w-full sm:w-auto min-h-[42px] sm:min-h-[38px] px-5 py-2 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer touch-manipulation"
                         >
                           <Play size={13} className="fill-white" /> Start Test
                         </button>
@@ -1382,6 +1838,24 @@ export default function TestsClient({
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* 7. Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 z-50 bg-slate-900/95 text-white px-4 py-3 rounded-2xl shadow-xl text-xs font-semibold flex items-center justify-between gap-3 animate-in fade-in slide-in-from-bottom-2 border border-slate-800">
+          <div className="flex items-center gap-2 min-w-0">
+            <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
+            <span className="truncate">{toastMessage}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setToastMessage(null)}
+            className="p-1 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white shrink-0 cursor-pointer"
+            aria-label="Dismiss Notification"
+          >
+            <X size={14} />
+          </button>
         </div>
       )}
     </div>
