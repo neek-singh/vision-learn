@@ -55,14 +55,15 @@ export default async function MaterialsPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-3 animate-in fade-in duration-300 pb-16">
-      <div className="bg-white rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs flex items-center justify-between gap-3">
+      <div className="bg-white rounded-2xl p-3 sm:p-4 border border-slate-200/80 shadow-2xs flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">Notes & Materials</h1>
+          <h1 className="text-base sm:text-xl font-bold text-slate-900 tracking-tight">Notes & Materials</h1>
           <p className="hidden sm:block text-xs text-slate-500 font-medium">Download module notes, cheatsheets & guides</p>
         </div>
         <div className="shrink-0">
-          <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-150 px-2.5 py-1 rounded-full">
-            {materials?.length || 0} Items
+          <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200/70 px-2 sm:px-2.5 py-1 rounded-full">
+            <span className="sm:hidden">{materials?.length || 0} Files</span>
+            <span className="hidden sm:inline">{materials?.length || 0} Items</span>
           </span>
         </div>
       </div>

@@ -408,34 +408,34 @@ export default function AssignmentsClient({
   return (
     <div className="space-y-3">
       {/* 3-Column Compact Stat Bar */}
-      <div className="grid grid-cols-3 gap-2">
-        <div className="bg-white rounded-xl p-2.5 sm:p-3 border border-slate-200/80 shadow-2xs flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100/60 flex items-center justify-center shrink-0">
-            <Target size={16} />
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+        <div className="bg-white rounded-xl p-2 sm:p-3 border border-slate-200/80 shadow-2xs flex items-center gap-2 sm:gap-2.5 min-h-[50px] sm:min-h-[56px]">
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100/60 flex items-center justify-center shrink-0">
+            <Target size={15} />
           </div>
           <div className="min-w-0">
-            <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider leading-none">Total</p>
-            <p className="text-base sm:text-lg font-bold text-slate-800 leading-tight mt-0.5">{stats.total}</p>
+            <p className="text-[9px] sm:text-[10px] text-slate-400 font-semibold uppercase tracking-wider leading-none">Total</p>
+            <p className="text-sm sm:text-lg font-bold text-slate-800 leading-tight mt-0.5">{stats.total}</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-2.5 sm:p-3 border border-slate-200/80 shadow-2xs flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100/60 flex items-center justify-center shrink-0">
-            <CheckCircle2 size={16} />
+        <div className="bg-white rounded-xl p-2 sm:p-3 border border-slate-200/80 shadow-2xs flex items-center gap-2 sm:gap-2.5 min-h-[50px] sm:min-h-[56px]">
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100/60 flex items-center justify-center shrink-0">
+            <CheckCircle2 size={15} />
           </div>
           <div className="min-w-0">
-            <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider leading-none">Completed</p>
-            <p className="text-base sm:text-lg font-bold text-slate-800 leading-tight mt-0.5">{stats.completed}</p>
+            <p className="text-[9px] sm:text-[10px] text-slate-400 font-semibold uppercase tracking-wider leading-none">Completed</p>
+            <p className="text-sm sm:text-lg font-bold text-slate-800 leading-tight mt-0.5">{stats.completed}</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-2.5 sm:p-3 border border-slate-200/80 shadow-2xs flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 border border-amber-100/60 flex items-center justify-center shrink-0">
-            <Clock size={16} />
+        <div className="bg-white rounded-xl p-2 sm:p-3 border border-slate-200/80 shadow-2xs flex items-center gap-2 sm:gap-2.5 min-h-[50px] sm:min-h-[56px]">
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-amber-50 text-amber-600 border border-amber-100/60 flex items-center justify-center shrink-0">
+            <Clock size={15} />
           </div>
           <div className="min-w-0">
-            <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider leading-none">Pending</p>
-            <p className="text-base sm:text-lg font-bold text-slate-800 leading-tight mt-0.5">{stats.pending}</p>
+            <p className="text-[9px] sm:text-[10px] text-slate-400 font-semibold uppercase tracking-wider leading-none">Pending</p>
+            <p className="text-sm sm:text-lg font-bold text-slate-800 leading-tight mt-0.5">{stats.pending}</p>
           </div>
         </div>
       </div>
@@ -449,15 +449,15 @@ export default function AssignmentsClient({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search assignments..."
-            className="w-full pl-8.5 pr-8 py-2 text-xs bg-white rounded-xl border border-slate-200/80 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 text-slate-800 placeholder-slate-400 transition-all shadow-2xs"
+            className="w-full pl-8.5 pr-8 py-2 min-h-[38px] text-xs bg-white rounded-xl border border-slate-200/80 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 text-slate-800 placeholder-slate-400 transition-all shadow-2xs touch-manipulation"
           />
           {searchQuery && (
             <button 
               onClick={() => setSearchQuery("")}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 w-7 h-7 flex items-center justify-center active:scale-90 transition-transform"
               aria-label="Clear search"
             >
-              <X size={13} />
+              <X size={14} />
             </button>
           )}
         </div>
@@ -465,7 +465,7 @@ export default function AssignmentsClient({
         {/* Filter Pills */}
         <div className="flex flex-col gap-1.5">
           {/* Status Pills */}
-          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide py-0.5">
+          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-1 -mx-0.5 px-0.5 touch-manipulation">
             {[
               { id: "all", label: `All (${initialAssignments.length})` },
               { id: "pending", label: "Pending" },
@@ -476,7 +476,7 @@ export default function AssignmentsClient({
               <button
                 key={status.id}
                 onClick={() => setStatusFilter(status.id)}
-                className={`shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                className={`shrink-0 min-h-[32px] px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all active:scale-95 touch-manipulation ${
                   statusFilter === status.id
                     ? "bg-slate-900 text-white shadow-2xs"
                     : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200/70"
@@ -489,10 +489,10 @@ export default function AssignmentsClient({
 
           {/* Category Pills (if categories exist) */}
           {categoriesList.length > 0 && (
-            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide py-0.5">
+            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-1 -mx-0.5 px-0.5 touch-manipulation">
               <button
                 onClick={() => setCategoryFilter("all")}
-                className={`shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                className={`shrink-0 min-h-[32px] px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all active:scale-95 touch-manipulation ${
                   categoryFilter === "all"
                     ? "bg-indigo-600 text-white shadow-2xs"
                     : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200/70"
@@ -504,7 +504,7 @@ export default function AssignmentsClient({
                 <button
                   key={cat}
                   onClick={() => setCategoryFilter(cat)}
-                  className={`shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                  className={`shrink-0 min-h-[32px] px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all active:scale-95 touch-manipulation ${
                     categoryFilter === cat
                       ? "bg-indigo-600 text-white shadow-2xs"
                       : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200/70"
@@ -520,8 +520,8 @@ export default function AssignmentsClient({
 
       {/* Projects List */}
       {!filteredAssignments || filteredAssignments.length === 0 ? (
-        <div className="p-10 text-center bg-white rounded-2xl border border-slate-200/70 shadow-2xs">
-          <div className="w-11 h-11 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 mx-auto mb-2.5 border border-slate-100">
+        <div className="p-8 sm:p-10 text-center bg-white rounded-2xl border border-slate-200/70 shadow-2xs">
+          <div className="w-10 h-10 sm:w-11 sm:h-11 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 mx-auto mb-2.5 border border-slate-100">
             <BookOpen size={20} />
           </div>
           <p className="text-xs font-bold text-slate-700">No projects found</p>
@@ -533,7 +533,7 @@ export default function AssignmentsClient({
           {(searchQuery || statusFilter !== "all" || categoryFilter !== "all") && (
             <button
               onClick={() => { setSearchQuery(""); setStatusFilter("all"); setCategoryFilter("all"); }}
-              className="mt-3 text-xs font-semibold text-indigo-600 hover:text-indigo-700"
+              className="mt-3 text-xs font-semibold text-indigo-600 hover:text-indigo-700 touch-manipulation"
             >
               Clear filters
             </button>
@@ -565,10 +565,10 @@ export default function AssignmentsClient({
               <div 
                 key={task.id} 
                 onClick={() => handleOpenSubmission(task)}
-                className="w-full min-w-0 bg-white rounded-xl border border-slate-200/75 hover:border-indigo-300 hover:shadow-2xs active:scale-[0.99] transition-all p-2.5 sm:p-3 flex items-center justify-between gap-2.5 cursor-pointer group"
+                className="w-full min-w-0 bg-white rounded-xl border border-slate-200/75 hover:border-indigo-300 hover:shadow-2xs active:scale-[0.99] transition-all p-2.5 sm:p-3 flex items-center justify-between gap-2.5 cursor-pointer group touch-manipulation"
               >
                 {/* Left: Compact Icon */}
-                <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center border transition-transform group-hover:scale-105 ${config.iconCls}`}>
+                <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg shrink-0 flex items-center justify-center border transition-transform group-hover:scale-105 ${config.iconCls}`}>
                   <Icon size={16} />
                 </div>
 
@@ -585,16 +585,16 @@ export default function AssignmentsClient({
                     )}
                   </div>
 
-                  <div className="flex items-center gap-1.5 mt-0.5 text-[10px] text-slate-400 font-medium leading-none">
-                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide border leading-none ${config.badgeCls}`}>
+                  <div className="flex items-center gap-1.5 mt-0.5 text-[10px] text-slate-400 font-medium leading-none min-w-0">
+                    <span className={`px-1.5 py-0.5 rounded text-[8.5px] sm:text-[9px] font-bold uppercase tracking-wide border leading-none shrink-0 ${config.badgeCls}`}>
                       {config.label}
                     </span>
                     <span className="text-slate-300">•</span>
-                    <span className={`flex items-center gap-0.5 ${atRisk ? 'text-rose-600 font-bold' : 'text-slate-500'}`}>
+                    <span className={`flex items-center gap-0.5 shrink-0 ${atRisk ? 'text-rose-600 font-bold' : 'text-slate-500'}`}>
                       <Calendar size={9} /> {dueDateStr}
                     </span>
                     <span className="text-slate-300">•</span>
-                    <span className="font-semibold text-slate-600">{progress}%</span>
+                    <span className="font-semibold text-slate-600 shrink-0">{progress}%</span>
                     {(isGraded || isSubmitted || isDraft) && (
                       <span className="hidden sm:inline-flex items-center gap-1.5">
                         <span className="text-slate-300">•</span>
@@ -616,16 +616,16 @@ export default function AssignmentsClient({
                       href={task.description}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="h-7 px-2 rounded-lg border border-slate-200/80 text-slate-600 hover:bg-slate-50 flex items-center justify-center transition-all shadow-2xs"
+                      className="min-h-[32px] min-w-[32px] px-2 rounded-lg border border-slate-200/80 text-slate-600 hover:bg-slate-50 flex items-center justify-center transition-all shadow-2xs active:scale-95"
                       title="Open Resource"
                     >
-                      <ExternalLink size={11} />
+                      <ExternalLink size={12} />
                     </a>
                   )}
 
                   <button
                     onClick={() => handleOpenSubmission(task)}
-                    className={`h-7 px-2.5 min-w-[58px] sm:min-w-[64px] rounded-lg text-[11px] font-bold flex items-center justify-center active:scale-95 transition-all shadow-2xs ${
+                    className={`min-h-[32px] px-2.5 sm:px-3 min-w-[58px] sm:min-w-[64px] rounded-lg text-[11px] font-bold flex items-center justify-center active:scale-95 transition-all shadow-2xs touch-manipulation ${
                       isGraded || isSubmitted
                         ? "bg-slate-900 hover:bg-slate-800 text-white"
                         : isDraft
@@ -648,34 +648,41 @@ export default function AssignmentsClient({
         const isFinalized = getSubmission(activeAssignment)?.status === "submitted" || getSubmission(activeAssignment)?.status === "graded";
 
         return (
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-0 sm:p-4 animate-in fade-in duration-300">
-            <div className="bg-slate-50 w-full h-screen max-h-screen sm:h-auto sm:max-h-[90vh] sm:max-w-xl overflow-hidden rounded-none sm:rounded-[2.5rem] border-0 sm:border border-slate-100 shadow-2xl flex flex-col animate-in zoom-in-95 duration-350">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-300">
+            <div className="bg-slate-50 w-full h-[92dvh] sm:h-auto sm:max-h-[90vh] sm:max-w-xl overflow-hidden rounded-t-[1.75rem] sm:rounded-[2.5rem] border-0 sm:border border-slate-100 shadow-2xl flex flex-col animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-300">
               
-              {/* Header (Header bar from mockup) */}
-              <div className="px-6 py-4 border-b border-slate-200 bg-white flex items-center shrink-0 relative">
+              {/* Header */}
+              <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-200 bg-white flex items-center justify-between shrink-0">
                 <button 
                   onClick={() => setIsSubmittingModal(false)}
                   className="p-2 hover:bg-slate-100 rounded-full transition-colors active:scale-90"
                   aria-label="Back"
                 >
-                  <ArrowLeft size={20} className="text-slate-800" />
+                  <ArrowLeft size={18} className="text-slate-800" />
                 </button>
-                <h3 className="font-extrabold text-slate-900 text-lg absolute left-1/2 -translate-x-1/2">
-                  {"Submit Project"}
+                <h3 className="font-extrabold text-slate-900 text-base sm:text-lg truncate px-2">
+                  Submit Project
                 </h3>
+                <button
+                  onClick={() => setIsSubmittingModal(false)}
+                  className="p-2 hover:bg-slate-100 rounded-full transition-colors active:scale-90 text-slate-400 hover:text-slate-600"
+                  aria-label="Close"
+                >
+                  <X size={18} />
+                </button>
               </div>
 
               {/* Scrollable Content Area */}
-              <div className="p-6 space-y-6 overflow-y-auto flex-1 custom-scrollbar text-left">
+              <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 overflow-y-auto flex-1 custom-scrollbar text-left">
                 
                 {/* Project Summary Card */}
-                <div className="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-sm flex items-center gap-4">
-                  <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
-                    <FolderCode size={24} />
+                <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200/60 shadow-xs flex items-center gap-3 sm:gap-4">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+                    <FolderCode size={20} className="sm:w-6 sm:h-6" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Project Summary</p>
-                    <h4 className="font-extrabold text-slate-955 text-base leading-tight truncate">
+                    <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Project Summary</p>
+                    <h4 className="font-extrabold text-slate-900 text-sm sm:text-base leading-tight truncate">
                       {activeAssignment.title}
                     </h4>
                     <p className="text-xs font-semibold text-slate-500 mt-0.5 truncate">
@@ -694,12 +701,12 @@ export default function AssignmentsClient({
                     value={submissionNotes}
                     onChange={(e) => setSubmissionNotes(e.target.value)}
                     placeholder="Add any final comments or context for the reviewers..."
-                    className="w-full h-32 p-4 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600/20 transition-all text-sm font-semibold text-slate-800 placeholder-slate-400 disabled:bg-slate-50 disabled:text-slate-500"
+                    className="w-full h-24 sm:h-32 p-3 sm:p-4 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600/20 transition-all text-xs sm:text-sm font-semibold text-slate-800 placeholder-slate-400 disabled:bg-slate-50 disabled:text-slate-500"
                   />
                 </div>
 
                 {/* Deliverables */}
-                <div className="space-y-3">
+                <div className="space-y-2.5 sm:space-y-3">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">
                     Deliverables
                   </label>
@@ -708,13 +715,13 @@ export default function AssignmentsClient({
                   {deliverables.length > 0 && (
                     <div className="space-y-2">
                       {deliverables.map((file, idx) => (
-                        <div key={idx} className="bg-white px-4 py-3 rounded-xl border border-slate-200/60 shadow-sm flex items-center justify-between gap-3 animate-in slide-in-from-bottom-2 duration-200">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-9 h-9 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center shrink-0">
-                              <FileUp size={18} />
+                        <div key={idx} className="bg-white px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border border-slate-200/60 shadow-xs flex items-center justify-between gap-3 animate-in slide-in-from-bottom-2 duration-200">
+                          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                            <div className="w-8 h-8 sm:w-9 sm:h-9 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center shrink-0">
+                              <FileUp size={16} className="sm:w-[18px] sm:h-[18px]" />
                             </div>
                             <div className="min-w-0">
-                              <p className="font-semibold text-slate-850 text-sm leading-tight truncate">
+                              <p className="font-semibold text-slate-800 text-xs sm:text-sm leading-tight truncate">
                                 {file.name}
                               </p>
                               <p className="text-[10px] font-medium text-slate-400">
@@ -726,9 +733,9 @@ export default function AssignmentsClient({
                             <button
                               type="button"
                               onClick={() => handleRemoveFile(idx)}
-                              className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors text-slate-400 hover:text-slate-600"
+                              className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors text-slate-400 hover:text-slate-600 active:scale-90"
                             >
-                              <X size={16} />
+                              <X size={15} />
                             </button>
                           )}
                         </div>
@@ -738,9 +745,9 @@ export default function AssignmentsClient({
 
                   {/* Upload Dashed Trigger */}
                   {!isFinalized && (
-                    <label htmlFor="file-upload-input" className="border-2 border-dashed border-blue-200 bg-blue-50/20 hover:bg-blue-50/50 rounded-xl p-6 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all hover:border-blue-400 select-none">
-                      <FileUp size={24} className="text-blue-500" />
-                      <span className="text-xs font-bold text-blue-600">Tap to upload additional files</span>
+                    <label htmlFor="file-upload-input" className="border-2 border-dashed border-blue-200 bg-blue-50/20 hover:bg-blue-50/50 rounded-xl p-4 sm:p-6 flex flex-col items-center justify-center gap-1.5 sm:gap-2 cursor-pointer transition-all hover:border-blue-400 select-none active:scale-[0.99] touch-manipulation">
+                      <FileUp size={22} className="text-blue-500" />
+                      <span className="text-xs font-bold text-blue-600">Tap to upload files</span>
                       <input
                         type="file"
                         id="file-upload-input"
@@ -764,12 +771,12 @@ export default function AssignmentsClient({
                         value={linkInput}
                         onChange={(e) => setLinkInput(e.target.value)}
                         placeholder="https://..."
-                        className="flex-1 px-4 py-2.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-600 transition-all text-sm font-semibold text-slate-800 placeholder-slate-400"
+                        className="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-600 transition-all text-xs sm:text-sm font-semibold text-slate-800 placeholder-slate-400 min-h-[38px]"
                       />
                       <button
                         type="button"
                         onClick={handleAddLink}
-                        className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl transition-colors shrink-0"
+                        className="px-3.5 sm:px-4 py-2 sm:py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm rounded-xl transition-colors shrink-0 min-h-[38px] active:scale-95 touch-manipulation"
                       >
                         Add Link
                       </button>
@@ -780,12 +787,12 @@ export default function AssignmentsClient({
                   {linksList.length > 0 && (
                     <div className="space-y-1.5 pt-1">
                       {linksList.map((link, idx) => (
-                        <div key={idx} className="bg-slate-100/60 px-3.5 py-2 rounded-lg flex items-center justify-between gap-3 text-xs">
+                        <div key={idx} className="bg-slate-100/60 px-3 sm:px-3.5 py-2 rounded-lg flex items-center justify-between gap-2.5 text-xs">
                           <a
                             href={link}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-blue-650 hover:underline font-semibold truncate flex-1 flex items-center gap-1.5"
+                            className="text-blue-600 hover:underline font-semibold truncate flex-1 flex items-center gap-1.5"
                           >
                             <ExternalLink size={12} className="shrink-0" />
                             {link}
@@ -794,9 +801,9 @@ export default function AssignmentsClient({
                             <button
                               type="button"
                               onClick={() => handleRemoveLink(idx)}
-                              className="p-1 hover:bg-slate-200 rounded text-slate-400 hover:text-slate-600 transition-colors"
+                              className="p-1 hover:bg-slate-200 rounded text-slate-400 hover:text-slate-600 transition-colors active:scale-90"
                             >
-                              <X size={12} />
+                              <X size={13} />
                             </button>
                           )}
                         </div>
@@ -808,14 +815,14 @@ export default function AssignmentsClient({
               </div>
 
               {/* Bottom Actions Bar */}
-              <div className="px-6 pt-4 pb-6 sm:pb-4 bg-white border-t border-slate-200 flex gap-4 shrink-0">
+              <div className="px-4 sm:px-6 pt-3 pb-6 sm:pb-4 bg-white border-t border-slate-200 flex gap-3 sm:gap-4 shrink-0">
                 {!isFinalized ? (
                   <>
                     <button
                       type="button"
                       onClick={() => handleSubmitData("draft")}
                       disabled={isUploading}
-                      className="flex-1 py-3 bg-white border border-blue-600 hover:bg-blue-50 text-blue-600 font-bold text-sm rounded-xl transition-all active:scale-[0.98] disabled:opacity-50"
+                      className="flex-1 min-h-[44px] py-2.5 sm:py-3 bg-white border border-blue-600 hover:bg-blue-50 text-blue-600 font-bold text-xs sm:text-sm rounded-xl transition-all active:scale-[0.98] disabled:opacity-50 touch-manipulation"
                     >
                       Save Draft
                     </button>
@@ -823,9 +830,9 @@ export default function AssignmentsClient({
                       type="button"
                       onClick={() => handleSubmitData("submitted")}
                       disabled={isUploading}
-                      className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-1.5"
+                      className="flex-1 min-h-[44px] py-2.5 sm:py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm rounded-xl transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-1.5 touch-manipulation"
                     >
-                      {isUploading && <Loader2 className="animate-spin" size={16} />}
+                      {isUploading && <Loader2 className="animate-spin" size={15} />}
                       Finalize Submission
                     </button>
                   </>
@@ -833,7 +840,7 @@ export default function AssignmentsClient({
                   <button
                     type="button"
                     disabled
-                    className="w-full py-3 bg-emerald-50 text-emerald-700 border border-emerald-250 font-bold text-sm rounded-xl flex items-center justify-center gap-1.5 cursor-not-allowed"
+                    className="w-full min-h-[44px] py-2.5 sm:py-3 bg-emerald-50 text-emerald-700 border border-emerald-250 font-bold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-1.5 cursor-not-allowed"
                   >
                     <CheckCircle2 size={16} />
                     {getSubmission(activeAssignment)?.status === "graded" ? "Project Graded" : "Project Finalized & Submitted"}

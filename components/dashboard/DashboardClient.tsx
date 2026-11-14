@@ -164,12 +164,12 @@ export default function DashboardClient({
   const remainingLessonsCount = stats?.remainingCount || Math.max(0, totalLessons - completedLessons);
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-300 pb-12">
+    <div className="space-y-3 sm:space-y-4 animate-in fade-in duration-300 pb-12">
       {/* 1. Welcome Banner Card */}
-      <div className="bg-gradient-to-r from-blue-50/70 via-indigo-50/40 to-slate-50/30 rounded-2xl border border-blue-100/70 p-5 sm:p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden shadow-2xs">
+      <div className="bg-gradient-to-r from-blue-50/70 via-indigo-50/40 to-slate-50/30 rounded-2xl border border-blue-100/70 p-4 sm:p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sm:gap-6 relative overflow-hidden shadow-2xs">
         {/* Left Side: Welcome Greeting */}
         <div className="z-10 max-w-lg">
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 leading-tight tracking-tight">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-900 leading-tight tracking-tight">
             Welcome back, <br className="hidden sm:inline" />
             <span className="text-slate-900">{studentName}!</span>
           </h1>
@@ -237,115 +237,121 @@ export default function DashboardClient({
       </div>
 
       {/* 2. Top Metric Cards Row (6 Cards) */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-4">
         {/* Card 1: Enrolled Courses */}
         <Link
           href="/courses"
-          className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-4 shadow-2xs hover:shadow-xs transition-all flex items-center gap-3 group"
+          className="bg-white rounded-xl sm:rounded-2xl border border-slate-200/80 p-3 sm:p-4 shadow-2xs hover:shadow-xs transition-all flex items-center gap-2.5 sm:gap-3 group min-h-[64px] sm:min-h-[72px]"
         >
-          <div className="w-11 h-11 rounded-xl bg-emerald-100/80 text-emerald-600 border border-emerald-200/60 flex items-center justify-center shrink-0">
-            <BookOpen size={19} className="stroke-[1.9]" />
+          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl bg-emerald-100/80 text-emerald-600 border border-emerald-200/60 flex items-center justify-center shrink-0">
+            <BookOpen size={18} className="stroke-[1.9]" />
           </div>
           <div className="min-w-0">
-            <div className="text-xl sm:text-2xl font-bold text-slate-900 leading-none">
+            <div className="text-lg sm:text-2xl font-bold text-slate-900 leading-none">
               {totalCourses}
             </div>
-            <div className="text-xs font-semibold text-slate-700 mt-1 truncate">Enrolled Courses</div>
+            <div className="text-xs font-semibold text-slate-700 mt-1 truncate">
+              <span className="sm:hidden">Courses</span>
+              <span className="hidden sm:inline">Enrolled Courses</span>
+            </div>
           </div>
         </Link>
 
         {/* Card 2: Lessons Completed */}
         <Link
           href="/curriculum"
-          className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-4 shadow-2xs hover:shadow-xs transition-all flex items-center gap-3 group"
+          className="bg-white rounded-xl sm:rounded-2xl border border-slate-200/80 p-3 sm:p-4 shadow-2xs hover:shadow-xs transition-all flex items-center gap-2.5 sm:gap-3 group min-h-[64px] sm:min-h-[72px]"
         >
-          <div className="w-11 h-11 rounded-full bg-blue-100/90 text-blue-600 border border-blue-200/60 flex items-center justify-center shrink-0">
-            <PlayCircle size={20} className="stroke-[1.9]" />
+          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl bg-blue-100/90 text-blue-600 border border-blue-200/60 flex items-center justify-center shrink-0">
+            <PlayCircle size={18} className="stroke-[1.9]" />
           </div>
           <div className="min-w-0">
-            <div className="text-xl sm:text-2xl font-bold text-slate-900 leading-none">
+            <div className="text-lg sm:text-2xl font-bold text-slate-900 leading-none">
               {completedLessons}
             </div>
-            <div className="text-xs font-semibold text-slate-700 mt-1 truncate">Lessons Completed</div>
-            <div className="text-[10px] text-slate-400 mt-0.5 truncate">of {totalLessons} lessons</div>
+            <div className="text-xs font-semibold text-slate-700 mt-1 truncate">
+              <span className="sm:hidden">Lessons</span>
+              <span className="hidden sm:inline">Lessons Completed</span>
+            </div>
+            <div className="hidden sm:block text-[10px] text-slate-400 mt-0.5 truncate">of {totalLessons} lessons</div>
           </div>
         </Link>
 
         {/* Card 3: Assignments */}
         <Link
           href="/assignments"
-          className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-4 shadow-2xs hover:shadow-xs transition-all flex items-center gap-3 group"
+          className="bg-white rounded-xl sm:rounded-2xl border border-slate-200/80 p-3 sm:p-4 shadow-2xs hover:shadow-xs transition-all flex items-center gap-2.5 sm:gap-3 group min-h-[64px] sm:min-h-[72px]"
         >
-          <div className="w-11 h-11 rounded-xl bg-purple-100/80 text-purple-600 border border-purple-200/60 flex items-center justify-center shrink-0">
-            <FileText size={19} className="stroke-[1.9]" />
+          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl bg-purple-100/80 text-purple-600 border border-purple-200/60 flex items-center justify-center shrink-0">
+            <FileText size={18} className="stroke-[1.9]" />
           </div>
           <div className="min-w-0">
-            <div className="text-xl sm:text-2xl font-bold text-slate-900 leading-none">
+            <div className="text-lg sm:text-2xl font-bold text-slate-900 leading-none">
               {totalAssignments}
             </div>
             <div className="text-xs font-semibold text-slate-700 mt-1 truncate">Assignments</div>
-            <div className="text-[10px] text-slate-400 mt-0.5 truncate">{submittedAssignments} submitted</div>
+            <div className="hidden sm:block text-[10px] text-slate-400 mt-0.5 truncate">{submittedAssignments} submitted</div>
           </div>
         </Link>
 
         {/* Card 4: Tests */}
         <Link
           href="/tests"
-          className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-4 shadow-2xs hover:shadow-xs transition-all flex items-center gap-3 group"
+          className="bg-white rounded-xl sm:rounded-2xl border border-slate-200/80 p-3 sm:p-4 shadow-2xs hover:shadow-xs transition-all flex items-center gap-2.5 sm:gap-3 group min-h-[64px] sm:min-h-[72px]"
         >
-          <div className="w-11 h-11 rounded-xl bg-rose-100/80 text-rose-600 border border-rose-200/60 flex items-center justify-center shrink-0">
-            <CheckSquare size={19} className="stroke-[1.9]" />
+          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl bg-rose-100/80 text-rose-600 border border-rose-200/60 flex items-center justify-center shrink-0">
+            <CheckSquare size={18} className="stroke-[1.9]" />
           </div>
           <div className="min-w-0">
-            <div className="text-xl sm:text-2xl font-bold text-slate-900 leading-none">
+            <div className="text-lg sm:text-2xl font-bold text-slate-900 leading-none">
               {totalTests}
             </div>
             <div className="text-xs font-semibold text-slate-700 mt-1 truncate">Tests</div>
-            <div className="text-[10px] text-slate-400 mt-0.5 truncate">{completedTests} completed</div>
+            <div className="hidden sm:block text-[10px] text-slate-400 mt-0.5 truncate">{completedTests} completed</div>
           </div>
         </Link>
 
         {/* Card 5: Certificates */}
         <Link
           href="/certificates"
-          className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-4 shadow-2xs hover:shadow-xs transition-all flex items-center gap-3 group"
+          className="bg-white rounded-xl sm:rounded-2xl border border-slate-200/80 p-3 sm:p-4 shadow-2xs hover:shadow-xs transition-all flex items-center gap-2.5 sm:gap-3 group min-h-[64px] sm:min-h-[72px]"
         >
-          <div className="w-11 h-11 rounded-xl bg-amber-100/80 text-amber-600 border border-amber-200/60 flex items-center justify-center shrink-0">
-            <Trophy size={19} className="stroke-[1.9]" />
+          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl bg-amber-100/80 text-amber-600 border border-amber-200/60 flex items-center justify-center shrink-0">
+            <Trophy size={18} className="stroke-[1.9]" />
           </div>
           <div className="min-w-0">
-            <div className="text-xl sm:text-2xl font-bold text-slate-900 leading-none">
+            <div className="text-lg sm:text-2xl font-bold text-slate-900 leading-none">
               {certificatesEarned}
             </div>
             <div className="text-xs font-semibold text-slate-700 mt-1 truncate">Certificates</div>
-            <div className="text-[10px] text-slate-400 mt-0.5 truncate">{certificatesEarned > 0 ? "Earned" : "In Progress"}</div>
+            <div className="hidden sm:block text-[10px] text-slate-400 mt-0.5 truncate">{certificatesEarned > 0 ? "Earned" : "In Progress"}</div>
           </div>
         </Link>
 
         {/* Card 6: Attendance */}
         <Link
           href="/attendance"
-          className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-4 shadow-2xs hover:shadow-xs transition-all flex items-center gap-3 group"
+          className="bg-white rounded-xl sm:rounded-2xl border border-slate-200/80 p-3 sm:p-4 shadow-2xs hover:shadow-xs transition-all flex items-center gap-2.5 sm:gap-3 group min-h-[64px] sm:min-h-[72px]"
         >
-          <div className="w-11 h-11 rounded-xl bg-blue-100/80 text-blue-600 border border-blue-200/60 flex items-center justify-center shrink-0">
-            <Calendar size={19} className="stroke-[1.9]" />
+          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl bg-blue-100/80 text-blue-600 border border-blue-200/60 flex items-center justify-center shrink-0">
+            <Calendar size={18} className="stroke-[1.9]" />
           </div>
           <div className="min-w-0">
-            <div className="text-xl sm:text-2xl font-bold text-slate-900 leading-none">
+            <div className="text-lg sm:text-2xl font-bold text-slate-900 leading-none">
               {attendancePct}%
             </div>
             <div className="text-xs font-semibold text-slate-700 mt-1 truncate">Attendance</div>
-            <div className="text-[10px] text-slate-400 mt-0.5 truncate">{attendancePresent} / {attendanceTotal} classes</div>
+            <div className="hidden sm:block text-[10px] text-slate-400 mt-0.5 truncate">{attendancePresent} / {attendanceTotal} classes</div>
           </div>
         </Link>
       </div>
 
       {/* 3. Main 3-Column Content Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 items-start">
         {/* Column 1 (4 of 12 cols): My Courses + Recent Assignments */}
-        <div className="lg:col-span-4 space-y-4">
+        <div className="lg:col-span-4 space-y-3 sm:space-y-4">
           {/* Card A: My Courses */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-2xs space-y-3.5">
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-5 shadow-2xs space-y-3 sm:space-y-3.5">
             <div className="flex items-center justify-between pb-1">
               <div className="flex items-center gap-2 font-bold text-slate-900 text-xs sm:text-sm">
                 <BookOpen size={16} className="text-blue-600" />
@@ -353,19 +359,19 @@ export default function DashboardClient({
               </div>
               <Link
                 href="/courses"
-                className="text-xs font-semibold text-blue-600 hover:underline"
+                className="text-xs font-semibold text-blue-600 hover:underline py-0.5 touch-manipulation"
               >
                 View All
               </Link>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-2.5 sm:space-y-3">
               {enrolledCourses && enrolledCourses.length > 0 ? (
                 enrolledCourses.slice(0, 3).map((c: any, idx: number) => (
-                  <div key={c.id || idx} className={`flex items-center justify-between gap-3 p-1 ${idx > 0 ? "border-t border-slate-100 pt-2.5" : ""}`}>
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <div className="w-10 h-10 rounded-xl bg-sky-50 text-blue-600 flex items-center justify-center shrink-0 border border-sky-100 relative">
-                        <BookOpen size={18} />
+                  <div key={c.id || idx} className={`flex items-center justify-between gap-2.5 p-1 ${idx > 0 ? "border-t border-slate-100 pt-2.5" : ""}`}>
+                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-sky-50 text-blue-600 flex items-center justify-center shrink-0 border border-sky-100 relative">
+                        <BookOpen size={17} />
                       </div>
                       <div className="min-w-0 flex-1">
                         <h4 className="text-xs font-bold text-slate-900 truncate">
@@ -388,7 +394,7 @@ export default function DashboardClient({
 
                     <Link
                       href="/curriculum"
-                      className="px-3 py-1 rounded-lg border border-blue-500 text-blue-600 hover:bg-blue-50 text-xs font-medium transition-all shadow-2xs active:scale-95 shrink-0"
+                      className="min-h-[34px] px-2.5 sm:px-3 py-1 rounded-lg border border-blue-500 text-blue-600 hover:bg-blue-50 text-xs font-medium transition-all shadow-2xs active:scale-95 shrink-0 flex items-center justify-center touch-manipulation"
                     >
                       Continue
                     </Link>
@@ -397,14 +403,14 @@ export default function DashboardClient({
               ) : (
                 <div className="py-6 text-center space-y-1">
                   <p className="text-xs font-semibold text-slate-700">No active course enrollments</p>
-                  <p className="text-[11px] text-slate-400">Enroll in a course to start your learning journey.</p>
+                  <p className="hidden sm:block text-[11px] text-slate-400">Enroll in a course to start your learning journey.</p>
                 </div>
               )}
             </div>
           </div>
 
           {/* Card B: Recent Assignments */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-2xs space-y-3.5">
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-5 shadow-2xs space-y-3 sm:space-y-3.5">
             <div className="flex items-center justify-between pb-1">
               <div className="flex items-center gap-2 font-bold text-slate-900 text-xs sm:text-sm">
                 <FileText size={16} className="text-blue-600" />
@@ -412,18 +418,18 @@ export default function DashboardClient({
               </div>
               <Link
                 href="/assignments"
-                className="text-xs font-semibold text-blue-600 hover:underline"
+                className="text-xs font-semibold text-blue-600 hover:underline py-0.5 touch-manipulation"
               >
                 View All
               </Link>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-2.5 sm:space-y-3">
               {recentAssignments && recentAssignments.length > 0 ? (
                 recentAssignments.slice(0, 3).map((a: any, idx: number) => (
                   <div key={a.id || idx} className={`flex items-center justify-between gap-2 p-1 ${idx > 0 ? "border-t border-slate-100 pt-2.5" : ""}`}>
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100">
+                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                      <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100">
                         <FileText size={16} />
                       </div>
                       <div className="min-w-0 flex-1">
@@ -451,7 +457,7 @@ export default function DashboardClient({
               ) : (
                 <div className="py-6 text-center space-y-1">
                   <p className="text-xs font-semibold text-slate-700">No active assignments</p>
-                  <p className="text-[11px] text-slate-400">Assignments given by teachers will appear here.</p>
+                  <p className="hidden sm:block text-[11px] text-slate-400">Assignments given by teachers will appear here.</p>
                 </div>
               )}
             </div>
@@ -459,9 +465,9 @@ export default function DashboardClient({
         </div>
 
         {/* Column 2 (4 of 12 cols): Upcoming Classes + Upcoming Tests */}
-        <div className="lg:col-span-4 space-y-4">
+        <div className="lg:col-span-4 space-y-3 sm:space-y-4">
           {/* Card C: Upcoming Classes */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-2xs space-y-3.5">
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-5 shadow-2xs space-y-3 sm:space-y-3.5">
             <div className="flex items-center justify-between pb-1">
               <div className="flex items-center gap-2 font-bold text-slate-900 text-xs sm:text-sm">
                 <Calendar size={16} className="text-blue-600" />
@@ -469,13 +475,13 @@ export default function DashboardClient({
               </div>
               <Link
                 href="/calendar"
-                className="text-xs font-semibold text-blue-600 hover:underline"
+                className="text-xs font-semibold text-blue-600 hover:underline py-0.5 touch-manipulation"
               >
                 View All
               </Link>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-2.5 sm:space-y-3">
               {upcomingClasses.length > 0 ? (
                 upcomingClasses.map((item: any, idx: number) => {
                   let monthStr = "CLASS";
@@ -488,11 +494,11 @@ export default function DashboardClient({
 
                   return (
                     <div key={item.id || idx} className={`flex items-center justify-between gap-2.5 p-1 ${idx > 0 ? "border-t border-slate-100 pt-2.5" : ""}`}>
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
                         {/* Date badge */}
-                        <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-200/80 flex flex-col items-center justify-center text-center shrink-0">
-                          <span className="text-[9px] font-bold text-slate-400 uppercase leading-none">{monthStr}</span>
-                          <span className="text-sm font-bold text-slate-900 leading-none mt-0.5">{dayStr}</span>
+                        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-50 border border-slate-200/80 flex flex-col items-center justify-center text-center shrink-0">
+                          <span className="text-[8.5px] sm:text-[9px] font-bold text-slate-400 uppercase leading-none">{monthStr}</span>
+                          <span className="text-xs sm:text-sm font-bold text-slate-900 leading-none mt-0.5">{dayStr}</span>
                         </div>
                         <div className="min-w-0 flex-1">
                           <h4 className="text-xs font-bold text-slate-900 truncate">
@@ -511,7 +517,7 @@ export default function DashboardClient({
                       <div className="flex flex-col items-end gap-1 shrink-0">
                         <Link
                           href="/curriculum"
-                          className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium transition-all shadow-2xs active:scale-95"
+                          className="min-h-[34px] px-2.5 sm:px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium transition-all shadow-2xs active:scale-95 flex items-center justify-center touch-manipulation"
                         >
                           Join Class
                         </Link>
@@ -522,14 +528,14 @@ export default function DashboardClient({
               ) : (
                 <div className="py-6 text-center space-y-1">
                   <p className="text-xs font-semibold text-slate-700">No upcoming classes scheduled</p>
-                  <p className="text-[11px] text-slate-400">Check the calendar for future classes.</p>
+                  <p className="hidden sm:block text-[11px] text-slate-400">Check the calendar for future classes.</p>
                 </div>
               )}
             </div>
           </div>
 
           {/* Card D: Upcoming Tests */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-2xs space-y-3.5">
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-5 shadow-2xs space-y-3 sm:space-y-3.5">
             <div className="flex items-center justify-between pb-1">
               <div className="flex items-center gap-2 font-bold text-slate-900 text-xs sm:text-sm">
                 <Clock size={16} className="text-blue-600" />
@@ -537,22 +543,22 @@ export default function DashboardClient({
               </div>
               <Link
                 href="/tests"
-                className="text-xs font-semibold text-blue-600 hover:underline"
+                className="text-xs font-semibold text-blue-600 hover:underline py-0.5 touch-manipulation"
               >
                 View All
               </Link>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {upcomingTests.length > 0 ? (
                 upcomingTests.map((t: any, idx: number) => (
                   <Link
                     key={t.id || idx}
                     href="/tests"
-                    className={`flex items-center justify-between gap-2 p-1 ${idx > 0 ? "border-t border-slate-100 pt-2.5" : ""} hover:bg-slate-50/70 rounded-xl transition-all group`}
+                    className={`flex items-center justify-between gap-2 p-1.5 sm:p-1 ${idx > 0 ? "border-t border-slate-100 pt-2 sm:pt-2.5" : ""} hover:bg-slate-50/70 rounded-xl transition-all group touch-manipulation`}
                   >
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-100">
+                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                      <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-100">
                         <CheckSquare size={16} />
                       </div>
                       <div className="min-w-0 flex-1">
@@ -569,7 +575,7 @@ export default function DashboardClient({
               ) : (
                 <div className="py-6 text-center space-y-1">
                   <p className="text-xs font-semibold text-slate-700">No upcoming tests</p>
-                  <p className="text-[11px] text-slate-400">All tests and quizzes are up to date.</p>
+                  <p className="hidden sm:block text-[11px] text-slate-400">All tests and quizzes are up to date.</p>
                 </div>
               )}
             </div>
@@ -577,9 +583,9 @@ export default function DashboardClient({
         </div>
 
         {/* Column 3 (4 of 12 cols): Learning Progress + Quick Links */}
-        <div className="lg:col-span-4 space-y-4">
+        <div className="lg:col-span-4 space-y-3 sm:space-y-4">
           {/* Card E: Learning Progress */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-2xs space-y-4">
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-5 shadow-2xs space-y-3 sm:space-y-4">
             <div className="flex items-center justify-between pb-1">
               <div className="flex items-center gap-2 font-bold text-slate-900 text-xs sm:text-sm">
                 <BarChart3 size={16} className="text-blue-600" />
@@ -677,7 +683,7 @@ export default function DashboardClient({
           </div>
 
           {/* Card F: Quick Links */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-2xs space-y-3.5">
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-5 shadow-2xs space-y-3 sm:space-y-3.5">
             <div className="flex items-center gap-2 font-bold text-slate-900 text-xs sm:text-sm">
               <LayoutGrid size={16} className="text-blue-600" />
               <span>Quick Links</span>
@@ -688,12 +694,12 @@ export default function DashboardClient({
               {/* 1. My Classes */}
               <Link
                 href="/curriculum"
-                className="flex flex-col items-center justify-center p-3 rounded-xl bg-blue-50/40 hover:bg-blue-50 border border-blue-100/60 text-center transition-all group shadow-2xs active:scale-95"
+                className="flex flex-col items-center justify-center p-2 sm:p-3 min-h-[72px] sm:min-h-[80px] rounded-xl bg-blue-50/40 hover:bg-blue-50 border border-blue-100/60 text-center transition-all group shadow-2xs active:scale-95 touch-manipulation"
               >
-                <div className="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center mb-1.5 group-hover:scale-105 transition-transform shadow-2xs">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-blue-600 text-white flex items-center justify-center mb-1 sm:mb-1.5 group-hover:scale-105 transition-transform shadow-2xs">
                   <PlayCircle size={18} fill="currentColor" className="text-blue-600 fill-white" />
                 </div>
-                <span className="text-[11px] font-semibold text-slate-700 group-hover:text-blue-700">
+                <span className="text-[10px] sm:text-[11px] font-semibold text-slate-700 group-hover:text-blue-700">
                   My Classes
                 </span>
               </Link>
@@ -701,12 +707,12 @@ export default function DashboardClient({
               {/* 2. Assignments */}
               <Link
                 href="/assignments"
-                className="flex flex-col items-center justify-center p-3 rounded-xl bg-emerald-50/50 hover:bg-emerald-50 border border-emerald-100/70 text-center transition-all group shadow-2xs active:scale-95"
+                className="flex flex-col items-center justify-center p-2 sm:p-3 min-h-[72px] sm:min-h-[80px] rounded-xl bg-emerald-50/50 hover:bg-emerald-50 border border-emerald-100/70 text-center transition-all group shadow-2xs active:scale-95 touch-manipulation"
               >
-                <div className="w-9 h-9 rounded-xl bg-emerald-100/80 text-emerald-600 flex items-center justify-center mb-1.5 group-hover:scale-105 transition-transform">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-100/80 text-emerald-600 flex items-center justify-center mb-1 sm:mb-1.5 group-hover:scale-105 transition-transform">
                   <FileText size={18} />
                 </div>
-                <span className="text-[11px] font-semibold text-slate-700 group-hover:text-emerald-700">
+                <span className="text-[10px] sm:text-[11px] font-semibold text-slate-700 group-hover:text-emerald-700">
                   Assignments
                 </span>
               </Link>
@@ -714,12 +720,12 @@ export default function DashboardClient({
               {/* 3. Tests */}
               <Link
                 href="/tests"
-                className="flex flex-col items-center justify-center p-3 rounded-xl bg-purple-50/50 hover:bg-purple-50 border border-purple-100/70 text-center transition-all group shadow-2xs active:scale-95"
+                className="flex flex-col items-center justify-center p-2 sm:p-3 min-h-[72px] sm:min-h-[80px] rounded-xl bg-purple-50/50 hover:bg-purple-50 border border-purple-100/70 text-center transition-all group shadow-2xs active:scale-95 touch-manipulation"
               >
-                <div className="w-9 h-9 rounded-xl bg-purple-100/80 text-purple-600 flex items-center justify-center mb-1.5 group-hover:scale-105 transition-transform">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-purple-100/80 text-purple-600 flex items-center justify-center mb-1 sm:mb-1.5 group-hover:scale-105 transition-transform">
                   <CheckSquare size={18} />
                 </div>
-                <span className="text-[11px] font-semibold text-slate-700 group-hover:text-purple-700">
+                <span className="text-[10px] sm:text-[11px] font-semibold text-slate-700 group-hover:text-purple-700">
                   Tests
                 </span>
               </Link>
@@ -727,12 +733,12 @@ export default function DashboardClient({
               {/* 4. Notes & Materials */}
               <Link
                 href="/curriculum?tab=resources"
-                className="flex flex-col items-center justify-center p-3 rounded-xl bg-amber-50/60 hover:bg-amber-50 border border-amber-100/70 text-center transition-all group shadow-2xs active:scale-95"
+                className="flex flex-col items-center justify-center p-2 sm:p-3 min-h-[72px] sm:min-h-[80px] rounded-xl bg-amber-50/60 hover:bg-amber-50 border border-amber-100/70 text-center transition-all group shadow-2xs active:scale-95 touch-manipulation"
               >
-                <div className="w-9 h-9 rounded-xl bg-amber-100/80 text-amber-600 flex items-center justify-center mb-1.5 group-hover:scale-105 transition-transform">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-100/80 text-amber-600 flex items-center justify-center mb-1 sm:mb-1.5 group-hover:scale-105 transition-transform">
                   <BookOpen size={18} />
                 </div>
-                <span className="text-[11px] font-semibold text-slate-700 group-hover:text-amber-700">
+                <span className="text-[10px] sm:text-[11px] font-semibold text-slate-700 group-hover:text-amber-700">
                   <span className="sm:hidden">Materials</span>
                   <span className="hidden sm:inline">Notes & Materials</span>
                 </span>
@@ -741,12 +747,12 @@ export default function DashboardClient({
               {/* 5. Projects */}
               <Link
                 href="/curriculum"
-                className="flex flex-col items-center justify-center p-3 rounded-xl bg-rose-50/50 hover:bg-rose-50 border border-rose-100/70 text-center transition-all group shadow-2xs active:scale-95"
+                className="flex flex-col items-center justify-center p-2 sm:p-3 min-h-[72px] sm:min-h-[80px] rounded-xl bg-rose-50/50 hover:bg-rose-50 border border-rose-100/70 text-center transition-all group shadow-2xs active:scale-95 touch-manipulation"
               >
-                <div className="w-9 h-9 rounded-xl bg-rose-100/80 text-rose-600 flex items-center justify-center mb-1.5 group-hover:scale-105 transition-transform">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-rose-100/80 text-rose-600 flex items-center justify-center mb-1 sm:mb-1.5 group-hover:scale-105 transition-transform">
                   <Box size={18} />
                 </div>
-                <span className="text-[11px] font-semibold text-slate-700 group-hover:text-rose-700">
+                <span className="text-[10px] sm:text-[11px] font-semibold text-slate-700 group-hover:text-rose-700">
                   Projects
                 </span>
               </Link>
@@ -754,12 +760,12 @@ export default function DashboardClient({
               {/* 6. Certificates */}
               <Link
                 href="/certificates"
-                className="flex flex-col items-center justify-center p-3 rounded-xl bg-sky-50/50 hover:bg-sky-50 border border-sky-100/70 text-center transition-all group shadow-2xs active:scale-95"
+                className="flex flex-col items-center justify-center p-2 sm:p-3 min-h-[72px] sm:min-h-[80px] rounded-xl bg-sky-50/50 hover:bg-sky-50 border border-sky-100/70 text-center transition-all group shadow-2xs active:scale-95 touch-manipulation"
               >
-                <div className="w-9 h-9 rounded-xl bg-sky-100/80 text-sky-600 flex items-center justify-center mb-1.5 group-hover:scale-105 transition-transform">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-sky-100/80 text-sky-600 flex items-center justify-center mb-1 sm:mb-1.5 group-hover:scale-105 transition-transform">
                   <Trophy size={18} />
                 </div>
-                <span className="text-[11px] font-semibold text-slate-700 group-hover:text-sky-700">
+                <span className="text-[10px] sm:text-[11px] font-semibold text-slate-700 group-hover:text-sky-700">
                   Certificates
                 </span>
               </Link>

@@ -673,7 +673,7 @@ export default function TestsClient({
     return (
       <div className="max-w-2xl mx-auto space-y-3 sm:space-y-4 px-2 sm:px-0 animate-in slide-in-from-right-3 duration-300 pb-16">
         {/* Sticky Mobile Header bar */}
-        <div className="sticky top-2 z-20 flex items-center justify-between bg-white px-4 py-3 rounded-2xl border border-slate-200/80 shadow-xs">
+        <div className="sticky top-2 z-20 flex items-center justify-between bg-white px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-2xl border border-slate-200/80 shadow-xs">
           <div className="min-w-0 flex-1 pr-2">
             <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full uppercase tracking-wider">
               Question {currentQuestion + 1} of {questions.length}
@@ -682,7 +682,7 @@ export default function TestsClient({
           </div>
           <button 
             onClick={() => setActiveTest(null)}
-            className="p-2 hover:bg-slate-100 text-slate-400 hover:text-slate-700 rounded-xl transition-colors cursor-pointer shrink-0"
+            className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center hover:bg-slate-100 text-slate-400 hover:text-slate-700 rounded-xl transition-colors cursor-pointer shrink-0"
             title="Exit Test"
             aria-label="Exit Test"
           >
@@ -692,7 +692,7 @@ export default function TestsClient({
 
         {/* Question card */}
         {questions.length > 0 && (
-          <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4 sm:space-y-5">
+          <div className="bg-white p-3.5 sm:p-6 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3.5 sm:space-y-5">
             <div className="flex items-start gap-2.5">
               <span className="w-6 h-6 rounded-lg bg-blue-50 text-blue-600 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
                 {currentQuestion + 1}
@@ -711,10 +711,10 @@ export default function TestsClient({
                     key={idx}
                     type="button"
                     onClick={() => handleSelectOption(idx)}
-                    className={`w-full min-h-[48px] flex items-center gap-3 p-3 sm:p-3.5 rounded-xl border text-left text-xs transition-all cursor-pointer active:scale-99 ${
+                    className={`w-full min-h-[48px] flex items-center gap-2.5 sm:gap-3 p-3 sm:p-3.5 rounded-xl border text-left text-xs transition-all cursor-pointer active:scale-[0.99] ${
                       isSelected 
                         ? "border-blue-600 bg-blue-50/70 text-blue-900 font-semibold shadow-2xs" 
-                        : "border-slate-200/80 hover:border-slate-300 bg-white text-slate-700"
+                        : "border-slate-200/80 hover:border-slate-300 bg-white text-slate-700 hover:bg-slate-50/50"
                     }`}
                   >
                     <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-bold shrink-0 ${
@@ -734,7 +734,7 @@ export default function TestsClient({
                 type="button"
                 disabled={currentQuestion === 0}
                 onClick={() => setCurrentQuestion(prev => prev - 1)}
-                className="min-h-[44px] px-3.5 py-2 flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer rounded-xl"
+                className="min-h-[44px] px-3.5 py-2 flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-800 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer rounded-xl bg-slate-50 hover:bg-slate-100"
               >
                 <ArrowLeft size={14} /> Previous
               </button>
@@ -754,39 +754,40 @@ export default function TestsClient({
   }
 
   return (
-    <div className="space-y-3.5 sm:space-y-4 animate-in fade-in duration-300 pb-12">
+    <div className="space-y-3 sm:space-y-4 animate-in fade-in duration-300 pb-12">
       {/* 1. Breadcrumbs Navigation */}
-      <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
-        <Link href="/dashboard" className="hover:text-slate-800 flex items-center gap-1">
+      <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium overflow-hidden whitespace-nowrap">
+        <Link href="/dashboard" className="hover:text-slate-800 flex items-center gap-1 shrink-0">
           <Home size={13} className="text-slate-400" />
-          <span>Dashboard</span>
+          <span className="hidden sm:inline">Dashboard</span>
         </Link>
-        <ChevronRight size={12} className="text-slate-400" />
-        <Link href="/curriculum" className="hover:text-slate-800 truncate max-w-[140px] sm:max-w-none">
+        <ChevronRight size={12} className="text-slate-400 shrink-0" />
+        <Link href="/curriculum" className="hover:text-slate-800 truncate max-w-[120px] sm:max-w-none">
           <span>{courseTitle}</span>
         </Link>
-        <ChevronRight size={12} className="text-slate-400" />
-        <span className="text-slate-800 font-semibold">Tests & Quizzes</span>
+        <ChevronRight size={12} className="text-slate-400 shrink-0" />
+        <span className="text-slate-800 font-semibold truncate">Tests & Quizzes</span>
       </div>
 
       {/* Main 2-Column Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 sm:gap-4 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 items-start">
         {/* Left Column (8 of 12 cols): Banner + Metrics + Tabs + Filters + Tests */}
         <div className="lg:col-span-8 space-y-3 sm:space-y-4">
           {/* 2. Hero Banner Card */}
-          <div className="bg-gradient-to-r from-purple-50/70 via-indigo-50/50 to-blue-50/40 rounded-2xl border border-purple-100/70 p-4 sm:p-5 flex items-center justify-between gap-4 relative overflow-hidden shadow-2xs">
+          <div className="bg-gradient-to-r from-purple-50/70 via-indigo-50/50 to-blue-50/40 rounded-2xl border border-purple-100/70 p-3.5 sm:p-5 flex items-center justify-between gap-4 relative overflow-hidden shadow-2xs">
             <div className="flex items-center gap-3 sm:gap-3.5 z-10 min-w-0">
-              <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-2xl bg-purple-100/90 border border-purple-200/80 text-purple-600 flex items-center justify-center shrink-0 shadow-2xs">
-                <CheckSquare size={22} className="stroke-[1.9]" />
+              <div className="w-10 h-10 sm:w-13 sm:h-13 rounded-xl sm:rounded-2xl bg-purple-100/90 border border-purple-200/80 text-purple-600 flex items-center justify-center shrink-0 shadow-2xs">
+                <CheckSquare size={20} className="sm:size-[22px] stroke-[1.9]" />
               </div>
               <div className="min-w-0">
                 <h1 className="text-base sm:text-xl font-bold text-slate-900 leading-tight">
                   Tests & Quizzes
                 </h1>
-                <p className="text-xs text-slate-500 mt-0.5 font-normal truncate">
+                <p className="hidden sm:block text-xs text-slate-500 mt-0.5 font-normal truncate">
                   Real assessments, chapter quizzes & live score tracking
                 </p>
-                <div className="flex flex-wrap items-center gap-2 mt-2 text-[11px] text-slate-600 font-medium">
+                {/* Auto Evaluation badge visible on tablet/desktop, omitted on mobile */}
+                <div className="hidden sm:flex flex-wrap items-center gap-2 mt-2 text-[11px] text-slate-600 font-medium">
                   <span className="inline-flex items-center gap-1 bg-white/70 px-2 py-0.5 rounded-md border border-purple-100">
                     <CheckSquare size={11} className="text-purple-600" />
                     Auto Evaluation
@@ -804,59 +805,62 @@ export default function TestsClient({
           </div>
 
           {/* 3. Top 4 Metric Summary Cards (2x2 grid on mobile) */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
             {/* Card 1: Total Tests */}
-            <div className="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-3.5 shadow-2xs flex items-center gap-2.5 sm:gap-3">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center shrink-0">
-                <FileText size={17} className="stroke-[1.9]" />
+            <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200/80 p-2.5 sm:p-3.5 shadow-2xs flex items-center gap-2.5 sm:gap-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center shrink-0">
+                <FileText size={16} className="sm:size-[17px] stroke-[1.9]" />
               </div>
               <div className="min-w-0">
                 <div className="text-base sm:text-xl font-bold text-slate-900 leading-none">
                   {stats.total}
                 </div>
-                <div className="text-[11px] sm:text-xs font-semibold text-slate-700 mt-1 truncate">Total Tests</div>
+                <div className="text-[11px] sm:text-xs font-semibold text-slate-700 mt-0.5 sm:mt-1 truncate">Total Tests</div>
                 <div className="hidden sm:block text-[10px] text-slate-400 mt-0.5 truncate">All modules</div>
               </div>
             </div>
 
             {/* Card 2: Completed */}
-            <div className="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-3.5 shadow-2xs flex items-center gap-2.5 sm:gap-3">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center shrink-0">
-                <CheckCircle2 size={17} className="stroke-[1.9]" />
+            <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200/80 p-2.5 sm:p-3.5 shadow-2xs flex items-center gap-2.5 sm:gap-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center shrink-0">
+                <CheckCircle2 size={16} className="sm:size-[17px] stroke-[1.9]" />
               </div>
               <div className="min-w-0">
                 <div className="text-base sm:text-xl font-bold text-slate-900 leading-none">
                   {stats.completed}
                 </div>
-                <div className="text-[11px] sm:text-xs font-semibold text-slate-700 mt-1 truncate">Completed</div>
+                <div className="text-[11px] sm:text-xs font-semibold text-slate-700 mt-0.5 sm:mt-1 truncate">Completed</div>
                 <div className="hidden sm:block text-[10px] text-slate-400 mt-0.5 truncate">{stats.completionRate}% completion</div>
               </div>
             </div>
 
             {/* Card 3: Pending */}
-            <div className="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-3.5 shadow-2xs flex items-center gap-2.5 sm:gap-3">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center shrink-0">
-                <Clock size={17} className="stroke-[1.9]" />
+            <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200/80 p-2.5 sm:p-3.5 shadow-2xs flex items-center gap-2.5 sm:gap-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center shrink-0">
+                <Clock size={16} className="sm:size-[17px] stroke-[1.9]" />
               </div>
               <div className="min-w-0">
                 <div className="text-base sm:text-xl font-bold text-slate-900 leading-none">
                   {stats.pending}
                 </div>
-                <div className="text-[11px] sm:text-xs font-semibold text-slate-700 mt-1 truncate">Pending</div>
+                <div className="text-[11px] sm:text-xs font-semibold text-slate-700 mt-0.5 sm:mt-1 truncate">Pending</div>
                 <div className="hidden sm:block text-[10px] text-slate-400 mt-0.5 truncate">To be taken</div>
               </div>
             </div>
 
             {/* Card 4: Average Score */}
-            <div className="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-3.5 shadow-2xs flex items-center gap-2.5 sm:gap-3">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-rose-50 text-rose-600 border border-rose-100 flex items-center justify-center shrink-0">
-                <BarChart3 size={17} className="stroke-[1.9]" />
+            <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200/80 p-2.5 sm:p-3.5 shadow-2xs flex items-center gap-2.5 sm:gap-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-rose-50 text-rose-600 border border-rose-100 flex items-center justify-center shrink-0">
+                <BarChart3 size={16} className="sm:size-[17px] stroke-[1.9]" />
               </div>
               <div className="min-w-0">
                 <div className="text-base sm:text-xl font-bold text-slate-900 leading-none">
                   {stats.avgScore}%
                 </div>
-                <div className="text-[11px] sm:text-xs font-semibold text-slate-700 mt-1 truncate">Average Score</div>
+                <div className="text-[11px] sm:text-xs font-semibold text-slate-700 mt-0.5 sm:mt-1 truncate">
+                  <span className="sm:hidden">Avg Score</span>
+                  <span className="hidden sm:inline">Average Score</span>
+                </div>
                 <div className="hidden sm:block text-[10px] text-slate-400 mt-0.5 truncate">
                   {stats.completed > 0 ? `${stats.completed} attempts` : "No attempts"}
                 </div>
@@ -865,22 +869,23 @@ export default function TestsClient({
           </div>
 
           {/* 4. Filter Tabs Bar with Dynamic Real Counts */}
-          <div className="flex items-center gap-1 sm:gap-2 border-b border-slate-200/80 pb-1 overflow-x-auto text-xs font-semibold scrollbar-hide">
+          <div className="flex items-center gap-1 sm:gap-2 border-b border-slate-200/80 pb-1 overflow-x-auto text-xs font-semibold scrollbar-none">
             <button
               type="button"
               onClick={() => setActiveTab("all")}
-              className={`pb-2 px-2.5 sm:px-3 whitespace-nowrap transition-all border-b-2 cursor-pointer ${
+              className={`pb-2 px-2.5 sm:px-3 whitespace-nowrap transition-all border-b-2 cursor-pointer min-h-[36px] flex items-center ${
                 activeTab === "all"
                   ? "border-blue-600 text-blue-600 font-bold"
                   : "border-transparent text-slate-500 hover:text-slate-800"
               }`}
             >
-              All Tests ({stats.total})
+              <span className="sm:hidden">All ({stats.total})</span>
+              <span className="hidden sm:inline">All Tests ({stats.total})</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveTab("upcoming")}
-              className={`pb-2 px-2.5 sm:px-3 whitespace-nowrap transition-all border-b-2 cursor-pointer ${
+              className={`pb-2 px-2.5 sm:px-3 whitespace-nowrap transition-all border-b-2 cursor-pointer min-h-[36px] flex items-center ${
                 activeTab === "upcoming"
                   ? "border-blue-600 text-blue-600 font-bold"
                   : "border-transparent text-slate-500 hover:text-slate-800"
@@ -891,7 +896,7 @@ export default function TestsClient({
             <button
               type="button"
               onClick={() => setActiveTab("completed")}
-              className={`pb-2 px-2.5 sm:px-3 whitespace-nowrap transition-all border-b-2 cursor-pointer ${
+              className={`pb-2 px-2.5 sm:px-3 whitespace-nowrap transition-all border-b-2 cursor-pointer min-h-[36px] flex items-center ${
                 activeTab === "completed"
                   ? "border-blue-600 text-blue-600 font-bold"
                   : "border-transparent text-slate-500 hover:text-slate-800"
@@ -902,95 +907,100 @@ export default function TestsClient({
             <button
               type="button"
               onClick={() => setActiveTab("practice")}
-              className={`pb-2 px-2.5 sm:px-3 whitespace-nowrap transition-all border-b-2 cursor-pointer ${
+              className={`pb-2 px-2.5 sm:px-3 whitespace-nowrap transition-all border-b-2 cursor-pointer min-h-[36px] flex items-center ${
                 activeTab === "practice"
                   ? "border-blue-600 text-blue-600 font-bold"
                   : "border-transparent text-slate-500 hover:text-slate-800"
               }`}
             >
-              Practice Quizzes ({stats.practiceCount})
+              <span className="sm:hidden">Practice ({stats.practiceCount})</span>
+              <span className="hidden sm:inline">Practice Quizzes ({stats.practiceCount})</span>
             </button>
             {stats.mockCount > 0 && (
               <button
                 type="button"
                 onClick={() => setActiveTab("mock")}
-                className={`pb-2 px-2.5 sm:px-3 whitespace-nowrap transition-all border-b-2 cursor-pointer ${
+                className={`pb-2 px-2.5 sm:px-3 whitespace-nowrap transition-all border-b-2 cursor-pointer min-h-[36px] flex items-center ${
                   activeTab === "mock"
                     ? "border-blue-600 text-blue-600 font-bold"
                     : "border-transparent text-slate-500 hover:text-slate-800"
                 }`}
               >
-                Mock Tests ({stats.mockCount})
+                <span className="sm:hidden">Mocks ({stats.mockCount})</span>
+                <span className="hidden sm:inline">Mock Tests ({stats.mockCount})</span>
               </button>
             )}
           </div>
 
           {/* Search and Filters Bar */}
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
             {/* Search Input */}
-            <div className="relative flex-1 min-w-[160px]">
+            <div className="relative flex-1 min-w-0">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search tests..."
-                className="w-full pl-8.5 pr-8 py-2 text-xs bg-white rounded-xl border border-slate-200/80 focus:outline-none focus:border-blue-500 text-slate-800 placeholder-slate-400 shadow-2xs"
+                className="w-full pl-8.5 pr-8 py-2 min-h-[38px] text-xs bg-white rounded-xl border border-slate-200/80 focus:outline-none focus:border-blue-500 text-slate-800 placeholder-slate-400 shadow-2xs"
               />
               {searchQuery && (
                 <button 
                   type="button"
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer min-h-[28px] min-w-[28px] flex items-center justify-center"
                 >
                   <X size={13} />
                 </button>
               )}
             </div>
 
-            {/* Dynamic Module Filter */}
-            {availableModules.length > 0 && (
-              <div className="relative">
+            {/* Filter Dropdowns Row */}
+            <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-0.5 sm:pb-0 scrollbar-none">
+              {/* Dynamic Module Filter */}
+              {availableModules.length > 0 && (
+                <div className="relative flex-1 sm:flex-initial">
+                  <select
+                    value={selectedModule}
+                    onChange={(e) => setSelectedModule(e.target.value)}
+                    className="w-full sm:w-auto appearance-none bg-white text-xs font-medium text-slate-700 py-2 min-h-[38px] pl-2.5 sm:pl-3 pr-7 rounded-xl border border-slate-200/80 focus:outline-none focus:border-blue-500 shadow-2xs cursor-pointer max-w-[120px] sm:max-w-[140px] truncate"
+                  >
+                    <option value="all">All Modules</option>
+                    {availableModules.map((m, idx) => (
+                      <option key={idx} value={m}>{m}</option>
+                    ))}
+                  </select>
+                  <ChevronDown size={13} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                </div>
+              )}
+
+              {/* Filter: All Status */}
+              <div className="relative flex-1 sm:flex-initial">
                 <select
-                  value={selectedModule}
-                  onChange={(e) => setSelectedModule(e.target.value)}
-                  className="appearance-none bg-white text-xs font-medium text-slate-700 py-2 pl-3 pr-7 rounded-xl border border-slate-200/80 focus:outline-none focus:border-blue-500 shadow-2xs cursor-pointer max-w-[140px] truncate"
+                  value={selectedStatus}
+                  onChange={(e) => setSelectedStatus(e.target.value)}
+                  className="w-full sm:w-auto appearance-none bg-white text-xs font-medium text-slate-700 py-2 min-h-[38px] pl-2.5 sm:pl-3 pr-6 sm:pr-7 rounded-xl border border-slate-200/80 focus:outline-none focus:border-blue-500 shadow-2xs cursor-pointer truncate"
                 >
-                  <option value="all">All Modules</option>
-                  {availableModules.map((m, idx) => (
-                    <option key={idx} value={m}>{m}</option>
-                  ))}
+                  <option value="all">All Status</option>
+                  <option value="Completed">Completed</option>
+                  <option value="Pending">Pending</option>
                 </select>
-                <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <ChevronDown size={13} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
               </div>
-            )}
 
-            {/* Filter: All Status */}
-            <div className="relative">
-              <select
-                value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
-                className="appearance-none bg-white text-xs font-medium text-slate-700 py-2 pl-3 pr-7 rounded-xl border border-slate-200/80 focus:outline-none focus:border-blue-500 shadow-2xs cursor-pointer"
-              >
-                <option value="all">All Status</option>
-                <option value="Completed">Completed</option>
-                <option value="Pending">Pending</option>
-              </select>
-              <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-            </div>
-
-            {/* Filter: Sort */}
-            <div className="relative">
-              <select
-                value={sortOrder}
-                onChange={(e) => setSortOrder(e.target.value)}
-                className="appearance-none bg-white text-xs font-medium text-slate-700 py-2 pl-3 pr-7 rounded-xl border border-slate-200/80 focus:outline-none focus:border-blue-500 shadow-2xs cursor-pointer"
-              >
-                <option value="newest">Newest First</option>
-                <option value="marks">Highest Marks</option>
-                <option value="oldest">Name (A-Z)</option>
-              </select>
-              <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              {/* Filter: Sort */}
+              <div className="relative flex-1 sm:flex-initial">
+                <select
+                  value={sortOrder}
+                  onChange={(e) => setSortOrder(e.target.value)}
+                  className="w-full sm:w-auto appearance-none bg-white text-xs font-medium text-slate-700 py-2 min-h-[38px] pl-2.5 sm:pl-3 pr-6 sm:pr-7 rounded-xl border border-slate-200/80 focus:outline-none focus:border-blue-500 shadow-2xs cursor-pointer truncate"
+                >
+                  <option value="newest">Newest</option>
+                  <option value="marks">Top Marks</option>
+                  <option value="oldest">Name (A-Z)</option>
+                </select>
+                <ChevronDown size={13} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              </div>
             </div>
           </div>
 
@@ -1044,19 +1054,19 @@ export default function TestsClient({
                 return (
                   <div
                     key={test.id}
-                    className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-4 shadow-2xs hover:shadow-xs transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-4"
+                    className="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-4 shadow-2xs hover:shadow-xs transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4"
                   >
                     {/* Left: Icon + Title & Description */}
-                    <div className="flex items-start gap-3 min-w-0 flex-1">
-                      <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shrink-0 border ${iconBg}`}>
-                        <IconComp size={18} className="stroke-[1.9]" />
+                    <div className="flex items-start gap-2.5 sm:gap-3 min-w-0 flex-1">
+                      <div className={`w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shrink-0 border ${iconBg}`}>
+                        <IconComp size={16} className="sm:size-[18px] stroke-[1.9]" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-1.5 mb-0.5">
-                          <h3 className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                          <h3 className="text-xs sm:text-sm font-bold text-slate-900 leading-snug">
                             {test.title}
                           </h3>
-                          <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${
+                          <span className={`px-1.5 sm:px-2 py-0.5 rounded-md text-[10px] font-semibold border ${
                             test.type === "Mock Test" 
                               ? "bg-purple-50 text-purple-700 border-purple-100"
                               : test.type === "MCQ Practice"
@@ -1067,21 +1077,23 @@ export default function TestsClient({
                           </span>
                         </div>
                         <p className="text-[11px] text-slate-500 font-medium truncate">
-                          {test.module} • {test.description}
+                          <span className="text-slate-600 font-semibold">{test.module}</span>
+                          <span className="hidden sm:inline text-slate-400"> • {test.description}</span>
                         </p>
 
                         {/* Metadata row */}
-                        <div className="flex flex-wrap items-center gap-3 mt-2 text-[11px] text-slate-500">
-                          <span className="flex items-center gap-1">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-1.5 sm:mt-2 text-[11px] text-slate-500">
+                          <span className="flex items-center gap-1 bg-slate-50 sm:bg-transparent px-1.5 py-0.5 sm:p-0 rounded-md">
                             <FileText size={11} className="text-slate-400" />
-                            {test.questionsCount} Questions
+                            <span className="sm:hidden">{test.questionsCount} Qs</span>
+                            <span className="hidden sm:inline">{test.questionsCount} Questions</span>
                           </span>
-                          <span className="flex items-center gap-1">
+                          <span className="flex items-center gap-1 bg-slate-50 sm:bg-transparent px-1.5 py-0.5 sm:p-0 rounded-md">
                             <Clock size={11} className="text-slate-400" />
                             {test.durationMinutes} min
                           </span>
                           {test.dueText && (
-                            <span className="flex items-center gap-1 text-amber-600 font-medium">
+                            <span className="flex items-center gap-1 text-amber-600 font-medium bg-amber-50/60 sm:bg-transparent px-1.5 py-0.5 sm:p-0 rounded-md">
                               <Calendar size={11} />
                               {test.dueText}
                             </span>
@@ -1096,12 +1108,12 @@ export default function TestsClient({
                     </div>
 
                     {/* Right: Action Button (Full width on mobile) */}
-                    <div className="flex items-center gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                    <div className="flex items-center gap-2 shrink-0 pt-2.5 sm:pt-0 border-t sm:border-t-0 border-slate-100 w-full sm:w-auto">
                       {isCompleted ? (
                         <button
                           type="button"
                           onClick={() => setViewingResult(test)}
-                          className="w-full sm:w-auto min-h-[40px] px-4 py-2 border border-slate-200 hover:border-blue-400 bg-slate-50 hover:bg-blue-50 text-slate-700 hover:text-blue-700 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                          className="w-full sm:w-auto min-h-[42px] sm:min-h-[38px] px-4 py-2 border border-slate-200 hover:border-blue-400 bg-slate-50 hover:bg-blue-50 text-slate-700 hover:text-blue-700 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-[0.99]"
                         >
                           <BarChart2 size={13} /> View Result
                         </button>
@@ -1109,7 +1121,7 @@ export default function TestsClient({
                         <button
                           type="button"
                           onClick={() => handleStartTest(test)}
-                          className="w-full sm:w-auto min-h-[40px] px-5 py-2 bg-blue-600 hover:bg-blue-700 active:scale-98 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
+                          className="w-full sm:w-auto min-h-[42px] sm:min-h-[38px] px-5 py-2 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
                         >
                           <Play size={13} className="fill-white" /> Start Test
                         </button>
@@ -1123,9 +1135,9 @@ export default function TestsClient({
         </div>
 
         {/* Right Column (4 of 12 cols): Real Performance + Upcoming Test + Recent Activity */}
-        <div className="lg:col-span-4 space-y-3.5 sm:space-y-4">
+        <div className="lg:col-span-4 space-y-3 sm:space-y-4">
           {/* Card 1: Your Performance (100% Real DB stats) */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-2xs space-y-4">
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-5 shadow-2xs space-y-3.5 sm:space-y-4">
             <div className="flex items-center gap-2 font-bold text-slate-900 text-xs sm:text-sm">
               <BarChart3 size={15} className="text-blue-600" />
               <span>Your Performance</span>
@@ -1133,8 +1145,8 @@ export default function TestsClient({
 
             {/* Circular Donut Gauge & Average Score */}
             <div className="flex items-center gap-4 py-1">
-              <div className="relative w-16 h-16 flex items-center justify-center shrink-0">
-                <svg className="w-16 h-16 -rotate-90" viewBox="0 0 36 36">
+              <div className="relative w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center shrink-0">
+                <svg className="w-14 h-14 sm:w-16 sm:h-16 -rotate-90" viewBox="0 0 36 36">
                   <path className="text-slate-100" strokeWidth="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                   <path 
                     className="text-emerald-500 transition-all duration-500" 
@@ -1146,20 +1158,20 @@ export default function TestsClient({
                     d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                   />
                 </svg>
-                <span className="absolute text-sm font-bold text-slate-900">{stats.avgScore}%</span>
+                <span className="absolute text-xs sm:text-sm font-bold text-slate-900">{stats.avgScore}%</span>
               </div>
               <div className="min-w-0">
-                <div className="text-sm font-bold text-slate-900 leading-tight">
+                <div className="text-xs sm:text-sm font-bold text-slate-900 leading-tight">
                   Average Score
                 </div>
-                <div className="text-xs text-slate-400 mt-0.5">
+                <div className="text-[11px] sm:text-xs text-slate-400 mt-0.5">
                   {stats.completed > 0 ? `Based on ${stats.completed} tests` : "No completed tests"}
                 </div>
               </div>
             </div>
 
             {/* Performance Stats List */}
-            <div className="space-y-2.5 pt-2 border-t border-slate-100 text-xs">
+            <div className="space-y-2 sm:space-y-2.5 pt-2 border-t border-slate-100 text-xs">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-slate-600">
                   <ShieldCheck size={14} className="text-blue-600" />
@@ -1193,7 +1205,7 @@ export default function TestsClient({
           </div>
 
           {/* Card 2: Upcoming Pending Test (Real) */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-2xs space-y-3">
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-5 shadow-2xs space-y-3">
             <div className="flex items-center gap-2 font-bold text-slate-900 text-xs sm:text-sm">
               <Calendar size={15} className="text-blue-600" />
               <span>Next Upcoming Test</span>
@@ -1231,7 +1243,7 @@ export default function TestsClient({
                 <button
                   type="button"
                   onClick={() => handleStartTest(upcomingTest)}
-                  className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-98 text-white rounded-xl font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full min-h-[42px] bg-blue-600 hover:bg-blue-700 active:scale-98 text-white rounded-xl font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
                 >
                   Start Test Now
                 </button>
@@ -1245,7 +1257,7 @@ export default function TestsClient({
           </div>
 
           {/* Card 3: Recent Activity (Real) */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-2xs space-y-3">
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-5 shadow-2xs space-y-3">
             <div className="flex items-center gap-2 font-bold text-slate-900 text-xs sm:text-sm">
               <Clock size={15} className="text-blue-600" />
               <span>Recent Activity</span>
@@ -1284,7 +1296,7 @@ export default function TestsClient({
       {/* 6. View Result Modal (Responsive bottom sheet on mobile) */}
       {viewingResult && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 z-50 animate-in fade-in duration-200">
-          <div className="bg-white rounded-t-3xl sm:rounded-3xl border border-slate-200 p-5 sm:p-7 max-w-md w-full shadow-xl space-y-4 animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200">
+          <div className="bg-white rounded-t-3xl sm:rounded-3xl border border-slate-200 p-4 sm:p-7 max-w-md w-full shadow-xl space-y-3.5 sm:space-y-4 animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
@@ -1299,7 +1311,7 @@ export default function TestsClient({
               <button
                 type="button"
                 onClick={() => setViewingResult(null)}
-                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
+                className="p-1.5 min-h-[32px] min-w-[32px] flex items-center justify-center text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
                 aria-label="Close"
               >
                 <X size={18} />
@@ -1307,24 +1319,24 @@ export default function TestsClient({
             </div>
 
             {/* Score & Gauge Display */}
-            <div className="bg-emerald-50/70 border border-emerald-100 rounded-2xl p-4 flex items-center justify-around">
+            <div className="bg-emerald-50/70 border border-emerald-100 rounded-2xl p-3 sm:p-4 flex items-center justify-around">
               <div className="text-center">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Score</span>
-                <span className="text-2xl font-black text-slate-900">
+                <span className="text-xl sm:text-2xl font-black text-slate-900">
                   {viewingResult.scoreValue ?? 0} / {viewingResult.totalQuestions}
                 </span>
               </div>
               <div className="h-10 w-[1px] bg-emerald-200/60" />
               <div className="text-center">
                 <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider block">Percentage</span>
-                <span className="text-2xl font-black text-emerald-700">
+                <span className="text-xl sm:text-2xl font-black text-emerald-700">
                   {viewingResult.totalQuestions > 0 ? Math.round(((viewingResult.scoreValue || 0) / viewingResult.totalQuestions) * 100) : 0}%
                 </span>
               </div>
               <div className="h-10 w-[1px] bg-emerald-200/60" />
               <div className="text-center">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Status</span>
-                <span className="text-sm font-bold text-emerald-600 flex items-center justify-center gap-1 mt-1">
+                <span className="text-xs sm:text-sm font-bold text-emerald-600 flex items-center justify-center gap-1 mt-1">
                   <Check size={14} /> Passed
                 </span>
               </div>
@@ -1342,7 +1354,10 @@ export default function TestsClient({
               </div>
               <div className="flex justify-between py-1">
                 <span className="text-slate-500">Evaluation Mode</span>
-                <span className="font-semibold text-blue-600">Instant Automated Scoring</span>
+                <span className="font-semibold text-blue-600">
+                  <span className="hidden sm:inline">Instant Automated Scoring</span>
+                  <span className="sm:hidden">Automated</span>
+                </span>
               </div>
             </div>
 
@@ -1354,14 +1369,14 @@ export default function TestsClient({
                   setViewingResult(null);
                   handleStartTest(viewingResult);
                 }}
-                className="flex-1 py-2.5 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                className="flex-1 min-h-[44px] py-2.5 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <RotateCcw size={14} /> Retake Test
               </button>
               <button
                 type="button"
                 onClick={() => setViewingResult(null)}
-                className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-98 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
+                className="flex-1 min-h-[44px] py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-98 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
               >
                 Close
               </button>

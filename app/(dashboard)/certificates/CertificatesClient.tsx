@@ -243,7 +243,7 @@ export default function CertificatesClient({
   return (
     <div className="space-y-3.5 sm:space-y-4 animate-in fade-in duration-300 pb-12">
       {/* 1. Breadcrumbs Navigation */}
-      <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+      <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-500 font-medium">
         <Link href="/dashboard" className="hover:text-slate-800 flex items-center gap-1">
           <Home size={13} className="text-slate-400" />
           <span>Dashboard</span>
@@ -360,7 +360,8 @@ export default function CertificatesClient({
               : "border-transparent text-slate-500 hover:text-slate-800"
           }`}
         >
-          All Certificates ({stats.total})
+          <span className="sm:hidden">All ({stats.total})</span>
+          <span className="hidden sm:inline">All Certificates ({stats.total})</span>
         </button>
         <button
           type="button"
@@ -396,13 +397,13 @@ export default function CertificatesClient({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search certificates..."
-            className="w-full pl-8.5 pr-8 py-2 text-xs bg-white rounded-xl border border-slate-200/80 focus:outline-none focus:border-blue-500 text-slate-800 placeholder-slate-400 shadow-2xs"
+            className="w-full min-h-[38px] pl-8.5 pr-8 py-2 text-xs bg-white rounded-xl border border-slate-200/80 focus:outline-none focus:border-blue-500 text-slate-800 placeholder-slate-400 shadow-2xs"
           />
           {searchQuery && (
             <button 
               type="button"
               onClick={() => setSearchQuery("")}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
             >
               <X size={13} />
             </button>
@@ -414,7 +415,7 @@ export default function CertificatesClient({
           <select
             value={sortOrder}
             onChange={(e) => setSortOrder(e.target.value)}
-            className="appearance-none bg-white text-xs font-medium text-slate-700 py-2 pl-3 pr-7 rounded-xl border border-slate-200/80 focus:outline-none focus:border-blue-500 shadow-2xs cursor-pointer"
+            className="appearance-none min-h-[38px] bg-white text-xs font-medium text-slate-700 py-2 pl-3 pr-7 rounded-xl border border-slate-200/80 focus:outline-none focus:border-blue-500 shadow-2xs cursor-pointer"
           >
             <option value="newest">Newest First</option>
             <option value="oldest">Oldest First</option>
@@ -443,12 +444,12 @@ export default function CertificatesClient({
           return (
             <div
               key={cert.id}
-              className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-4 shadow-2xs hover:shadow-xs transition-all flex flex-col md:flex-row md:items-center justify-between gap-3.5 sm:gap-4"
+              className="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-4 shadow-2xs hover:shadow-xs transition-all flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4"
             >
               {/* Left Column: Icon + Title + Type Badge */}
-              <div className="flex items-start gap-3 min-w-0 flex-1">
-                <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shrink-0 border ${iconBg}`}>
-                  <IconComponent size={18} className="stroke-[1.9]" />
+              <div className="flex items-start gap-2.5 sm:gap-3 min-w-0 flex-1">
+                <div className={`w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shrink-0 border ${iconBg}`}>
+                  <IconComponent size={17} className="stroke-[1.9]" />
                 </div>
 
                 <div className="min-w-0 flex-1">
@@ -464,17 +465,17 @@ export default function CertificatesClient({
                     <span>{cert.subtitle}</span>
                     <span className="hidden sm:inline"> • {cert.description}</span>
                   </p>
-                  <div className="flex flex-wrap items-center gap-3 mt-1.5 text-[11px] text-slate-400">
-                    <span className="font-mono text-[10px] text-slate-500">#{cert.certCode}</span>
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-1.5 text-[11px] text-slate-400">
+                    <span className="font-mono text-[10px] text-slate-500 max-w-[130px] sm:max-w-none truncate">#{cert.certCode}</span>
                     <span>•</span>
                     <span className="flex items-center gap-1 text-slate-600">
                       <Calendar size={11} className="text-slate-400" />
-                      Issued: {cert.issuedDate}
+                      <span className="hidden sm:inline">Issued: </span>{cert.issuedDate}
                     </span>
                     {cert.grade && (
                       <>
                         <span>•</span>
-                        <span className="font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100 text-[10px]">
+                        <span className="font-bold text-emerald-600 bg-emerald-50 px-1.5 sm:px-2 py-0.5 rounded-md border border-emerald-100 text-[10px]">
                           {cert.grade}
                         </span>
                       </>
@@ -488,7 +489,7 @@ export default function CertificatesClient({
                 <button
                   type="button"
                   onClick={() => setSelectedCertificate(cert)}
-                  className="flex-1 md:flex-initial min-h-[38px] px-3.5 py-1.5 rounded-xl border border-blue-500 text-blue-600 hover:bg-blue-50 text-xs font-semibold transition-all shadow-2xs active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="flex-1 md:flex-initial min-h-[38px] px-3.5 py-1.5 rounded-xl border border-blue-500 text-blue-600 hover:bg-blue-50 text-xs font-semibold transition-all shadow-2xs active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation"
                 >
                   <Download size={13} />
                   <span>Preview / PDF</span>
@@ -497,7 +498,7 @@ export default function CertificatesClient({
                 <button
                   type="button"
                   onClick={() => setSharingCertificate(cert)}
-                  className="flex-1 md:flex-initial min-h-[38px] px-3.5 py-1.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold transition-all shadow-2xs active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="flex-1 md:flex-initial min-h-[38px] px-3.5 py-1.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold transition-all shadow-2xs active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation"
                 >
                   <Share2 size={13} />
                   <span>Share</span>
@@ -508,11 +509,11 @@ export default function CertificatesClient({
         })}
 
         {filteredCertificates.length === 0 && (
-          <div className="p-8 sm:p-10 text-center bg-white rounded-2xl border border-slate-200/80 shadow-2xs space-y-2">
-            <Award className="mx-auto text-slate-300" size={36} />
+          <div className="p-6 sm:p-10 text-center bg-white rounded-2xl border border-slate-200/80 shadow-2xs space-y-2">
+            <Award className="mx-auto text-slate-300" size={32} />
             <h3 className="text-sm sm:text-base font-bold text-slate-800">No Unlocked Certificates Yet</h3>
             <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed font-normal">
-              You haven't completed any course program or scored 70%+ on a test yet. Review your courses below to track your progress towards unlocking your certificate!
+              <span className="hidden sm:inline">You haven't completed any course program or scored 70%+ on a test yet. </span>Complete your courses or score 70%+ on tests to unlock certificates!
             </p>
           </div>
         )}
@@ -535,7 +536,7 @@ export default function CertificatesClient({
               return (
                 <div
                   key={c.courseId}
-                  className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs space-y-3 flex flex-col justify-between"
+                  className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-4 shadow-2xs space-y-3 flex flex-col justify-between"
                 >
                   <div>
                     <div className="flex items-start justify-between gap-2">
@@ -562,7 +563,10 @@ export default function CertificatesClient({
                       </div>
                       <div className="flex items-center justify-between text-[11px] text-slate-500">
                         <span>{c.completedLessons} of {c.totalLessons} lessons completed</span>
-                        <span className="font-semibold text-slate-700">{remaining} remaining</span>
+                        <span className="font-semibold text-slate-700">
+                          <span className="sm:hidden">{remaining} left</span>
+                          <span className="hidden sm:inline">{remaining} remaining</span>
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -574,9 +578,9 @@ export default function CertificatesClient({
                     </span>
                     <Link
                       href="/curriculum"
-                      className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center gap-1"
+                      className="min-h-[36px] px-3 py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center gap-1 touch-manipulation"
                     >
-                      Continue Learning <ArrowRight size={12} />
+                      Continue <ArrowRight size={12} />
                     </Link>
                   </div>
                 </div>
@@ -589,12 +593,12 @@ export default function CertificatesClient({
       {/* 8. Certificate Printable / Preview Modal (Fully Responsive on Mobile) */}
       {selectedCertificate && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-2 sm:p-5 z-50 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200 max-w-2xl w-full max-h-[94vh] overflow-y-auto shadow-2xl space-y-3.5 sm:space-y-4 animate-in zoom-in-95 duration-200 p-4 sm:p-6 print:p-0 print:border-none print:shadow-none">
+          <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200 max-w-2xl w-full max-h-[94vh] overflow-y-auto shadow-2xl space-y-3 sm:space-y-4 animate-in zoom-in-95 duration-200 p-3.5 sm:p-6 print:p-0 print:border-none print:shadow-none">
             {/* Modal Top Control Bar */}
             <div className="flex items-center justify-between border-b border-slate-100 pb-2.5 print:hidden">
               <div className="flex items-center gap-2 min-w-0 pr-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
-                <span className="text-xs font-bold text-slate-800 truncate">
+                <span className="text-xs font-bold text-slate-800 truncate max-w-[140px] sm:max-w-none">
                   Verified #{selectedCertificate.certCode}
                 </span>
               </div>
@@ -602,7 +606,7 @@ export default function CertificatesClient({
                 <button
                   type="button"
                   onClick={handlePrintCertificate}
-                  className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+                  className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm touch-manipulation min-h-[34px]"
                 >
                   <Printer size={13} />
                   <span>Print / PDF</span>
@@ -621,39 +625,39 @@ export default function CertificatesClient({
             {/* Official Certificate Visual Canvas (Responsive, no screen overflow) */}
             <div 
               id="printable-certificate"
-              className="relative bg-gradient-to-b from-amber-50/40 via-white to-blue-50/20 border-4 sm:border-8 border-double border-amber-300/80 rounded-2xl p-4 sm:p-8 text-center space-y-3 sm:space-y-4 shadow-sm max-w-full overflow-hidden"
+              className="relative bg-gradient-to-b from-amber-50/40 via-white to-blue-50/20 border-4 sm:border-8 border-double border-amber-300/80 rounded-2xl p-3 sm:p-8 text-center space-y-2.5 sm:space-y-4 shadow-sm max-w-full overflow-hidden"
             >
               {/* Corner Ornaments */}
-              <div className="absolute top-2 left-2 text-amber-500/60 font-serif text-base sm:text-lg">❖</div>
-              <div className="absolute top-2 right-2 text-amber-500/60 font-serif text-base sm:text-lg">❖</div>
-              <div className="absolute bottom-2 left-2 text-amber-500/60 font-serif text-base sm:text-lg">❖</div>
-              <div className="absolute bottom-2 right-2 text-amber-500/60 font-serif text-base sm:text-lg">❖</div>
+              <div className="absolute top-2 left-2 text-amber-500/60 font-serif text-xs sm:text-lg">❖</div>
+              <div className="absolute top-2 right-2 text-amber-500/60 font-serif text-xs sm:text-lg">❖</div>
+              <div className="absolute bottom-2 left-2 text-amber-500/60 font-serif text-xs sm:text-lg">❖</div>
+              <div className="absolute bottom-2 right-2 text-amber-500/60 font-serif text-xs sm:text-lg">❖</div>
 
               {/* Institution Header */}
               <div className="flex flex-col items-center">
-                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-sm sm:text-base shadow-sm mb-1">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-xs sm:text-base shadow-sm mb-1">
                   VL
                 </div>
-                <h4 className="text-sm sm:text-base font-black tracking-wider text-slate-900 uppercase">
+                <h4 className="text-xs sm:text-base font-black tracking-wider text-slate-900 uppercase">
                   Vision Learn Institute
                 </h4>
-                <p className="text-[9px] sm:text-[10px] text-slate-400 tracking-widest uppercase font-semibold">
+                <p className="hidden sm:block text-[9px] sm:text-[10px] text-slate-400 tracking-widest uppercase font-semibold">
                   Accredited Technical Education & Certification
                 </p>
               </div>
 
               {/* Certificate Title */}
-              <div className="pt-1">
-                <h2 className="text-base sm:text-2xl font-serif font-black text-amber-800 uppercase tracking-wider sm:tracking-widest">
+              <div className="pt-0.5 sm:pt-1">
+                <h2 className="text-sm sm:text-2xl font-serif font-black text-amber-800 uppercase tracking-wider sm:tracking-widest">
                   Certificate of Achievement
                 </h2>
-                <div className="w-20 sm:w-24 h-0.5 bg-gradient-to-r from-transparent via-amber-500 to-transparent mx-auto mt-1" />
+                <div className="w-16 sm:w-24 h-0.5 bg-gradient-to-r from-transparent via-amber-500 to-transparent mx-auto mt-1" />
               </div>
 
               {/* Recipient */}
-              <div className="space-y-0.5 sm:space-y-1 pt-1">
-                <p className="text-[11px] sm:text-xs text-slate-500 italic font-serif">This is proudly presented to</p>
-                <h3 className="text-xl sm:text-3xl font-serif font-bold text-slate-900 underline decoration-amber-400 decoration-1 underline-offset-4">
+              <div className="space-y-0.5 sm:space-y-1 pt-0.5 sm:pt-1">
+                <p className="text-[10px] sm:text-xs text-slate-500 italic font-serif">This is proudly presented to</p>
+                <h3 className="text-lg sm:text-3xl font-serif font-bold text-slate-900 underline decoration-amber-400 decoration-1 underline-offset-4">
                   {studentName}
                 </h3>
                 <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium pt-0.5">
@@ -662,9 +666,9 @@ export default function CertificatesClient({
               </div>
 
               {/* Achievement description */}
-              <div className="max-w-md mx-auto text-xs text-slate-600 leading-relaxed font-sans pt-1 px-2">
+              <div className="max-w-md mx-auto text-[11px] sm:text-xs text-slate-600 leading-snug sm:leading-relaxed font-sans pt-1 px-1">
                 has successfully fulfilled all curriculum requirements, assessments, and projects for
-                <div className="font-bold text-slate-900 text-xs sm:text-sm mt-1 text-blue-700">
+                <div className="font-bold text-slate-900 text-xs sm:text-sm mt-0.5 sm:mt-1 text-blue-700">
                   {selectedCertificate.title}
                 </div>
                 <div className="text-[10px] sm:text-[11px] text-slate-500 mt-0.5">
@@ -674,7 +678,7 @@ export default function CertificatesClient({
 
               {/* Skills tags */}
               {selectedCertificate.skills && selectedCertificate.skills.length > 0 && (
-                <div className="flex flex-wrap items-center justify-center gap-1 pt-1">
+                <div className="flex flex-wrap items-center justify-center gap-1 pt-0.5 sm:pt-1">
                   {selectedCertificate.skills.map((skill, i) => (
                     <span key={i} className="px-2 py-0.5 bg-slate-100 border border-slate-200 text-slate-700 rounded-md text-[9px] sm:text-[10px] font-medium">
                       {skill}
@@ -684,18 +688,18 @@ export default function CertificatesClient({
               )}
 
               {/* Footer: Seal, QR Code, Verification and Signature */}
-              <div className="grid grid-cols-3 items-end pt-4 sm:pt-5 border-t border-slate-200/80 text-left gap-2">
+              <div className="grid grid-cols-3 items-end pt-3 sm:pt-5 border-t border-slate-200/80 text-left gap-1 sm:gap-2">
                 {/* Left: Issued date and cert ID */}
                 <div className="space-y-0.5 sm:space-y-1">
-                  <p className="text-[9px] sm:text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Issue Date</p>
-                  <p className="text-[11px] sm:text-xs font-bold text-slate-800">{selectedCertificate.issuedDate}</p>
-                  <p className="text-[8px] sm:text-[9px] text-slate-400 font-mono truncate">ID: {selectedCertificate.certCode}</p>
+                  <p className="text-[8px] sm:text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Issue Date</p>
+                  <p className="text-[10px] sm:text-xs font-bold text-slate-800">{selectedCertificate.issuedDate}</p>
+                  <p className="text-[8px] sm:text-[9px] text-slate-400 font-mono truncate max-w-[80px] sm:max-w-none">ID: {selectedCertificate.certCode}</p>
                 </div>
 
                 {/* Center: Gold Seal */}
                 <div className="flex flex-col items-center justify-center">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-tr from-amber-400 via-yellow-300 to-amber-500 border-2 border-amber-600 flex items-center justify-center shadow-md shadow-amber-200 text-amber-950 font-black text-[8px] sm:text-[9px] text-center leading-tight uppercase relative">
-                    <Sparkles size={11} className="absolute top-1 text-amber-900" />
+                  <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-full bg-gradient-to-tr from-amber-400 via-yellow-300 to-amber-500 border-2 border-amber-600 flex items-center justify-center shadow-md shadow-amber-200 text-amber-950 font-black text-[7px] sm:text-[9px] text-center leading-tight uppercase relative">
+                    <Sparkles size={9} className="absolute top-1 text-amber-900" />
                     <span>Official<br/>Certified<br/>Seal</span>
                   </div>
                 </div>
@@ -705,8 +709,8 @@ export default function CertificatesClient({
                   <div className="font-serif italic text-xs sm:text-sm font-bold text-slate-800 leading-none">
                     Director
                   </div>
-                  <div className="w-16 sm:w-24 h-[1px] bg-slate-400 ml-auto my-1" />
-                  <p className="text-[9px] sm:text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Academic Board</p>
+                  <div className="w-14 sm:w-24 h-[1px] bg-slate-400 ml-auto my-0.5 sm:my-1" />
+                  <p className="text-[8px] sm:text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Academic Board</p>
                 </div>
               </div>
             </div>
@@ -719,7 +723,7 @@ export default function CertificatesClient({
                   setSharingCertificate(selectedCertificate);
                   setSelectedCertificate(null);
                 }}
-                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                className="flex-1 min-h-[40px] py-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer touch-manipulation"
               >
                 <Share2 size={13} />
                 <span>Share</span>
@@ -727,7 +731,7 @@ export default function CertificatesClient({
               <button
                 type="button"
                 onClick={() => setSelectedCertificate(null)}
-                className="flex-1 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-all cursor-pointer"
+                className="flex-1 min-h-[40px] py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-all cursor-pointer touch-manipulation"
               >
                 Close
               </button>
@@ -738,11 +742,11 @@ export default function CertificatesClient({
 
       {/* 9. Share Modal */}
       {sharingCertificate && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl border border-slate-200 p-5 sm:p-6 max-w-md w-full shadow-xl space-y-4 animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-50 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl border border-slate-200 p-4 sm:p-6 max-w-md w-full shadow-xl space-y-3.5 sm:space-y-4 animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-base font-bold text-slate-900">Share Certificate</h3>
+                <h3 className="text-sm sm:text-base font-bold text-slate-900">Share Certificate</h3>
                 <p className="text-xs text-slate-500 truncate">{sharingCertificate.title}</p>
               </div>
               <button
@@ -769,7 +773,7 @@ export default function CertificatesClient({
                 <button
                   type="button"
                   onClick={() => handleCopyShareLink(sharingCertificate)}
-                  className="px-2.5 py-1 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1 shadow-2xs active:scale-95 cursor-pointer shrink-0"
+                  className="min-h-[34px] px-2.5 py-1 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1 shadow-2xs active:scale-95 cursor-pointer shrink-0 touch-manipulation"
                 >
                   {copiedLink ? (
                     <>
@@ -792,7 +796,7 @@ export default function CertificatesClient({
                 href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`https://visionlearn.edu/verify?id=${sharingCertificate.certCode}`)}`}
                 target="_blank"
                 rel="noreferrer"
-                className="py-2.5 px-3 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer border border-blue-200/60"
+                className="min-h-[40px] py-2.5 px-3 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer border border-blue-200/60 touch-manipulation"
               >
                 <LinkedinIcon size={14} />
                 <span>LinkedIn</span>
@@ -802,7 +806,7 @@ export default function CertificatesClient({
                 href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`Check out my verified ${sharingCertificate.title} from Vision Learn: https://visionlearn.edu/verify?id=${sharingCertificate.certCode}`)}`}
                 target="_blank"
                 rel="noreferrer"
-                className="py-2.5 px-3 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer border border-emerald-200/60"
+                className="min-h-[40px] py-2.5 px-3 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer border border-emerald-200/60 touch-manipulation"
               >
                 <Share2 size={14} />
                 <span>WhatsApp</span>
@@ -812,7 +816,7 @@ export default function CertificatesClient({
             <button
               type="button"
               onClick={() => setSharingCertificate(null)}
-              className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-all cursor-pointer mt-2"
+              className="w-full min-h-[40px] py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-all cursor-pointer mt-2 touch-manipulation"
             >
               Done
             </button>

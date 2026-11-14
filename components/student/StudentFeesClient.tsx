@@ -329,12 +329,14 @@ export function StudentFeesClient({ fee: initialFee }: { fee: any }) {
 
   if (!fee) {
     return (
-      <div className="max-w-xl mx-auto my-12 p-8 sm:p-12 text-center bg-white rounded-3xl border border-slate-200/80 shadow-2xs">
-        <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-indigo-100">
-          <Wallet size={28} />
+      <div className="max-w-xl mx-auto my-8 sm:my-12 p-6 sm:p-12 text-center bg-white rounded-3xl border border-slate-200/80 shadow-2xs">
+        <div className="w-12 h-12 sm:w-14 sm:h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-3 sm:mb-4 border border-indigo-100">
+          <Wallet size={24} className="sm:w-7 sm:h-7" />
         </div>
-        <h3 className="text-lg font-bold text-slate-900 tracking-tight">Financial Records Pending</h3>
-        <p className="text-xs text-slate-500 font-medium mt-1">Your course fee structure hasn't been configured by the institute admin yet. Please check back later or contact the accounts office.</p>
+        <h3 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">Financial Records Pending</h3>
+        <p className="text-xs text-slate-500 font-medium mt-1">
+          <span className="hidden sm:inline">Your course fee structure hasn't been configured by the institute admin yet. </span>Please check back later or contact the accounts office.
+        </p>
       </div>
     );
   }
@@ -346,7 +348,7 @@ export function StudentFeesClient({ fee: initialFee }: { fee: any }) {
   return (
     <div className="space-y-3.5 sm:space-y-4 animate-in fade-in duration-300 pb-20 md:pb-12">
       {/* 1. Breadcrumb navigation */}
-      <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+      <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-500 font-medium">
         <Link href="/dashboard" className="hover:text-slate-800 flex items-center gap-1">
           <Home size={13} className="text-slate-400" />
           <span>Dashboard</span>
@@ -411,7 +413,7 @@ export function StudentFeesClient({ fee: initialFee }: { fee: any }) {
               <div className="flex-1 min-w-0">
                 <p className="text-xs sm:text-sm font-bold text-rose-900 leading-tight">Payment Overdue</p>
                 <p className="text-[11px] sm:text-xs text-rose-700 mt-0.5 font-medium leading-relaxed">
-                  An installment of <span className="font-bold">₹{Number(overdueInstallment.amount).toLocaleString('en-IN')}</span> was due on {new Date(overdueInstallment.due_date).toLocaleDateString('en-IN')}. Please settle at the accounts office.
+                  <span className="hidden sm:inline">An installment of </span><span className="font-bold">₹{Number(overdueInstallment.amount).toLocaleString('en-IN')}</span> was due on {new Date(overdueInstallment.due_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}. Please settle at the accounts office.
                 </p>
               </div>
             </div>
@@ -430,7 +432,7 @@ export function StudentFeesClient({ fee: initialFee }: { fee: any }) {
                   ₹{finalFee.toLocaleString('en-IN')}
                 </div>
                 <div className="text-[11px] sm:text-xs font-semibold text-slate-700 mt-1 truncate">Total Course Fee</div>
-                <div className="text-[10px] text-slate-400 mt-0.5 truncate">
+                <div className="hidden sm:block text-[10px] text-slate-400 mt-0.5 truncate">
                   {discountAmount > 0 ? `Save ₹${discountAmount.toLocaleString('en-IN')}` : 'Payable'}
                 </div>
               </div>
@@ -446,7 +448,7 @@ export function StudentFeesClient({ fee: initialFee }: { fee: any }) {
                   ₹{totalPaid.toLocaleString('en-IN')}
                 </div>
                 <div className="text-[11px] sm:text-xs font-semibold text-slate-700 mt-1 truncate">Total Paid</div>
-                <div className="text-[10px] text-slate-400 mt-0.5 truncate">
+                <div className="hidden sm:block text-[10px] text-slate-400 mt-0.5 truncate">
                   {fee.payments?.length || 0} payment{fee.payments?.length === 1 ? '' : 's'} logged
                 </div>
               </div>
@@ -464,7 +466,7 @@ export function StudentFeesClient({ fee: initialFee }: { fee: any }) {
                   ₹{balance.toLocaleString('en-IN')}
                 </div>
                 <div className="text-[11px] sm:text-xs font-semibold text-slate-700 mt-1 truncate">Current Balance</div>
-                <div className="text-[10px] text-slate-400 mt-0.5 truncate">
+                <div className="hidden sm:block text-[10px] text-slate-400 mt-0.5 truncate">
                   {balance === 0 ? 'No dues pending' : 'Pending payment'}
                 </div>
               </div>
@@ -500,7 +502,7 @@ export function StudentFeesClient({ fee: initialFee }: { fee: any }) {
                   {progress.toFixed(0)}%
                 </div>
                 <div className="text-[11px] sm:text-xs font-semibold text-slate-700 mt-1 truncate">Paid Rate</div>
-                <div className="text-[10px] text-slate-400 mt-0.5 truncate">
+                <div className="hidden sm:block text-[10px] text-slate-400 mt-0.5 truncate">
                   {isPaid ? 'Fully cleared' : 'In installments'}
                 </div>
               </div>
@@ -516,7 +518,7 @@ export function StudentFeesClient({ fee: initialFee }: { fee: any }) {
                   <IndianRupee size={16} className="text-indigo-600" />
                   <span>Fee Settlement Progress</span>
                 </h3>
-                <p className="text-[11px] text-slate-500 mt-0.5">
+                <p className="hidden sm:block text-[11px] text-slate-500 mt-0.5">
                   Track your total cleared vs remaining course payments
                 </p>
               </div>
@@ -574,58 +576,56 @@ export function StudentFeesClient({ fee: initialFee }: { fee: any }) {
 
             {/* Vertical Timeline / Direct Scheme Notice */}
             {!fee.installments || fee.installments.length === 0 ? (
-              <div className="py-6 px-4 bg-slate-50/70 rounded-2xl border border-dashed border-slate-200 text-center space-y-2">
+              <div className="py-5 sm:py-6 px-3.5 sm:px-4 bg-slate-50/70 rounded-2xl border border-dashed border-slate-200 text-center space-y-2">
                 <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center mx-auto">
                   <CalendarCheck size={20} />
                 </div>
                 <h4 className="text-xs font-bold text-slate-800">Direct Payment Scheme Active</h4>
                 <p className="text-[11px] text-slate-500 max-w-md mx-auto leading-relaxed">
-                  No strict monthly schedule was enforced for your enrollment. All payments are recorded upon receipt at the institute accounts desk. View all generated receipts below.
+                  <span className="hidden sm:inline">No strict monthly schedule was enforced for your enrollment. </span>All payments are recorded upon receipt at accounts desk.
                 </p>
               </div>
             ) : (
-              <div className="space-y-4 relative">
+              <div className="space-y-3 sm:space-y-4 relative">
                 {fee.installments.map((inst: any, idx: number) => {
                   const isInstPaid = inst.status === 'paid';
                   const isInstOverdue = inst.status === 'overdue' || (inst.status === 'pending' && new Date(inst.due_date) < new Date());
                   return (
-                    <div key={inst.id} className="relative flex gap-3.5 sm:gap-4 pb-4 last:pb-0 group">
+                    <div key={inst.id} className="relative flex gap-3 sm:gap-4 pb-3.5 sm:pb-4 last:pb-0 group">
                       {idx !== fee.installments.length - 1 && (
-                        <div className={`absolute left-4 top-8 bottom-0 w-[2px] ${isInstPaid ? 'bg-emerald-500' : 'bg-slate-200'}`} />
+                        <div className={`absolute left-3.5 sm:left-4 top-8 bottom-0 w-[2px] ${isInstPaid ? 'bg-emerald-500' : 'bg-slate-200'}`} />
                       )}
                       
                       {/* Timeline Node */}
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center z-10 shrink-0 border-2 transition-all ${
+                      <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center z-10 shrink-0 border-2 transition-all ${
                         isInstPaid ? 'bg-emerald-500 border-emerald-500 text-white' :
                         isInstOverdue ? 'bg-rose-50 border-rose-500 text-rose-500' :
                         'bg-white border-slate-300 text-slate-400 group-hover:border-indigo-500 group-hover:text-indigo-500'
                       }`}>
-                        {isInstPaid ? <CheckCircle2 size={14} /> : <Clock size={14} />}
+                        {isInstPaid ? <CheckCircle2 size={13} /> : <Clock size={13} />}
                       </div>
 
                       {/* Content Card */}
-                      <div className={`flex-1 p-3.5 sm:p-4 rounded-xl border transition-all ${
+                      <div className={`flex-1 p-3 sm:p-4 rounded-xl border transition-all ${
                         isInstPaid ? 'bg-emerald-50/20 border-emerald-100 hover:bg-emerald-50/30' :
                         isInstOverdue ? 'bg-rose-50/30 border-rose-100 hover:bg-rose-50/40' :
                         'bg-slate-50/60 border-slate-200/70 hover:bg-white hover:shadow-2xs'
                       }`}>
-                        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
-                          <div>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Installment #{idx + 1}</p>
-                            <p className="text-base font-bold text-slate-900 mt-0.5">₹{Number(inst.amount).toLocaleString('en-IN')}</p>
-                          </div>
-                          <div className="sm:text-right">
-                            <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border inline-block ${
-                              isInstPaid ? 'text-emerald-700 bg-emerald-50 border-emerald-200' :
-                              isInstOverdue ? 'text-rose-700 bg-rose-50 border-rose-200' :
-                              'text-slate-600 bg-slate-100 border-slate-200'
-                            }`}>
-                              {isInstPaid ? 'Paid' : isInstOverdue ? 'Overdue' : 'Upcoming'}
-                            </span>
-                            <p className="text-[10px] text-slate-400 mt-1">
-                              Due: {new Date(inst.due_date).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}
-                            </p>
-                          </div>
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Installment #{idx + 1}</p>
+                          <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border inline-block ${
+                            isInstPaid ? 'text-emerald-700 bg-emerald-50 border-emerald-200' :
+                            isInstOverdue ? 'text-rose-700 bg-rose-50 border-rose-200' :
+                            'text-slate-600 bg-slate-100 border-slate-200'
+                          }`}>
+                            {isInstPaid ? 'Paid' : isInstOverdue ? 'Overdue' : 'Upcoming'}
+                          </span>
+                        </div>
+                        <div className="flex items-baseline justify-between gap-2 mt-1">
+                          <p className="text-sm sm:text-base font-bold text-slate-900">₹{Number(inst.amount).toLocaleString('en-IN')}</p>
+                          <p className="text-[10px] text-slate-400">
+                            Due: {new Date(inst.due_date).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -648,17 +648,17 @@ export function StudentFeesClient({ fee: initialFee }: { fee: any }) {
             </div>
 
             {/* Filter and Search Bar */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                   <Search size={14} />
                 </div>
                 <input 
                   type="text" 
-                  placeholder="Search by amount, mode, txn ID..."
+                  placeholder="Search amount, mode, txn ID..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-8 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200/80 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-xs text-slate-800 placeholder-slate-400"
+                  className="w-full min-h-[38px] pl-8 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200/80 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-xs text-slate-800 placeholder-slate-400"
                 />
               </div>
               
@@ -666,7 +666,7 @@ export function StudentFeesClient({ fee: initialFee }: { fee: any }) {
                 <select
                   value={filterMode}
                   onChange={(e) => setFilterMode(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200/80 focus:bg-white focus:outline-none text-xs font-semibold text-slate-700 cursor-pointer"
+                  className="w-full min-h-[38px] px-3 py-2 rounded-xl bg-slate-50 border border-slate-200/80 focus:bg-white focus:outline-none text-xs font-semibold text-slate-700 cursor-pointer"
                 >
                   <option value="all">All Payment Modes</option>
                   <option value="upi">UPI / Online</option>
@@ -678,7 +678,7 @@ export function StudentFeesClient({ fee: initialFee }: { fee: any }) {
             </div>
 
             {/* Transaction Items */}
-            <div className="space-y-3">
+            <div className="space-y-2.5 sm:space-y-3">
               {filteredPayments.length === 0 ? (
                 <div className="py-8 text-center text-slate-400 text-xs font-medium bg-slate-50 rounded-xl border border-dashed border-slate-200">
                   No transaction records found matching your filter.
@@ -687,18 +687,18 @@ export function StudentFeesClient({ fee: initialFee }: { fee: any }) {
                 filteredPayments.map((pay: any) => (
                   <div 
                     key={pay.id} 
-                    className="p-3.5 sm:p-4 rounded-xl bg-slate-50/60 hover:bg-white border border-slate-200/70 hover:border-slate-300 transition-all shadow-2xs hover:shadow-xs space-y-2.5"
+                    className="p-3 sm:p-4 rounded-xl bg-slate-50/60 hover:bg-white border border-slate-200/70 hover:border-slate-300 transition-all shadow-2xs hover:shadow-xs space-y-2 sm:space-y-2.5"
                   >
                     <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center shrink-0">
-                          <IndianRupee size={17} />
+                      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center shrink-0">
+                          <IndianRupee size={16} />
                         </div>
-                        <div>
+                        <div className="min-w-0">
                           <div className="text-base sm:text-lg font-bold text-slate-900 leading-tight">
                             ₹{Number(pay.amount).toLocaleString('en-IN')}
                           </div>
-                          <div className="text-[11px] text-slate-500 mt-0.5">
+                          <div className="text-[11px] text-slate-500 mt-0.5 truncate">
                             {pay.payment_date ? new Date(pay.payment_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : "Payment Date N/A"}
                           </div>
                         </div>
@@ -706,7 +706,7 @@ export function StudentFeesClient({ fee: initialFee }: { fee: any }) {
 
                       <button 
                         onClick={() => handleDownloadReceipt(pay)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 active:scale-95 text-indigo-700 text-xs font-semibold border border-indigo-200/70 transition-all cursor-pointer shadow-2xs shrink-0" 
+                        className="min-h-[36px] flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 active:scale-95 text-indigo-700 text-xs font-semibold border border-indigo-200/70 transition-all cursor-pointer shadow-2xs shrink-0 touch-manipulation" 
                         title="Download / Print Receipt"
                       >
                         <Download size={13} />
@@ -716,24 +716,24 @@ export function StudentFeesClient({ fee: initialFee }: { fee: any }) {
                     </div>
 
                     {/* Breakdown Chips */}
-                    <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                    <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
                       {Number(pay.registration_fee) > 0 && (
                         <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-md">
-                          Registration: ₹{Number(pay.registration_fee).toLocaleString('en-IN')}
+                          <span className="sm:hidden">Reg: </span><span className="hidden sm:inline">Registration: </span>₹{Number(pay.registration_fee).toLocaleString('en-IN')}
                         </span>
                       )}
                       {Number(pay.course_fee) > 0 && (
                         <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-md">
-                          Course Fee: ₹{Number(pay.course_fee).toLocaleString('en-IN')}
+                          <span className="sm:hidden">Course: </span><span className="hidden sm:inline">Course Fee: </span>₹{Number(pay.course_fee).toLocaleString('en-IN')}
                         </span>
                       )}
                       {Number(pay.exam_fee) > 0 && (
                         <span className="text-[10px] font-bold text-purple-700 bg-purple-50 border border-purple-100 px-2 py-0.5 rounded-md">
-                          Exam Fee: ₹{Number(pay.exam_fee).toLocaleString('en-IN')}
+                          <span className="sm:hidden">Exam: </span><span className="hidden sm:inline">Exam Fee: </span>₹{Number(pay.exam_fee).toLocaleString('en-IN')}
                         </span>
                       )}
                       <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md uppercase">
-                        Mode: {pay.payment_mode || 'Cash'}
+                        {pay.payment_mode || 'Cash'}
                       </span>
                     </div>
 
@@ -790,19 +790,20 @@ export function StudentFeesClient({ fee: initialFee }: { fee: any }) {
           </div>
 
           {/* Right Card 2: Accounts Office & Payment Assistance */}
-          <div className="bg-gradient-to-br from-indigo-50/60 to-blue-50/40 rounded-2xl border border-indigo-100 p-4 sm:p-5 shadow-2xs space-y-3">
-            <div className="w-9 h-9 rounded-xl bg-white text-indigo-600 border border-indigo-100 flex items-center justify-center shadow-2xs">
-              <Building size={17} />
+          <div className="bg-gradient-to-br from-indigo-50/60 to-blue-50/40 rounded-2xl border border-indigo-100 p-3.5 sm:p-5 shadow-2xs space-y-2.5 sm:space-y-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white text-indigo-600 border border-indigo-100 flex items-center justify-center shrink-0 shadow-2xs">
+                <Building size={16} />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-slate-900">Institute Accounts Office</h4>
+                <p className="hidden sm:block text-[11px] text-slate-500 mt-0.5 leading-relaxed">
+                  For fee receipts, installment extensions, or payment verification
+                </p>
+              </div>
             </div>
 
-            <div>
-              <h4 className="text-xs font-bold text-slate-900">Institute Accounts Office</h4>
-              <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
-                For fee receipts, installment extensions, or UPI verification issues, visit the admin desk:
-              </p>
-            </div>
-
-            <div className="space-y-1.5 text-[11px] text-slate-600 font-medium">
+            <div className="space-y-1.5 text-[11px] text-slate-600 font-medium pt-0.5">
               <div className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
                 <span>Mon – Sat: 9:00 AM – 5:00 PM</span>

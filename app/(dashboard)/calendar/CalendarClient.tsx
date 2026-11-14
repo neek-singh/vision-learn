@@ -414,13 +414,13 @@ export default function CalendarClient({
       )}
 
       {/* 1. Breadcrumb navigation */}
-      <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+      <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-500 font-medium">
         <Link href="/" className="hover:text-slate-800 flex items-center gap-1">
           <Home size={13} className="text-slate-400" />
           <span>My Courses</span>
         </Link>
         <ChevronRight size={12} className="text-slate-400" />
-        <Link href="/curriculum" className="hover:text-slate-800">
+        <Link href="/curriculum" className="hover:text-slate-800 truncate max-w-[220px]">
           <span>{courseTitle}</span>
         </Link>
         <ChevronRight size={12} className="text-slate-400" />
@@ -428,14 +428,15 @@ export default function CalendarClient({
       </div>
 
       {/* 2. Learning Calendar Hero Banner */}
-      <div className="bg-gradient-to-r from-purple-50/70 via-indigo-50/40 to-blue-50/40 rounded-2xl border border-purple-100/70 p-4 sm:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative overflow-hidden shadow-2xs">
+      <div className="bg-gradient-to-r from-purple-50/70 via-indigo-50/40 to-blue-50/40 rounded-2xl border border-purple-100/70 p-3.5 sm:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 sm:gap-4 relative overflow-hidden shadow-2xs">
         {/* Left: Icon + Text */}
-        <div className="flex items-start sm:items-center gap-3.5 z-10">
-          <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-purple-100/90 border border-purple-200/80 text-purple-600 flex items-center justify-center shrink-0 shadow-2xs">
-            <CalendarIcon size={26} className="stroke-[1.9]" />
+        <div className="flex items-start sm:items-center gap-3 sm:gap-3.5 z-10 w-full md:w-auto">
+          <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-purple-100/90 border border-purple-200/80 text-purple-600 flex items-center justify-center shrink-0 shadow-2xs">
+            <CalendarIcon size={20} className="sm:hidden stroke-[1.9]" />
+            <CalendarIcon size={26} className="hidden sm:block stroke-[1.9]" />
           </div>
-          <div>
-            <h1 className="text-lg sm:text-xl font-bold text-slate-900 leading-tight">
+          <div className="min-w-0 flex-1 sm:flex-initial">
+            <h1 className="text-base sm:text-xl font-bold text-slate-900 leading-tight">
               Learning Calendar
             </h1>
             <p className="hidden sm:block text-xs text-slate-500 mt-0.5">
@@ -443,7 +444,7 @@ export default function CalendarClient({
             </p>
 
             {/* Interactive Category Dots Legend */}
-            <div className="flex items-center gap-2 sm:gap-2.5 mt-2.5 text-xs text-slate-600 font-medium overflow-x-auto no-scrollbar py-0.5 max-w-full">
+            <div className="flex items-center gap-1.5 sm:gap-2.5 mt-2 sm:mt-2.5 text-xs text-slate-600 font-medium overflow-x-auto no-scrollbar py-0.5 max-w-full">
               <button
                 onClick={() => setActiveCategoryFilter("all")}
                 className={`px-2.5 py-1 rounded-full text-[11px] whitespace-nowrap transition-all cursor-pointer ${
@@ -459,7 +460,8 @@ export default function CalendarClient({
                 }`}
               >
                 <span className={`w-2 h-2 rounded-full ${activeCategoryFilter === "class" ? "bg-white" : "bg-blue-600"} shrink-0`} />
-                <span>Live Class</span>
+                <span className="sm:hidden">Class</span>
+                <span className="hidden sm:inline">Live Class</span>
               </button>
               <button
                 onClick={() => setActiveCategoryFilter(activeCategoryFilter === "assignment" ? "all" : "assignment")}
@@ -525,14 +527,15 @@ export default function CalendarClient({
             </svg>
           </div>
 
-          <div className="relative">
+          <div className="relative w-full sm:w-auto">
             <button
               onClick={() => setShowCalendarExportMenu(!showCalendarExportMenu)}
-              className="bg-white hover:bg-slate-50 border border-blue-400 text-blue-600 rounded-xl px-3.5 py-1.5 text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition-all active:scale-95 shrink-0 cursor-pointer"
+              className="w-full sm:w-auto justify-center bg-white hover:bg-slate-50 border border-blue-400 text-blue-600 rounded-xl px-3.5 py-1.5 text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition-all active:scale-95 shrink-0 cursor-pointer"
             >
-              <CalendarIcon size={14} className="text-blue-600" />
-              <span>Add to Google Calendar</span>
-              <ChevronDown size={12} className="text-blue-500" />
+              <CalendarIcon size={14} className="text-blue-600 shrink-0" />
+              <span className="sm:hidden">Sync / Export</span>
+              <span className="hidden sm:inline">Add to Google Calendar</span>
+              <ChevronDown size={12} className="text-blue-500 shrink-0" />
             </button>
 
             {/* Dropdown Menu */}
@@ -540,17 +543,17 @@ export default function CalendarClient({
               <div className="absolute right-0 top-full mt-1.5 w-52 bg-white rounded-xl shadow-xl border border-slate-200/90 py-1.5 z-50 animate-in fade-in zoom-in-95">
                 <button
                   onClick={handleOpenGoogleWebCalendar}
-                  className="w-full text-left px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                  className="w-full text-left px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
                 >
-                  <ExternalLink size={13} className="text-blue-600" />
-                  <span>Open in Google Calendar</span>
+                  <ExternalLink size={13} className="text-blue-600 shrink-0" />
+                  <span>Google Calendar</span>
                 </button>
                 <button
                   onClick={handleDownloadIcs}
-                  className="w-full text-left px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 border-t border-slate-100"
+                  className="w-full text-left px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 border-t border-slate-100 cursor-pointer"
                 >
-                  <Download size={13} className="text-emerald-600" />
-                  <span>Download .ICS (Apple/Outlook)</span>
+                  <Download size={13} className="text-emerald-600 shrink-0" />
+                  <span>Download .ICS file</span>
                 </button>
               </div>
             )}
@@ -563,37 +566,39 @@ export default function CalendarClient({
         {/* Left Column (8 of 12 cols): Month Calendar & Next 7 Days Schedule */}
         <div className="lg:col-span-8 space-y-4">
           {/* Card A: Calendar View */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-2xs">
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-5 shadow-2xs">
             {/* Header: < Month Year > | [Month] [Week] [Day] | [Today] */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={handlePrevMonth}
-                  className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
-                  aria-label="Previous month"
-                >
-                  <ChevronLeft size={16} />
-                </button>
+              <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-3">
+                <div className="flex items-center gap-1.5 sm:gap-3">
+                  <button
+                    onClick={handlePrevMonth}
+                    className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+                    aria-label="Previous month"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
 
-                <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
-                  {monthNames[currentMonth]} {currentYear}
-                </h2>
+                  <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+                    {monthNames[currentMonth]} {currentYear}
+                  </h2>
 
-                <button
-                  onClick={handleNextMonth}
-                  className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
-                  aria-label="Next month"
-                >
-                  <ChevronRight size={16} />
-                </button>
+                  <button
+                    onClick={handleNextMonth}
+                    className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+                    aria-label="Next month"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
               </div>
 
               {/* View Switcher & Today button */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
                 <div className="inline-flex rounded-lg border border-slate-200/80 bg-white p-0.5 text-xs font-semibold">
                   <button
                     onClick={() => setViewMode("month")}
-                    className={`px-3 py-1 rounded-md transition-all cursor-pointer ${
+                    className={`px-2.5 sm:px-3 py-1 rounded-md transition-all cursor-pointer ${
                       viewMode === "month"
                         ? "bg-blue-600 text-white shadow-2xs"
                         : "text-slate-600 hover:text-slate-900"
@@ -603,7 +608,7 @@ export default function CalendarClient({
                   </button>
                   <button
                     onClick={() => setViewMode("week")}
-                    className={`px-3 py-1 rounded-md transition-all cursor-pointer ${
+                    className={`px-2.5 sm:px-3 py-1 rounded-md transition-all cursor-pointer ${
                       viewMode === "week"
                         ? "bg-blue-600 text-white shadow-2xs"
                         : "text-slate-600 hover:text-slate-900"
@@ -613,7 +618,7 @@ export default function CalendarClient({
                   </button>
                   <button
                     onClick={() => setViewMode("day")}
-                    className={`px-3 py-1 rounded-md transition-all cursor-pointer ${
+                    className={`px-2.5 sm:px-3 py-1 rounded-md transition-all cursor-pointer ${
                       viewMode === "day"
                         ? "bg-blue-600 text-white shadow-2xs"
                         : "text-slate-600 hover:text-slate-900"
@@ -636,10 +641,11 @@ export default function CalendarClient({
             {viewMode === "month" && (
               <>
                 {/* Weekday labels */}
-                <div className="grid grid-cols-7 text-center text-xs font-medium text-slate-500 py-2.5 border-b border-slate-100">
+                <div className="grid grid-cols-7 text-center text-xs font-semibold text-slate-500 py-2 sm:py-2.5 border-b border-slate-100">
                   {dayNames.map((day) => (
                     <div key={day} className="py-0.5">
-                      {day}
+                      <span className="sm:hidden">{day.slice(0, 1)}</span>
+                      <span className="hidden sm:inline">{day}</span>
                     </div>
                   ))}
                 </div>
@@ -658,16 +664,16 @@ export default function CalendarClient({
                             setSelectedDate(cell.dateStr);
                           }
                         }}
-                        className={`min-h-[52px] sm:min-h-[85px] p-1 sm:p-2 border-r border-b border-slate-100 transition-all flex flex-col justify-between ${
+                        className={`min-h-[50px] sm:min-h-[85px] p-1 sm:p-2 border-r border-b border-slate-100 transition-all flex flex-col justify-between touch-manipulation ${
                           cell.isCurrentMonth
                             ? isSelected
                               ? "bg-blue-50/40 ring-2 ring-inset ring-blue-500/80 cursor-pointer z-10"
-                              : "bg-white hover:bg-slate-50/70 cursor-pointer"
+                              : "bg-white hover:bg-slate-50/70 cursor-pointer active:bg-blue-50/30"
                             : "bg-slate-50/40 text-slate-300 pointer-events-none"
                         }`}
                       >
                         {/* Top Row: Date Number */}
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-center sm:justify-between">
                           {isSelected ? (
                             <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-blue-600 text-white font-bold text-[11px] sm:text-xs flex items-center justify-center shadow-2xs">
                               {cell.dayNumber}
@@ -718,7 +724,7 @@ export default function CalendarClient({
                           </div>
 
                           {/* Mobile-only compact dots */}
-                          <div className="flex sm:hidden items-center justify-center gap-1 py-1 flex-wrap">
+                          <div className="flex sm:hidden items-center justify-center gap-1 py-0.5 flex-wrap">
                             {cell.events.slice(0, 3).map((ev) => {
                               const cfg = getCategoryConfig(ev.type);
                               return (
@@ -745,8 +751,85 @@ export default function CalendarClient({
 
             {/* WEEK VIEW */}
             {viewMode === "week" && (
-              <div className="pt-3 overflow-x-auto no-scrollbar">
-                <div className="grid grid-cols-7 gap-2 min-w-[560px] sm:min-w-0">
+              <div className="pt-3">
+                {/* Mobile Week View: 7-day responsive strip + Selected day schedule */}
+                <div className="sm:hidden space-y-3">
+                  <div className="grid grid-cols-7 gap-1 bg-slate-50/80 p-1 rounded-xl border border-slate-100">
+                    {selectedWeekDays.map((col, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setSelectedDate(col.dateStr)}
+                        className={`py-1.5 rounded-lg flex flex-col items-center justify-center transition-all cursor-pointer ${
+                          col.isSelected
+                            ? "bg-blue-600 text-white shadow-xs font-bold"
+                            : col.isToday
+                            ? "bg-slate-900 text-white font-semibold"
+                            : "hover:bg-white text-slate-700"
+                        }`}
+                      >
+                        <span className={`text-[10px] ${col.isSelected || col.isToday ? "text-white/80" : "text-slate-400"}`}>
+                          {col.dayName.slice(0, 1)}
+                        </span>
+                        <span className="text-xs font-bold mt-0.5">{col.dayNumber}</span>
+                        <div className="h-1 flex items-center justify-center mt-0.5">
+                          {col.events.length > 0 && (
+                            <span className={`w-1 h-1 rounded-full ${col.isSelected ? "bg-white" : "bg-blue-500"}`} />
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs font-semibold text-slate-600 px-0.5">
+                      <span>{formattedSelectedDateHeader}</span>
+                      <span className="text-[11px] text-blue-600">{selectedDayEvents.length} events</span>
+                    </div>
+                    {selectedDayEvents.length > 0 ? (
+                      selectedDayEvents.map((ev) => {
+                        const cfg = getCategoryConfig(ev.type);
+                        return (
+                          <div
+                            key={ev.id}
+                            className={`p-3 rounded-xl border flex items-center justify-between gap-2.5 ${cfg.badgeClass}`}
+                          >
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5">
+                                <span className={`w-1.5 h-1.5 rounded-full ${cfg.dotClass}`} />
+                                <span className={`text-[10px] font-bold uppercase tracking-wider ${cfg.textColor}`}>
+                                  {cfg.label}
+                                </span>
+                                <span className="text-[10px] text-slate-400">• {ev.start_time}</span>
+                              </div>
+                              <h4 className="text-xs font-semibold text-slate-800 truncate mt-0.5">
+                                {ev.title}
+                              </h4>
+                              <p className="text-[10px] text-slate-500 truncate mt-0.5">{ev.module}</p>
+                            </div>
+                            <button
+                              onClick={() => handleActionClick({
+                                title: ev.title,
+                                module: ev.module,
+                                type: ev.type,
+                                action: ev.type === "class" ? "Join" : "View"
+                              })}
+                              className="shrink-0 px-3 py-1 rounded-lg border border-blue-500 bg-white text-blue-600 hover:bg-blue-50 text-xs font-medium shadow-2xs"
+                            >
+                              {ev.type === "class" ? "Join" : "View"}
+                            </button>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="py-6 text-center text-xs text-slate-400 bg-slate-50/50 rounded-xl border border-slate-100">
+                        No events scheduled for this day
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Desktop / Tablet Week View: 7 columns */}
+                <div className="hidden sm:grid sm:grid-cols-7 gap-2 overflow-x-auto no-scrollbar">
                   {selectedWeekDays.map((col, idx) => (
                     <div
                       key={idx}
@@ -802,25 +885,25 @@ export default function CalendarClient({
             {viewMode === "day" && (
               <div className="pt-3 divide-y divide-slate-100">
                 <div className="py-2 flex items-center justify-between text-xs font-semibold text-slate-600 pb-3">
-                  <span>Day Schedule for {formattedSelectedDateHeader}</span>
-                  <span className="text-[11px] text-blue-600">{selectedDayEvents.length} events scheduled</span>
+                  <span className="truncate mr-2">Schedule • {formattedSelectedDateHeader}</span>
+                  <span className="text-[11px] text-blue-600 shrink-0">{selectedDayEvents.length} events</span>
                 </div>
                 {["09:00 AM", "10:00 AM", "11:00 AM", "01:00 PM", "02:00 PM", "04:00 PM", "05:00 PM"].map((slot) => {
                   const slotEvents = selectedDayEvents.filter(e => (e.start_time || "").includes(slot.slice(0, 5)));
                   return (
-                    <div key={slot} className="py-3 flex items-start gap-4">
-                      <div className="w-16 shrink-0 text-xs font-semibold text-slate-400 pt-1">{slot}</div>
-                      <div className="flex-1 space-y-2">
+                    <div key={slot} className="py-2.5 sm:py-3 flex items-start gap-2.5 sm:gap-4">
+                      <div className="w-14 sm:w-16 shrink-0 text-xs font-semibold text-slate-400 pt-1">{slot}</div>
+                      <div className="flex-1 min-w-0 space-y-2">
                         {slotEvents.map(ev => {
                           const cfg = getCategoryConfig(ev.type);
                           return (
-                            <div key={ev.id} className={`p-3 rounded-xl border flex items-center justify-between gap-3 ${cfg.badgeClass}`}>
-                              <div>
+                            <div key={ev.id} className={`p-2.5 sm:p-3 rounded-xl border flex items-center justify-between gap-2.5 sm:gap-3 ${cfg.badgeClass}`}>
+                              <div className="min-w-0 flex-1">
                                 <span className={`text-[10px] font-bold uppercase tracking-wider block ${cfg.textColor}`}>
                                   {cfg.label}
                                 </span>
-                                <h4 className="text-xs sm:text-sm font-semibold text-slate-800">{ev.title}</h4>
-                                <p className="text-[11px] text-slate-500 mt-0.5">{ev.module || "Course Module"}</p>
+                                <h4 className="text-xs sm:text-sm font-semibold text-slate-800 truncate">{ev.title}</h4>
+                                <p className="text-[10px] sm:text-[11px] text-slate-500 truncate mt-0.5">{ev.module || "Course Module"}</p>
                               </div>
                               <button
                                 onClick={() => handleActionClick({
@@ -829,7 +912,7 @@ export default function CalendarClient({
                                   type: ev.type,
                                   action: ev.type === "class" ? "Join" : "View"
                                 })}
-                                className="px-3.5 py-1 rounded-lg border border-blue-500 bg-white text-blue-600 hover:bg-blue-50 text-xs font-medium shadow-2xs cursor-pointer"
+                                className="shrink-0 px-3 sm:px-3.5 py-1 rounded-lg border border-blue-500 bg-white text-blue-600 hover:bg-blue-50 text-xs font-medium shadow-2xs cursor-pointer"
                               >
                                 {ev.type === "class" ? "Join" : "View"}
                               </button>
@@ -837,7 +920,7 @@ export default function CalendarClient({
                           );
                         })}
                         {slotEvents.length === 0 && (
-                          <div className="text-xs text-slate-300 italic py-1">Available / Free Time</div>
+                          <div className="text-[11px] sm:text-xs text-slate-300 italic py-0.5">Free</div>
                         )}
                       </div>
                     </div>
@@ -848,10 +931,11 @@ export default function CalendarClient({
           </div>
 
           {/* Card B: Your Schedule (Next 7 Days) */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-2xs space-y-3">
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-5 shadow-2xs space-y-3">
             <div className="flex items-center justify-between pb-1">
               <h3 className="text-sm sm:text-base font-bold text-slate-900">
-                Your Schedule (Next 7 Days)
+                <span className="sm:hidden">Next 7 Days</span>
+                <span className="hidden sm:inline">Your Schedule (Next 7 Days)</span>
               </h3>
               <button 
                 onClick={() => setShowViewAllSchedule(true)}
@@ -868,17 +952,32 @@ export default function CalendarClient({
                   return (
                     <div 
                       key={idx} 
-                      className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 hover:bg-slate-50/50 rounded-xl px-2 transition-colors"
+                      className="py-2.5 sm:py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2.5 hover:bg-slate-50/50 rounded-xl px-1.5 sm:px-2 transition-colors"
                     >
-                      {/* Date, Day & Time */}
-                      <div className="flex items-center gap-2.5 sm:w-56 shrink-0 text-xs">
-                        <span className="font-semibold text-slate-900 whitespace-nowrap">{item.dateFormatted}</span>
-                        <span className="hidden sm:inline text-slate-400 font-medium whitespace-nowrap">{item.dayOfWeek}</span>
-                        <span className="text-slate-600 font-medium whitespace-nowrap ml-auto sm:ml-0">{item.timeFormatted}</span>
+                      {/* Mobile Row 1 / Desktop Left: Date, Time, Badge & Action */}
+                      <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-2.5 sm:w-56 shrink-0 text-xs">
+                        <div className="flex items-center gap-1.5 sm:gap-2">
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border sm:hidden ${cfg.badgeClass}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${cfg.dotClass}`} />
+                            <span>{cfg.label}</span>
+                          </span>
+                          <span className="font-semibold text-slate-900 whitespace-nowrap">{item.dateFormatted}</span>
+                          <span className="hidden sm:inline text-slate-400 font-medium whitespace-nowrap">{item.dayOfWeek}</span>
+                          <span className="text-slate-500 font-medium whitespace-nowrap text-[11px] sm:text-xs">{item.timeFormatted}</span>
+                        </div>
+                        {/* Mobile Action Button aligned right */}
+                        <div className="sm:hidden">
+                          <button
+                            onClick={() => handleActionClick(item)}
+                            className="px-3 py-0.5 rounded-lg border border-blue-500 text-blue-600 hover:bg-blue-50 text-xs font-medium transition-all shadow-2xs active:scale-95 cursor-pointer"
+                          >
+                            {item.action}
+                          </button>
+                        </div>
                       </div>
 
-                      {/* Badge */}
-                      <div className="shrink-0">
+                      {/* Desktop Badge */}
+                      <div className="hidden sm:block shrink-0">
                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${cfg.badgeClass}`}>
                           <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${cfg.dotClass}`} />
                           <span>{cfg.label}</span>
@@ -886,18 +985,22 @@ export default function CalendarClient({
                       </div>
 
                       {/* Title & Module */}
-                      <div className="min-w-0 flex-1 px-1">
+                      <div className="min-w-0 flex-1 px-0.5 sm:px-1">
                         <span className="text-xs font-semibold text-slate-800 truncate block">
                           {item.title}
                         </span>
+                        <span className="sm:hidden text-[10px] text-slate-400 truncate block mt-0.5">
+                          {item.module}
+                        </span>
                       </div>
 
-                      <div className="shrink-0 text-xs text-slate-400">
+                      {/* Desktop Module */}
+                      <div className="hidden sm:block shrink-0 text-xs text-slate-400">
                         <span>{item.module}</span>
                       </div>
 
-                      {/* Action button */}
-                      <div className="shrink-0">
+                      {/* Desktop Action button */}
+                      <div className="hidden sm:block shrink-0">
                         <button
                           onClick={() => handleActionClick(item)}
                           className="px-4 py-1 rounded-lg border border-blue-500 text-blue-600 hover:bg-blue-50 text-xs font-medium transition-all shadow-2xs active:scale-95 cursor-pointer"
@@ -910,12 +1013,12 @@ export default function CalendarClient({
                 })}
               </div>
             ) : (
-              <div className="py-8 text-center space-y-1.5">
-                <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-300 mx-auto">
-                  <CalendarIcon size={20} />
+              <div className="py-6 sm:py-8 text-center space-y-1">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-300 mx-auto">
+                  <CalendarIcon size={18} />
                 </div>
-                <p className="text-xs font-semibold text-slate-700">No classes or events in the next 7 days</p>
-                <p className="text-[11px] text-slate-400">All caught up! Check back soon or select a date on the calendar.</p>
+                <p className="text-xs font-semibold text-slate-700">No events in next 7 days</p>
+                <p className="hidden sm:block text-[11px] text-slate-400">All caught up! Check back soon or select a date on the calendar.</p>
               </div>
             )}
           </div>
@@ -924,13 +1027,13 @@ export default function CalendarClient({
         {/* Right Column (4 of 12 cols): Selected Day Timeline & Upcoming Events */}
         <div className="lg:col-span-4 space-y-4">
           {/* Card 1: Selected Day Timeline */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-2xs">
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-5 shadow-2xs">
             {/* Header: Date + Event Count */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-              <h3 className="text-sm font-bold text-slate-900">
+              <h3 className="text-sm font-bold text-slate-900 truncate mr-2">
                 {formattedSelectedDateHeader}
               </h3>
-              <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-semibold">
+              <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-semibold shrink-0">
                 {selectedDayEvents.length} Events
               </span>
             </div>
@@ -943,9 +1046,9 @@ export default function CalendarClient({
                   const isLast = idx === selectedDayEvents.length - 1;
 
                   return (
-                    <div key={ev.id} className="relative flex items-start gap-3">
+                    <div key={ev.id} className="relative flex items-start gap-2.5 sm:gap-3">
                       {/* Time Column */}
-                      <div className="w-14 shrink-0 text-right text-[10px] font-medium text-slate-400 pt-1 leading-tight">
+                      <div className="w-13 sm:w-14 shrink-0 text-right text-[10px] font-medium text-slate-400 pt-1 leading-tight">
                         <div>{ev.start_time || "10:00 AM"}</div>
                         <div className="text-slate-300 mt-0.5">{ev.end_time || "11:00 AM"}</div>
                       </div>
@@ -957,17 +1060,17 @@ export default function CalendarClient({
                       </div>
 
                       {/* Event Card Content */}
-                      <div className="flex-1 min-w-0 bg-slate-50/60 hover:bg-slate-50 rounded-xl border border-slate-200/70 p-3 transition-colors">
+                      <div className="flex-1 min-w-0 bg-slate-50/60 hover:bg-slate-50 rounded-xl border border-slate-200/70 p-2.5 sm:p-3 transition-colors">
                         <div className="flex items-start justify-between gap-2">
-                          <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                          <div className="flex items-start gap-2 sm:gap-2.5 min-w-0 flex-1">
                             {/* Icon Box */}
-                            <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center border ${cfg.iconBg}`}>
+                            <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg shrink-0 flex items-center justify-center border ${cfg.iconBg}`}>
                               {ev.type === "class" ? (
-                                <Video size={14} />
+                                <Video size={13} />
                               ) : ev.type === "assignment" ? (
-                                <FileText size={14} />
+                                <FileText size={13} />
                               ) : (
-                                <FolderCode size={14} />
+                                <FolderCode size={13} />
                               )}
                             </div>
 
@@ -1008,7 +1111,7 @@ export default function CalendarClient({
                               type: ev.type,
                               action: "Join"
                             })}
-                            className="w-full mt-2.5 py-1.5 rounded-lg border border-blue-500 text-blue-600 hover:bg-blue-50 text-xs font-medium transition-colors text-center shadow-2xs active:scale-98 cursor-pointer"
+                            className="w-full mt-2 sm:mt-2.5 py-1.5 rounded-lg border border-blue-500 text-blue-600 hover:bg-blue-50 text-xs font-medium transition-colors text-center shadow-2xs active:scale-98 cursor-pointer"
                           >
                             Join Class
                           </button>
@@ -1019,18 +1122,18 @@ export default function CalendarClient({
                 })}
               </div>
             ) : (
-              <div className="py-10 text-center space-y-2">
-                <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 mx-auto border border-slate-100">
-                  <CalendarIcon size={22} />
+              <div className="py-8 sm:py-10 text-center space-y-1 sm:space-y-2">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 mx-auto border border-slate-100">
+                  <CalendarIcon size={20} />
                 </div>
                 <p className="text-xs font-semibold text-slate-700">No events on this day</p>
-                <p className="text-[11px] text-slate-400">Enjoy your free time or revise previous course modules.</p>
+                <p className="hidden sm:block text-[11px] text-slate-400">Enjoy your free time or revise previous course modules.</p>
               </div>
             )}
           </div>
 
           {/* Card 2: Upcoming Events */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-2xs space-y-3">
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-5 shadow-2xs space-y-3">
             <div className="flex items-center justify-between pb-1">
               <h3 className="text-sm font-bold text-slate-900">
                 Upcoming Events
@@ -1054,25 +1157,25 @@ export default function CalendarClient({
                         setSelectedDate(item.dateStr);
                         setToastMessage(`Selected date: ${item.dateFormatted}`);
                       }}
-                      className="py-2.5 flex items-center justify-between gap-3 hover:bg-slate-50/60 rounded-xl px-1.5 transition-colors cursor-pointer group"
+                      className="py-2.5 flex items-center justify-between gap-2.5 hover:bg-slate-50/60 rounded-xl px-1 sm:px-1.5 transition-colors cursor-pointer group"
                     >
                       {/* Left: Icon Box + Details */}
                       <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                        <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center border transition-transform group-hover:scale-105 ${cfg.iconBg}`}>
+                        <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg shrink-0 flex items-center justify-center border transition-transform group-hover:scale-105 ${cfg.iconBg}`}>
                           {item.type === "class" ? (
-                            <Video size={14} />
+                            <Video size={13} />
                           ) : item.type === "test" ? (
-                            <HelpCircle size={14} />
+                            <HelpCircle size={13} />
                           ) : item.type === "assignment" ? (
-                            <FileText size={14} />
+                            <FileText size={13} />
                           ) : (
-                            <FolderCode size={14} />
+                            <FolderCode size={13} />
                           )}
                         </div>
 
                         <div className="min-w-0 flex-1">
-                          <div className="text-[10px] text-slate-400 font-medium">
-                            {item.dateFormatted}  {item.timeFormatted}
+                          <div className="text-[10px] text-slate-400 font-medium truncate">
+                            {item.dateFormatted} • {item.timeFormatted}
                           </div>
                           <h4 className="text-xs font-semibold text-slate-800 truncate leading-snug group-hover:text-blue-600 transition-colors">
                             {item.title}
@@ -1087,9 +1190,9 @@ export default function CalendarClient({
                 })}
               </div>
             ) : (
-              <div className="py-6 text-center space-y-1.5">
+              <div className="py-6 text-center space-y-1">
                 <p className="text-xs font-semibold text-slate-700">No upcoming events</p>
-                <p className="text-[11px] text-slate-400">All scheduled sessions are up to date.</p>
+                <p className="hidden sm:block text-[11px] text-slate-400">All scheduled sessions are up to date.</p>
               </div>
             )}
           </div>
@@ -1098,12 +1201,12 @@ export default function CalendarClient({
 
       {/* MODAL 1: Live Class Join Interactive Modal */}
       {activeJoinModal && (
-        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs z-[130] flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs z-[130] flex items-center justify-center p-3.5 sm:p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 overflow-hidden animate-in zoom-in-95">
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-5 text-white flex items-center justify-between">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-4 sm:p-5 text-white flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center text-white border border-white/20">
-                  <Video size={20} />
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center text-white border border-white/20">
+                  <Video size={18} />
                 </div>
                 <div>
                   <h3 className="font-bold text-sm">Live Class Session</h3>
@@ -1112,15 +1215,15 @@ export default function CalendarClient({
               </div>
               <button 
                 onClick={() => setActiveJoinModal(null)}
-                className="p-1 rounded-lg text-white/80 hover:text-white hover:bg-white/10"
+                className="p-1 rounded-lg text-white/80 hover:text-white hover:bg-white/10 cursor-pointer"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <div className="p-5 space-y-4">
+            <div className="p-4 sm:p-5 space-y-3.5 sm:space-y-4">
               <div>
-                <h4 className="font-bold text-slate-900 text-base">{activeJoinModal.title}</h4>
+                <h4 className="font-bold text-slate-900 text-sm sm:text-base">{activeJoinModal.title}</h4>
                 <div className="flex items-center gap-3 text-xs text-slate-500 mt-1 font-medium">
                   <div className="flex items-center gap-1">
                     <CalendarIcon size={13} className="text-blue-600" />
@@ -1133,7 +1236,8 @@ export default function CalendarClient({
                 </div>
               </div>
 
-              <div className="bg-blue-50/70 border border-blue-100 rounded-xl p-3 text-xs text-blue-900 space-y-1">
+              {/* Class Instructions: Hidden on mobile to keep action visible */}
+              <div className="hidden sm:block bg-blue-50/70 border border-blue-100 rounded-xl p-3 text-xs text-blue-900 space-y-1">
                 <p className="font-semibold">Class Instructions:</p>
                 <p className="text-[11px] text-blue-700 leading-relaxed">
                   Make sure your microphone and camera are tested. Have your code editor ready for live practical coding.
@@ -1147,7 +1251,7 @@ export default function CalendarClient({
                     setToastMessage("Redirecting to Live Classroom session...");
                     router.push("/curriculum");
                   }}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs py-2.5 rounded-xl transition-all shadow-md active:scale-98"
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs py-2.5 rounded-xl transition-all shadow-md active:scale-98 cursor-pointer"
                 >
                   Enter Classroom
                 </button>
@@ -1156,7 +1260,7 @@ export default function CalendarClient({
                     navigator.clipboard.writeText(window.location.origin + "/curriculum");
                     setToastMessage("Classroom link copied to clipboard!");
                   }}
-                  className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-xs rounded-xl transition-colors"
+                  className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-xs rounded-xl transition-colors cursor-pointer"
                 >
                   Copy Link
                 </button>
@@ -1168,14 +1272,14 @@ export default function CalendarClient({
 
       {/* MODAL 2: View Details Modal (Tests / Assignments / Projects) */}
       {activeViewModal && (
-        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs z-[130] flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs z-[130] flex items-center justify-center p-3.5 sm:p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 overflow-hidden animate-in zoom-in-95">
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+            <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center border ${
+                <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center border ${
                   activeViewModal.type === "test" ? "bg-amber-50 text-amber-600 border-amber-200" : "bg-emerald-50 text-emerald-600 border-emerald-200"
                 }`}>
-                  {activeViewModal.type === "test" ? <HelpCircle size={18} /> : <FileText size={18} />}
+                  {activeViewModal.type === "test" ? <HelpCircle size={16} /> : <FileText size={16} />}
                 </div>
                 <div>
                   <h3 className="font-bold text-slate-900 text-sm">{activeViewModal.title}</h3>
@@ -1184,29 +1288,29 @@ export default function CalendarClient({
               </div>
               <button 
                 onClick={() => setActiveViewModal(null)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <div className="p-5 space-y-3.5">
+            <div className="p-4 sm:p-5 space-y-3 sm:space-y-3.5">
               <div className="space-y-1">
-                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Scheduled Timing</span>
+                <span className="text-[10px] sm:text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Scheduled Timing</span>
                 <p className="text-xs font-semibold text-slate-800 flex items-center gap-2">
                   <CalendarIcon size={14} className="text-slate-400" />
                   <span>{activeViewModal.date} at {activeViewModal.time}</span>
                 </p>
               </div>
 
-              <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3 text-xs text-slate-600">
+              <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-2.5 sm:p-3 text-xs text-slate-600">
                 <p className="font-semibold text-slate-800 mb-0.5">Details & Requirements:</p>
                 <p className="text-[11px] text-slate-500 leading-relaxed">
-                  Complete and submit before deadline. Results and teacher feedback will be available immediately following submission.
+                  Complete and submit before deadline.<span className="hidden sm:inline"> Results and teacher feedback will be available immediately following submission.</span>
                 </p>
               </div>
 
-              <div className="flex items-center gap-2 pt-2">
+              <div className="flex items-center gap-2 pt-1 sm:pt-2">
                 <button
                   onClick={() => {
                     setActiveViewModal(null);
@@ -1216,7 +1320,7 @@ export default function CalendarClient({
                       router.push("/curriculum?tab=assignments");
                     }
                   }}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs py-2.5 rounded-xl transition-all shadow-md active:scale-98"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs py-2.5 rounded-xl transition-all shadow-md active:scale-98 cursor-pointer"
                 >
                   {activeViewModal.type === "test" ? "Start Test Assessment" : "Open Assignment Workspace"}
                 </button>
@@ -1228,34 +1332,37 @@ export default function CalendarClient({
 
       {/* MODAL 3: View All Schedule Modal */}
       {showViewAllSchedule && (
-        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs z-[130] flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs z-[130] flex items-center justify-center p-3.5 sm:p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full border border-slate-200 max-h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95">
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+            <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
               <div>
-                <h3 className="font-bold text-slate-900 text-base">Complete Monthly Schedule</h3>
+                <h3 className="font-bold text-slate-900 text-sm sm:text-base">Complete Monthly Schedule</h3>
                 <p className="text-xs text-slate-500 mt-0.5">{monthNames[currentMonth]} {currentYear} • {allEvents.length} total events</p>
               </div>
               <button 
                 onClick={() => setShowViewAllSchedule(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <div className="p-5 overflow-y-auto divide-y divide-slate-100 space-y-2">
+            <div className="p-3.5 sm:p-5 overflow-y-auto divide-y divide-slate-100 space-y-2">
               {allEvents.length > 0 ? (
                 allEvents.map((item, idx) => {
                   const cfg = getCategoryConfig(item.type);
                   return (
-                    <div key={idx} className="pt-2.5 flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center border ${cfg.iconBg}`}>
-                          {item.type === "class" ? <Video size={14} /> : item.type === "test" ? <HelpCircle size={14} /> : <FileText size={14} />}
+                    <div key={idx} className="pt-2.5 flex items-center justify-between gap-2.5">
+                      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                        <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg shrink-0 flex items-center justify-center border ${cfg.iconBg}`}>
+                          {item.type === "class" ? <Video size={13} /> : item.type === "test" ? <HelpCircle size={13} /> : <FileText size={13} />}
                         </div>
-                        <div>
-                          <h4 className="text-xs font-semibold text-slate-800">{item.title}</h4>
-                          <p className="text-[10px] text-slate-400">{item.event_date} • {item.start_time || "10:00 AM"} • {item.module}</p>
+                        <div className="min-w-0 flex-1">
+                          <h4 className="text-xs font-semibold text-slate-800 truncate">{item.title}</h4>
+                          <p className="text-[10px] text-slate-400 truncate">
+                            {item.event_date} • {item.start_time || "10:00 AM"}
+                            <span className="hidden sm:inline"> • {item.module}</span>
+                          </p>
                         </div>
                       </div>
                       <button
@@ -1268,7 +1375,7 @@ export default function CalendarClient({
                             action: item.type === "class" ? "Join" : "View"
                           });
                         }}
-                        className="px-3 py-1 rounded-lg border border-blue-500 text-blue-600 hover:bg-blue-50 text-xs font-medium"
+                        className="shrink-0 px-3 py-1 rounded-lg border border-blue-500 text-blue-600 hover:bg-blue-50 text-xs font-medium cursor-pointer"
                       >
                         {item.type === "class" ? "Join" : "View"}
                       </button>
@@ -1276,12 +1383,12 @@ export default function CalendarClient({
                   );
                 })
               ) : (
-                <div className="py-10 text-center space-y-2">
-                  <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 mx-auto border border-slate-100">
-                    <CalendarIcon size={22} />
+                <div className="py-8 sm:py-10 text-center space-y-2">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 mx-auto border border-slate-100">
+                    <CalendarIcon size={20} />
                   </div>
                   <p className="text-xs font-semibold text-slate-700">No events found for this month</p>
-                  <p className="text-[11px] text-slate-400">Classes and events will appear here once scheduled by the institute.</p>
+                  <p className="hidden sm:block text-[11px] text-slate-400">Classes and events will appear here once scheduled by the institute.</p>
                 </div>
               )}
             </div>

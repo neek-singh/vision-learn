@@ -258,10 +258,13 @@ export default function StudentAttendanceClient({
     }
   }, [selectedDate]);
 
+  // Status Filter for Attendance Logs
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+
   // 3. Real recent attendance table rows derived dynamically from database records
   const recentAttendanceRows = useMemo(() => {
     return (initialRecords || [])
-      .slice(0, 8)
+      .slice(0, 10)
       .map((r: any) => {
         const dStr = r.date ? r.date.split("T")[0] : "";
         const d = dStr ? new Date(dStr + "T00:00:00") : new Date();
@@ -281,6 +284,65 @@ export default function StudentAttendanceClient({
         };
       });
   }, [initialRecords]);
+
+  // Filtered rows based on user selection
+  const filteredAttendanceRows = useMemo(() => {
+    if (statusFilter === "all") return recentAttendanceRows;
+    if (statusFilter === "present") return recentAttendanceRows.filter((r: any) => r.statusType === "present");
+    if (statusFilter === "absent") return recentAttendanceRows.filter((r: any) => r.statusType === "absent");
+    if (statusFilter === "late_leave") return recentAttendanceRows.filter((r: any) => r.statusType === "late" || r.statusType === "leave");
+    return recentAttendanceRows;
+  }, [recentAttendanceRows, statusFilter]);
+
+  // Filter counts for active tab pills
+  const filterCounts = useMemo(() => {
+    const present = recentAttendanceRows.filter((r: any) => r.statusType === "present").length;
+    const absent = recentAttendanceRows.filter((r: any) => r.statusType === "absent").length;
+    const lateLeave = recentAttendanceRows.filter((r: any) => r.statusType === "late" || r.statusType === "leave").length;
+    return { all: recentAttendanceRows.length, present, absent, lateLeave };
+  }, [recentAttendanceRows]);
+
+  // Helper for status badge rendering
+  const renderStatusBadge = (status: string) => {
+    const s = (status || "").toLowerCase();
+    if (s === "present") {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/70 shrink-0">
+          <CheckCircle2 size={10} className="stroke-[2.5]" />
+          Present
+        </span>
+      );
+    }
+    if (s === "late") {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200/70 shrink-0">
+          <Clock size={10} className="stroke-[2.5]" />
+          Late
+        </span>
+      );
+    }
+    if (s === "absent") {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200/70 shrink-0">
+          <XCircle size={10} className="stroke-[2.5]" />
+          Absent
+        </span>
+      );
+    }
+    if (s === "leave") {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200/70 shrink-0">
+          <AlertCircle size={10} className="stroke-[2.5]" />
+          Leave
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-50 text-slate-400 border border-slate-200/60 shrink-0">
+        {status ? status.charAt(0).toUpperCase() + status.slice(1) : "No Record"}
+      </span>
+    );
+  };
 
   // 4. Real course/subject-wise attendance breakdown
   const subjectAttendance = useMemo(() => {
@@ -305,16 +367,16 @@ export default function StudentAttendanceClient({
     <div className="space-y-3.5 sm:space-y-4 animate-in fade-in duration-300 pb-12">
       {/* 1. Breadcrumb navigation */}
       <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
-        <Link href="/dashboard" className="hover:text-slate-800 flex items-center gap-1">
+        <Link href="/dashboard" className="hover:text-slate-800 flex items-center gap-1 shrink-0">
           <Home size={13} className="text-slate-400" />
           <span>Dashboard</span>
         </Link>
-        <ChevronRight size={12} className="text-slate-400" />
-        <Link href="/curriculum" className="hover:text-slate-800 truncate max-w-[140px] sm:max-w-none">
+        <ChevronRight size={12} className="text-slate-400 shrink-0" />
+        <Link href="/curriculum" className="hover:text-slate-800 truncate max-w-[100px] sm:max-w-none">
           <span>{courseTitle}</span>
         </Link>
-        <ChevronRight size={12} className="text-slate-400" />
-        <span className="text-slate-800 font-semibold">Attendance</span>
+        <ChevronRight size={12} className="text-slate-400 shrink-0" />
+        <span className="text-slate-800 font-semibold shrink-0">Attendance</span>
       </div>
 
       {/* Main Two-Column Layout */}
@@ -322,22 +384,27 @@ export default function StudentAttendanceClient({
         {/* Left Column (8 of 12 cols): Banner + 4 Metric Cards + Calendar & Day Details + Recent Attendance */}
         <div className="lg:col-span-8 space-y-3.5 sm:space-y-4">
           {/* 2. Hero Banner */}
-          <div className="bg-gradient-to-r from-emerald-50/70 via-teal-50/40 to-blue-50/40 rounded-2xl border border-emerald-100/70 p-4 sm:p-5 flex items-center justify-between gap-4 relative overflow-hidden shadow-2xs">
+          <div className="bg-gradient-to-r from-emerald-50/70 via-teal-50/40 to-blue-50/40 rounded-2xl border border-emerald-100/70 p-3.5 sm:p-5 flex items-center justify-between gap-3 sm:gap-4 relative overflow-hidden shadow-2xs">
             <div className="flex items-center gap-3 sm:gap-3.5 z-10 min-w-0">
-              <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-2xl bg-emerald-100/90 border border-emerald-200/80 text-emerald-600 flex items-center justify-center shrink-0 shadow-2xs">
-                <CalendarCheck size={22} className="stroke-[1.9]" />
+              <div className="w-10 h-10 sm:w-13 sm:h-13 rounded-xl sm:rounded-2xl bg-emerald-100/90 border border-emerald-200/80 text-emerald-600 flex items-center justify-center shrink-0 shadow-2xs">
+                <CalendarCheck size={20} className="sm:w-[22px] sm:h-[22px] stroke-[1.9]" />
               </div>
               <div className="min-w-0">
                 <h1 className="text-base sm:text-xl font-bold text-slate-900 leading-tight">
                   Attendance Tracker
                 </h1>
-                <p className="text-xs text-slate-500 mt-0.5 font-normal truncate">
-                  Batch: <span className="font-semibold text-slate-700">{batchName}</span> • Timing: <span className="font-semibold text-slate-700">{batchTiming}</span>
-                </p>
-                <div className="flex flex-wrap items-center gap-2 mt-2 text-[11px] text-slate-600 font-medium">
-                  <span className="inline-flex items-center gap-1 bg-white/70 px-2 py-0.5 rounded-md border border-emerald-100">
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-1.5 sm:mt-2 text-[11px] text-slate-600 font-medium">
+                  <span className="inline-flex items-center gap-1 bg-white/80 px-2 py-0.5 rounded-md border border-emerald-100 text-slate-700">
+                    <span className="text-slate-400 font-normal">Batch:</span>
+                    <span className="font-semibold text-slate-800">{batchName}</span>
+                  </span>
+                  <span className="hidden sm:inline-flex items-center gap-1 bg-white/80 px-2 py-0.5 rounded-md border border-emerald-100 text-slate-600">
+                    <Clock size={11} className="text-emerald-600" />
+                    <span>{batchTiming}</span>
+                  </span>
+                  <span className="inline-flex items-center gap-1 bg-white/80 px-2 py-0.5 rounded-md border border-emerald-100 text-emerald-700 font-semibold">
                     <ShieldCheck size={11} className="text-emerald-600" />
-                    Overall {stats.allTimePct}% Attendance
+                    <span>{stats.allTimePct}% Overall</span>
                   </span>
                 </div>
               </div>
@@ -355,8 +422,8 @@ export default function StudentAttendanceClient({
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
             {/* Card 1: Present */}
             <div className="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-3.5 shadow-2xs flex items-center gap-2.5 sm:gap-3">
-              <div className="relative w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center shrink-0">
-                <svg className="w-10 h-10 sm:w-11 sm:h-11 -rotate-90" viewBox="0 0 36 36">
+              <div className="relative w-9 h-9 sm:w-11 sm:h-11 flex items-center justify-center shrink-0">
+                <svg className="w-9 h-9 sm:w-11 sm:h-11 -rotate-90" viewBox="0 0 36 36">
                   <path className="text-slate-100" strokeWidth="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                   <path className="text-emerald-500 transition-all duration-500" strokeDasharray={`${stats.presentPct}, 100`} strokeWidth="3.5" strokeLinecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                 </svg>
@@ -367,14 +434,14 @@ export default function StudentAttendanceClient({
                   {stats.present}
                 </div>
                 <div className="text-[11px] sm:text-xs font-semibold text-slate-700 mt-1 truncate">Present</div>
-                <div className="text-[10px] text-slate-400 mt-0.5 truncate">of {stats.total} this month</div>
+                <div className="hidden sm:block text-[10px] text-slate-400 mt-0.5 truncate">of {stats.total} this month</div>
               </div>
             </div>
 
             {/* Card 2: Absent */}
             <div className="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-3.5 shadow-2xs flex items-center gap-2.5 sm:gap-3">
-              <div className="relative w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center shrink-0">
-                <svg className="w-10 h-10 sm:w-11 sm:h-11 -rotate-90" viewBox="0 0 36 36">
+              <div className="relative w-9 h-9 sm:w-11 sm:h-11 flex items-center justify-center shrink-0">
+                <svg className="w-9 h-9 sm:w-11 sm:h-11 -rotate-90" viewBox="0 0 36 36">
                   <path className="text-slate-100" strokeWidth="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                   <path className="text-rose-500 transition-all duration-500" strokeDasharray={`${stats.absentPct}, 100`} strokeWidth="3.5" strokeLinecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                 </svg>
@@ -391,8 +458,8 @@ export default function StudentAttendanceClient({
 
             {/* Card 3: Leave / Late */}
             <div className="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-3.5 shadow-2xs flex items-center gap-2.5 sm:gap-3">
-              <div className="relative w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center shrink-0">
-                <svg className="w-10 h-10 sm:w-11 sm:h-11 -rotate-90" viewBox="0 0 36 36">
+              <div className="relative w-9 h-9 sm:w-11 sm:h-11 flex items-center justify-center shrink-0">
+                <svg className="w-9 h-9 sm:w-11 sm:h-11 -rotate-90" viewBox="0 0 36 36">
                   <path className="text-slate-100" strokeWidth="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                   <path className="text-amber-500 transition-all duration-500" strokeDasharray={`${stats.leavePct}, 100`} strokeWidth="3.5" strokeLinecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                 </svg>
@@ -409,15 +476,15 @@ export default function StudentAttendanceClient({
 
             {/* Card 4: Total Classes */}
             <div className="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-3.5 shadow-2xs flex items-center gap-2.5 sm:gap-3">
-              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center shrink-0">
-                <FileText size={17} className="stroke-[1.9]" />
+              <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center shrink-0">
+                <FileText size={16} className="sm:w-[17px] sm:h-[17px] stroke-[1.9]" />
               </div>
               <div className="min-w-0">
                 <div className="text-base sm:text-xl font-bold text-slate-900 leading-none">
                   {stats.total}
                 </div>
                 <div className="text-[11px] sm:text-xs font-semibold text-slate-700 mt-1 truncate">Classes Held</div>
-                <div className="text-[10px] text-slate-400 mt-0.5 truncate">{monthNames[currentMonth]} {currentYear}</div>
+                <div className="hidden sm:block text-[10px] text-slate-400 mt-0.5 truncate">{monthNames[currentMonth]} {currentYear}</div>
               </div>
             </div>
           </div>
@@ -428,13 +495,13 @@ export default function StudentAttendanceClient({
             <div className="md:col-span-7 bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-4 shadow-2xs flex flex-col justify-between">
               <div>
                 {/* Header: Monthly Attendance + Month Navigator */}
-                <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
+                <div className="flex items-center justify-between pb-2 sm:pb-2.5 border-b border-slate-100">
                   <div className="flex items-center gap-1.5 font-bold text-slate-900 text-xs">
                     <BarChart3 size={14} className="text-blue-600" />
                     <span>Monthly Attendance</span>
                   </div>
 
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-0.5 sm:gap-1">
                     <button
                       type="button"
                       onClick={handlePrevMonth}
@@ -460,27 +527,27 @@ export default function StudentAttendanceClient({
                 </div>
 
                 {/* Status Indicator Legend */}
-                <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-2.5 py-2 text-[10px] text-slate-500 font-medium">
+                <div className="flex items-center justify-between sm:justify-end gap-1.5 sm:gap-2.5 py-1.5 sm:py-2 text-[10px] text-slate-500 font-medium">
                   <div className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-500" />
                     <span>Present</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-amber-500" />
+                    <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-amber-500" />
                     <span>Late</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-rose-500" />
+                    <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-rose-500" />
                     <span>Absent</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-blue-500" />
+                    <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-500" />
                     <span>Leave</span>
                   </div>
                 </div>
 
                 {/* Weekday headers */}
-                <div className="grid grid-cols-7 text-center text-[10px] sm:text-[11px] font-semibold text-slate-400 py-1.5 border-b border-slate-100">
+                <div className="grid grid-cols-7 text-center text-[10px] sm:text-[11px] font-semibold text-slate-400 py-1 sm:py-1.5 border-b border-slate-100">
                   {dayNames.map(d => (
                     <div key={d}>{d}</div>
                   ))}
@@ -499,7 +566,7 @@ export default function StudentAttendanceClient({
                             setSelectedDate(cell.dateStr);
                           }
                         }}
-                        className={`h-9 sm:h-10 flex flex-col items-center justify-center rounded-xl transition-all cursor-pointer m-0.5 ${
+                        className={`h-8 sm:h-10 flex flex-col items-center justify-center rounded-xl transition-all cursor-pointer m-0.5 ${
                           cell.isCurrentMonth
                             ? isSelected
                               ? "bg-blue-50 border border-blue-300 text-blue-700 font-bold shadow-2xs"
@@ -533,10 +600,10 @@ export default function StudentAttendanceClient({
             </div>
 
             {/* Card B: Selected Day Details Card (5 cols on desktop) */}
-            <div className="md:col-span-5 bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs flex flex-col justify-between">
+            <div className="md:col-span-5 bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-4 shadow-2xs flex flex-col justify-between">
               <div>
                 {/* Header: Date + Status Badge */}
-                <div className="flex items-start justify-between pb-2.5 border-b border-slate-100 gap-2">
+                <div className="flex items-start justify-between pb-2 sm:pb-2.5 border-b border-slate-100 gap-2">
                   <div className="min-w-0">
                     <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
                       Selected Date
@@ -546,34 +613,19 @@ export default function StudentAttendanceClient({
                     </div>
                   </div>
 
-                  {selectedRecord ? (
-                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${
-                      selectedRecord.status === "present"
-                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200/70"
-                        : selectedRecord.status === "late"
-                        ? "bg-amber-50 text-amber-700 border border-amber-200/70"
-                        : selectedRecord.status === "absent"
-                        ? "bg-rose-50 text-rose-700 border border-rose-200/70"
-                        : selectedRecord.status === "leave"
-                        ? "bg-blue-50 text-blue-700 border border-blue-200/70"
-                        : "bg-slate-50 text-slate-600 border border-slate-200/70"
-                    }`}>
-                      {selectedRecord.status.charAt(0).toUpperCase() + selectedRecord.status.slice(1)}
-                    </span>
-                  ) : (
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-50 text-slate-400 border border-slate-200/60 shrink-0">
-                      No Record
-                    </span>
-                  )}
+                  {renderStatusBadge(selectedRecord?.status || "")}
                 </div>
 
                 {selectedRecord ? (
                   <>
-                    {/* Class Timing & Title */}
-                    <div className="pt-3">
+                    {/* Class Timing & Punch-in indicator */}
+                    <div className="pt-2.5 sm:pt-3">
                       <div className="flex items-center gap-1.5 text-[11px] text-blue-600 font-semibold">
-                        <Clock size={12} />
+                        <Clock size={12} className="shrink-0" />
                         <span>{selectedRecord.time || batchTiming}</span>
+                        <span className="text-[10px] text-blue-500/80 font-normal">
+                          ({selectedRecord.time ? "Punch-in" : "Session"})
+                        </span>
                       </div>
                       <h4 className="text-xs sm:text-sm font-bold text-slate-900 mt-1 leading-snug">
                         {selectedRecord.topic}
@@ -584,8 +636,8 @@ export default function StudentAttendanceClient({
                     </div>
 
                     {/* Class Details List */}
-                    <div className="mt-4 pt-3 border-t border-slate-100 space-y-2">
-                      <h5 className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                    <div className="mt-3 sm:mt-4 pt-2.5 sm:pt-3 border-t border-slate-100 space-y-2">
+                      <h5 className="text-[10px] sm:text-[11px] font-bold text-slate-700 uppercase tracking-wider">
                         Session Details
                       </h5>
 
@@ -614,8 +666,8 @@ export default function StudentAttendanceClient({
                     </div>
                   </>
                 ) : (
-                  <div className="py-8 text-center space-y-1.5">
-                    <CalendarCheck size={28} className="mx-auto text-slate-300 stroke-[1.5]" />
+                  <div className="py-6 sm:py-8 text-center space-y-1.5">
+                    <CalendarCheck size={26} className="mx-auto text-slate-300 stroke-[1.5]" />
                     <p className="text-xs font-semibold text-slate-700">No Class Logged</p>
                     <p className="text-[11px] text-slate-400 max-w-[200px] mx-auto leading-relaxed">
                       No attendance record was recorded for this date.
@@ -625,7 +677,7 @@ export default function StudentAttendanceClient({
               </div>
 
               {/* Class Notes Button at bottom */}
-              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+              <div className="mt-3 sm:mt-4 pt-2.5 sm:pt-3 border-t border-slate-100 flex items-center justify-between">
                 <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-800">
                   <FileText size={14} className="text-blue-600" />
                   <span>Module Notes</span>
@@ -633,7 +685,7 @@ export default function StudentAttendanceClient({
                 <button
                   type="button"
                   onClick={() => router.push("/materials")}
-                  className="px-3 py-1 rounded-lg border border-blue-500 text-blue-600 hover:bg-blue-50 text-xs font-medium transition-all shadow-2xs active:scale-95 cursor-pointer"
+                  className="px-2.5 sm:px-3 py-1 rounded-lg border border-blue-500 text-blue-600 hover:bg-blue-50 text-xs font-medium transition-all shadow-2xs active:scale-95 cursor-pointer"
                 >
                   View Notes
                 </button>
@@ -641,72 +693,150 @@ export default function StudentAttendanceClient({
             </div>
           </div>
 
-          {/* Card C: Recent Attendance Table */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-2xs space-y-3">
-            <div className="flex items-center justify-between pb-1">
-              <div className="flex items-center gap-2 font-bold text-slate-900 text-xs sm:text-sm">
-                <CalendarIcon size={15} className="text-blue-600" />
-                <span>Recent Attendance Logs</span>
+          {/* Card C: Recent Attendance Logs */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-5 shadow-2xs space-y-3">
+            {/* Header with Title and Filter Chips */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-1">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 font-bold text-slate-900 text-xs sm:text-sm">
+                  <CalendarIcon size={15} className="text-blue-600" />
+                  <span>Recent Attendance Logs</span>
+                </div>
+                <span className="sm:hidden text-[11px] font-semibold text-slate-400">
+                  {filteredAttendanceRows.length} shown
+                </span>
               </div>
-              <span className="text-xs font-semibold text-slate-400">
-                {initialRecords.length} Total Records
-              </span>
+
+              {/* Filter Tabs */}
+              <div className="flex items-center gap-1 overflow-x-auto pb-0.5 sm:pb-0 scrollbar-none">
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter("all")}
+                  className={`px-2 py-0.5 rounded-lg text-[11px] font-medium transition-colors shrink-0 cursor-pointer ${
+                    statusFilter === "all"
+                      ? "bg-slate-900 text-white"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200/70"
+                  }`}
+                >
+                  All ({filterCounts.all})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter("present")}
+                  className={`px-2 py-0.5 rounded-lg text-[11px] font-medium transition-colors shrink-0 cursor-pointer ${
+                    statusFilter === "present"
+                      ? "bg-emerald-600 text-white"
+                      : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                  }`}
+                >
+                  Present ({filterCounts.present})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter("absent")}
+                  className={`px-2 py-0.5 rounded-lg text-[11px] font-medium transition-colors shrink-0 cursor-pointer ${
+                    statusFilter === "absent"
+                      ? "bg-rose-600 text-white"
+                      : "bg-rose-50 text-rose-700 hover:bg-rose-100"
+                  }`}
+                >
+                  Absent ({filterCounts.absent})
+                </button>
+                {filterCounts.lateLeave > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setStatusFilter("late_leave")}
+                    className={`px-2 py-0.5 rounded-lg text-[11px] font-medium transition-colors shrink-0 cursor-pointer ${
+                      statusFilter === "late_leave"
+                        ? "bg-amber-600 text-white"
+                        : "bg-amber-50 text-amber-700 hover:bg-amber-100"
+                    }`}
+                  >
+                    Late/Leave ({filterCounts.lateLeave})
+                  </button>
+                )}
+              </div>
             </div>
 
-            {recentAttendanceRows.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs">
-                  <thead>
-                    <tr className="border-b border-slate-100 text-slate-400 font-semibold text-[11px]">
-                      <th className="py-2.5 font-medium">Date</th>
-                      <th className="hidden sm:table-cell py-2.5 font-medium">Day</th>
-                      <th className="py-2.5 font-medium">Topic / Remarks</th>
-                      <th className="py-2.5 font-medium">Status</th>
-                      <th className="hidden sm:table-cell py-2.5 font-medium text-right">Mode</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {recentAttendanceRows.map((row: any, idx: number) => (
-                      <tr 
+            {filteredAttendanceRows.length > 0 ? (
+              <>
+                {/* Mobile Card List (screen width < 640px) */}
+                <div className="block sm:hidden space-y-2 pt-1">
+                  {filteredAttendanceRows.map((row: any, idx: number) => {
+                    const isSelected = row.dateStr === selectedDate;
+                    return (
+                      <div
                         key={idx}
                         onClick={() => setSelectedDate(row.dateStr)}
-                        className={`hover:bg-slate-50/70 transition-colors cursor-pointer group ${
-                          row.dateStr === selectedDate ? "bg-blue-50/40" : ""
+                        className={`p-2.5 rounded-xl border transition-all cursor-pointer ${
+                          isSelected
+                            ? "bg-blue-50/70 border-blue-300 shadow-2xs"
+                            : "bg-slate-50/50 hover:bg-slate-100/70 border-slate-200/60"
                         }`}
                       >
-                        <td className="py-2.5 font-semibold text-slate-900 whitespace-nowrap">
-                          {row.dateFormatted}
-                        </td>
-                        <td className="hidden sm:table-cell py-2.5 text-slate-400 font-medium">
-                          {row.dayOfWeek}
-                        </td>
-                        <td className="py-2.5 font-medium text-slate-800 truncate max-w-[180px] sm:max-w-[280px]">
-                          {row.topic}
-                        </td>
-                        <td className="py-2.5">
-                          <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                            row.statusType === "present"
-                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200/70"
-                              : row.statusType === "late"
-                              ? "bg-amber-50 text-amber-700 border border-amber-200/70"
-                              : row.statusType === "leave"
-                              ? "bg-blue-50 text-blue-700 border border-blue-200/70"
-                              : "bg-rose-50 text-rose-700 border border-rose-200/70"
-                          }`}>
-                            {row.status}
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-900">
+                            <span>{row.dateFormatted}</span>
+                            <span className="text-slate-400 font-normal text-[11px]">({row.dayOfWeek})</span>
+                          </div>
+                          {renderStatusBadge(row.statusType)}
+                        </div>
+                        <div className="flex items-center justify-between gap-2 mt-1.5 pt-1.5 border-t border-slate-100/80">
+                          <p className="text-xs text-slate-700 font-medium truncate flex-1">{row.topic}</p>
+                          <span className="text-[10px] font-medium text-slate-500 bg-white px-1.5 py-0.5 rounded border border-slate-200/70 shrink-0">
+                            {row.mode}
                           </span>
-                        </td>
-                        <td className="hidden sm:table-cell py-2.5 text-right text-slate-500 font-medium">
-                          {row.mode}
-                        </td>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Desktop Table View (screen width >= 640px) */}
+                <div className="hidden sm:block overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="border-b border-slate-100 text-slate-400 font-semibold text-[11px]">
+                        <th className="py-2.5 font-medium">Date</th>
+                        <th className="py-2.5 font-medium">Day</th>
+                        <th className="py-2.5 font-medium">Topic / Remarks</th>
+                        <th className="py-2.5 font-medium">Status</th>
+                        <th className="py-2.5 font-medium text-right">Mode</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {filteredAttendanceRows.map((row: any, idx: number) => (
+                        <tr 
+                          key={idx}
+                          onClick={() => setSelectedDate(row.dateStr)}
+                          className={`hover:bg-slate-50/70 transition-colors cursor-pointer group ${
+                            row.dateStr === selectedDate ? "bg-blue-50/40" : ""
+                          }`}
+                        >
+                          <td className="py-2.5 font-semibold text-slate-900 whitespace-nowrap">
+                            {row.dateFormatted}
+                          </td>
+                          <td className="py-2.5 text-slate-400 font-medium">
+                            {row.dayOfWeek}
+                          </td>
+                          <td className="py-2.5 font-medium text-slate-800 truncate max-w-[280px]">
+                            {row.topic}
+                          </td>
+                          <td className="py-2.5">
+                            {renderStatusBadge(row.statusType)}
+                          </td>
+                          <td className="py-2.5 text-right text-slate-500 font-medium">
+                            {row.mode}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             ) : (
-              <p className="text-xs text-slate-400 py-4 text-center">
-                No attendance logs found for this student.
+              <p className="text-xs text-slate-400 py-6 text-center">
+                No attendance logs found matching the filter.
               </p>
             )}
           </div>
@@ -715,16 +845,16 @@ export default function StudentAttendanceClient({
         {/* Right Column (4 of 12 cols): Summary, Subject-wise, Tip Card */}
         <div className="lg:col-span-4 space-y-3.5 sm:space-y-4">
           {/* Card 1: Attendance Summary (100% Real) */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-2xs space-y-4">
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-5 shadow-2xs space-y-4">
             <div className="flex items-center gap-2 font-bold text-slate-900 text-xs sm:text-sm">
               <BarChart3 size={15} className="text-blue-600" />
               <span>Attendance Summary</span>
             </div>
 
             {/* Large Gauge & Main Count */}
-            <div className="flex items-center gap-4 py-1">
-              <div className="relative w-16 h-16 flex items-center justify-center shrink-0">
-                <svg className="w-16 h-16 -rotate-90" viewBox="0 0 36 36">
+            <div className="flex items-center gap-3.5 sm:gap-4 py-1">
+              <div className="relative w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center shrink-0">
+                <svg className="w-14 h-14 sm:w-16 sm:h-16 -rotate-90" viewBox="0 0 36 36">
                   <path className="text-slate-100" strokeWidth="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                   <path 
                     className="text-emerald-500 transition-all duration-500" 
@@ -736,13 +866,16 @@ export default function StudentAttendanceClient({
                     d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                   />
                 </svg>
-                <span className="absolute text-sm font-bold text-slate-900">{stats.presentPct}%</span>
+                <span className="absolute text-xs sm:text-sm font-bold text-slate-900">{stats.presentPct}%</span>
               </div>
               <div className="min-w-0">
                 <div className="text-xl sm:text-2xl font-bold text-slate-900 leading-none">
                   {stats.present} / {stats.total}
                 </div>
-                <div className="text-xs text-slate-400 mt-1">Classes Attended this Month</div>
+                <div className="text-xs text-slate-400 mt-1">
+                  <span className="hidden sm:inline">Classes Attended this Month</span>
+                  <span className="sm:hidden">Attended this Month</span>
+                </div>
               </div>
             </div>
 
@@ -799,7 +932,7 @@ export default function StudentAttendanceClient({
           </div>
 
           {/* Card 2: Real Subject-wise Attendance */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-2xs space-y-3.5">
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-5 shadow-2xs space-y-3.5">
             <div className="flex items-center gap-2 font-bold text-slate-900 text-xs sm:text-sm">
               <BarChart3 size={15} className="text-blue-600" />
               <span>Subject Attendance</span>

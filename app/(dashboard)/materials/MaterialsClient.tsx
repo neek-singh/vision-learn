@@ -210,10 +210,10 @@ export default function MaterialsClient({
 
         {/* Filter Pills */}
         {availableTypes.length > 1 && (
-          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide py-0.5">
+          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5 -mx-1 px-1 sm:mx-0 sm:px-0">
             <button
               onClick={() => setSelectedType("all")}
-              className={`shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+              className={`shrink-0 px-3 py-1.5 min-h-[34px] rounded-lg text-[11px] sm:text-xs font-bold transition-all flex items-center cursor-pointer ${
                 selectedType === "all"
                   ? "bg-slate-900 text-white shadow-2xs"
                   : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200/70"
@@ -225,7 +225,7 @@ export default function MaterialsClient({
               <button
                 key={label}
                 onClick={() => setSelectedType(label)}
-                className={`shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                className={`shrink-0 px-3 py-1.5 min-h-[34px] rounded-lg text-[11px] sm:text-xs font-bold transition-all flex items-center cursor-pointer ${
                   selectedType === label
                     ? "bg-indigo-600 text-white shadow-2xs"
                     : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200/70"
@@ -320,7 +320,7 @@ export default function MaterialsClient({
                   {isCodeNote ? (
                     <button
                       onClick={() => setViewingCode(item)}
-                      className="h-7 w-full rounded-lg text-[11px] font-bold bg-amber-500 hover:bg-amber-600 text-white flex items-center justify-center gap-1 active:scale-95 transition-all shadow-2xs"
+                      className="h-8 sm:h-7 w-full rounded-lg text-[11px] font-bold bg-amber-500 hover:bg-amber-600 text-white flex items-center justify-center gap-1 active:scale-95 transition-all shadow-2xs cursor-pointer"
                       aria-label={`Read note: ${item.title}`}
                     >
                       <BookOpen size={11} />
@@ -331,7 +331,7 @@ export default function MaterialsClient({
                       href={item.content_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className={`h-7 w-full rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 active:scale-95 transition-all shadow-2xs ${
+                      className={`h-8 sm:h-7 w-full rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 active:scale-95 transition-all shadow-2xs cursor-pointer ${
                         item.type === 'pdf'
                           ? 'bg-slate-800 hover:bg-slate-900 text-white'
                           : 'bg-indigo-600 hover:bg-indigo-700 text-white'

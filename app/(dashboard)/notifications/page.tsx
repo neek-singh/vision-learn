@@ -4,6 +4,11 @@ import { verifyToken } from "@/lib/auth-custom";
 import { createPublicSupabaseClient } from "@/lib/supabase-server";
 import StudentNotificationsClient from "./NotificationsClient";
 
+export const metadata = {
+  title: "Notifications - Vision Learn",
+  description: "Official notifications, announcements and updates from Vision Institute."
+};
+
 export default async function StudentNotificationsPage() {
   const cookieStore = await cookies();
   const token = cookieStore.get("vision_learn_session")?.value;

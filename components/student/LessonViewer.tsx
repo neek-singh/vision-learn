@@ -449,7 +449,7 @@ export default function LessonViewer({
   }, [lesson.notes_content]);
 
   return (
-    <div className={`fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[100] flex items-center justify-center animate-in fade-in duration-300 ${isFullScreen ? 'p-0' : 'p-4'}`} role="dialog" aria-modal="true">
+    <div className={`fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[100] flex items-center justify-center animate-in fade-in duration-300 ${isFullScreen ? 'p-0' : 'p-0 sm:p-4'}`} role="dialog" aria-modal="true">
       {/* Unsubmitted Quiz Exit Warning Modal */}
       {showExitWarning && (
         <div className="fixed inset-0 z-[150] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
@@ -484,8 +484,8 @@ export default function LessonViewer({
         isFullScreen 
           ? 'w-full h-full rounded-none' 
           : lessonType === 'mcq'
-          ? 'w-full max-w-2xl rounded-3xl max-h-[92vh]'
-          : 'w-full max-w-5xl rounded-[3rem] max-h-[95vh]'
+          ? 'w-full max-w-2xl rounded-none sm:rounded-3xl h-full sm:h-auto max-h-full sm:max-h-[92vh]'
+          : 'w-full max-w-5xl rounded-none sm:rounded-[3rem] h-full sm:h-auto max-h-full sm:max-h-[95vh]'
       }`}>
         
         {/* Sticky Top Scroll Progress Indicator */}
@@ -494,18 +494,18 @@ export default function LessonViewer({
           style={{ width: `${scrollProgress}%` }}
         />
 
-        <div className={`px-4 py-3 sm:px-6 sm:py-3.5 flex items-center justify-between bg-white border-b border-slate-100 shrink-0 ${isFullScreen ? 'rounded-none' : 'rounded-t-2xl sm:rounded-t-[2.5rem]'}`}>
+        <div className={`px-3.5 py-2.5 sm:px-6 sm:py-3.5 flex items-center justify-between bg-white border-b border-slate-100 shrink-0 ${isFullScreen ? 'rounded-none' : 'rounded-none sm:rounded-t-2xl sm:rounded-t-[2.5rem]'}`}>
           <div className="flex flex-col min-w-0 pr-2">
-            <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight truncate">{lesson.title}</h3>
+            <h3 className="text-sm sm:text-lg font-black text-slate-900 tracking-tight truncate">{lesson.title}</h3>
             <p className="text-[10px] sm:text-xs font-bold text-slate-400 mt-0.5 uppercase tracking-wider">
               {lessonType === 'mcq' ? 'Interactive Quiz' : (lesson.lesson_type || lesson.type)} • {lesson.duration || '0'} Mins
             </p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <button 
               onClick={handleAttemptClose} 
               aria-label="Close lesson viewer"
-              className="p-1.5 hover:bg-slate-100 rounded-full transition-all text-slate-400 hover:text-slate-900 cursor-pointer"
+              className="p-2 min-h-[38px] min-w-[38px] flex items-center justify-center hover:bg-slate-100 active:bg-slate-200 rounded-full transition-all text-slate-400 hover:text-slate-900 cursor-pointer"
             >
               <X size={20} />
             </button>
@@ -515,7 +515,7 @@ export default function LessonViewer({
         <div 
           ref={scrollRef}
           onScroll={handleScroll}
-          className={`flex-1 overflow-y-auto bg-white scrollbar-hide relative min-h-0 ${isFullScreen ? 'p-3.5 sm:p-5' : 'p-3.5 sm:p-5'}`}
+          className={`flex-1 overflow-y-auto bg-white scrollbar-hide relative min-h-0 ${isFullScreen ? 'p-3 sm:p-5' : 'p-3 sm:p-5'}`}
         >
           <div className="max-w-4xl mx-auto">
              {lessonType === 'video' ? (
@@ -835,11 +835,11 @@ export default function LessonViewer({
                                   )}
 
                                   {/* Navigation Footer */}
-                                  <div className="flex items-center justify-between gap-3 pt-3 border-t border-slate-100 mt-1">
+                                  <div className="flex items-center justify-between gap-2 sm:gap-3 pt-3 border-t border-slate-100 mt-1">
                                     <button
                                       disabled={safeIndex === 0}
                                       onClick={() => setCurrentQuestionIndex(prev => Math.max(0, prev - 1))}
-                                      className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed text-slate-700 font-bold text-xs flex items-center gap-1 transition-all cursor-pointer active:scale-95"
+                                      className="px-3 py-2 sm:py-1.5 min-h-[38px] rounded-xl bg-slate-100 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed text-slate-700 font-bold text-xs flex items-center gap-1 transition-all cursor-pointer active:scale-95"
                                     >
                                       <ChevronLeft size={14} /> Previous
                                     </button>
@@ -851,7 +851,7 @@ export default function LessonViewer({
                                     {safeIndex < questions.length - 1 ? (
                                       <button
                                         onClick={() => setCurrentQuestionIndex(prev => Math.min(questions.length - 1, prev + 1))}
-                                        className="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-1 transition-all shadow-xs cursor-pointer active:scale-95"
+                                        className="px-4 py-2 sm:py-1.5 min-h-[38px] rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-1 transition-all shadow-xs cursor-pointer active:scale-95"
                                       >
                                         Next <ChevronRight size={14} />
                                       </button>
@@ -859,7 +859,7 @@ export default function LessonViewer({
                                       <button
                                         onClick={submitQuizResult}
                                         disabled={submitting}
-                                        className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs disabled:opacity-50 active:scale-95"
+                                        className="px-4 py-2 sm:py-1.5 min-h-[38px] bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs disabled:opacity-50 active:scale-95"
                                       >
                                         {submitting ? <Loader2 className="animate-spin" size={13} /> : <Upload size={13} />}
                                         Submit Quiz
@@ -867,7 +867,7 @@ export default function LessonViewer({
                                     ) : (
                                       <button
                                         onClick={onClose}
-                                        className="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-1 transition-all shadow-xs cursor-pointer active:scale-95"
+                                        className="px-4 py-2 sm:py-1.5 min-h-[38px] rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-1 transition-all shadow-xs cursor-pointer active:scale-95"
                                       >
                                         Done <CheckCircle2 size={13} />
                                       </button>
@@ -974,12 +974,12 @@ export default function LessonViewer({
                    sDate.setHours(parseInt(h), parseInt(mins), 0);
                    return now >= sDate;
                  }).length > 0 && (
-                  <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <div className="space-y-4 sm:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <div className="space-y-1">
-                      <h3 className="text-xl font-black text-slate-900 tracking-tight">Homework Assignments</h3>
-                      <p className="text-xs text-slate-500 font-medium">Complete these tests to validate and master your knowledge:</p>
+                      <h3 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">Homework Assignments</h3>
+                      <p className="hidden sm:block text-xs text-slate-500 font-medium">Complete these tests to validate and master your knowledge:</p>
                     </div>
-                    <div className="grid grid-cols-1 gap-4">
+                    <div className="grid grid-cols-1 gap-2.5 sm:gap-4">
                       {initialTests
                         .filter(t => {
                           const lessonTitle = (lesson?.title || "").toLowerCase();
@@ -990,19 +990,19 @@ export default function LessonViewer({
                           <Link 
                             key={test.id}
                             href={`/tests?testId=${test.id}`}
-                            className="group flex items-center justify-between p-5 bg-gradient-to-br from-slate-50 to-white hover:from-rose-50/40 hover:to-rose-50/10 rounded-2xl transition-all border border-slate-100 hover:border-rose-100/50 hover:shadow-lg hover:shadow-rose-500/5 hover:-translate-y-0.5"
+                            className="group flex items-center justify-between p-3.5 sm:p-5 bg-gradient-to-br from-slate-50 to-white hover:from-rose-50/40 hover:to-rose-50/10 rounded-2xl transition-all border border-slate-100 hover:border-rose-100/50 hover:shadow-lg hover:shadow-rose-500/5 hover:-translate-y-0.5"
                           >
-                            <div className="flex items-center gap-4">
-                              <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-rose-500 shadow-sm group-hover:scale-110 transition-transform">
-                                <FileText size={24} />
+                            <div className="flex items-center gap-3 sm:gap-4 min-w-0 pr-2">
+                              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-xl flex items-center justify-center text-rose-500 shadow-xs group-hover:scale-110 transition-transform shrink-0">
+                                <FileText size={20} className="sm:w-6 sm:h-6" />
                               </div>
-                              <div>
-                                <h4 className="font-bold text-slate-900 group-hover:text-rose-600 transition-colors text-sm">{test.title}</h4>
+                              <div className="min-w-0">
+                                <h4 className="font-bold text-slate-900 group-hover:text-rose-600 transition-colors text-xs sm:text-sm truncate">{test.title}</h4>
                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">{test.duration_minutes} Mins • {test.type || 'Daily Test'}</p>
                               </div>
                             </div>
-                            <div className="px-4 py-2 bg-white text-slate-900 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-sm group-hover:bg-rose-500 group-hover:text-white transition-all cursor-pointer border border-slate-100">
-                              Start Homework
+                            <div className="px-3 py-1.5 sm:px-4 sm:py-2 bg-white text-slate-900 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xs group-hover:bg-rose-500 group-hover:text-white transition-all cursor-pointer border border-slate-100 shrink-0">
+                              Start
                             </div>
                           </Link>
                         ))}
@@ -1022,12 +1022,12 @@ export default function LessonViewer({
                    sDate.setHours(parseInt(h), parseInt(mins), 0);
                    return now >= sDate;
                  }).length > 0 && (
-                  <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                  <div className="space-y-4 sm:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
                     <div className="space-y-1">
-                      <h3 className="text-xl font-black text-slate-900 tracking-tight">Study Materials</h3>
-                      <p className="text-xs text-slate-500 font-medium">Handy references, notes, and study guides for this class:</p>
+                      <h3 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">Study Materials</h3>
+                      <p className="hidden sm:block text-xs text-slate-500 font-medium">Handy references, notes, and study guides for this class:</p>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-4">
                       {initialMaterials
                         .filter(m => {
                           const lessonTitle = (lesson?.title || "").toLowerCase();
@@ -1040,12 +1040,12 @@ export default function LessonViewer({
                             href={material.content_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="group flex flex-col p-5 bg-gradient-to-br from-slate-50 to-white hover:from-blue-50/40 hover:to-blue-50/10 rounded-2xl border border-slate-100 hover:border-blue-100/50 hover:shadow-lg hover:shadow-blue-500/5 hover:-translate-y-0.5 transition-all"
+                            className="group flex flex-col p-3.5 sm:p-5 bg-gradient-to-br from-slate-50 to-white hover:from-blue-50/40 hover:to-blue-50/10 rounded-2xl border border-slate-100 hover:border-blue-100/50 hover:shadow-lg hover:shadow-blue-500/5 hover:-translate-y-0.5 transition-all"
                           >
-                            <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600 mb-4 group-hover:scale-110 transition-transform">
-                              <BookOpen size={20} />
+                            <div className="w-9 h-9 sm:w-10 sm:h-10 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600 mb-3 sm:mb-4 group-hover:scale-110 transition-transform">
+                              <BookOpen size={18} className="sm:w-5 sm:h-5" />
                             </div>
-                            <h4 className="font-bold text-slate-900 mb-2 leading-tight group-hover:text-blue-600 transition-colors text-sm">{material.title}</h4>
+                            <h4 className="font-bold text-slate-900 mb-1.5 sm:mb-2 leading-tight group-hover:text-blue-600 transition-colors text-xs sm:text-sm">{material.title}</h4>
                             <div className="mt-auto flex items-center justify-between">
                               <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{material.type} • {material.file_size || material.duration || 'Article'}</span>
                               <ExternalLink size={14} className="text-slate-300 group-hover:text-blue-500" />
@@ -1153,26 +1153,26 @@ export default function LessonViewer({
                   </div>
                 )}
 
-                <div className="bg-amber-50 rounded-2xl p-6 border border-amber-100/50 mt-10">
-                  <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest mb-1.5 flex items-center gap-2">
+                <div className="bg-amber-50 rounded-2xl p-4 sm:p-6 border border-amber-100/50 mt-6 sm:mt-10">
+                  <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest mb-1 sm:mb-1.5 flex items-center gap-2">
                     <CheckCircle2 size={16} className="text-amber-600" /> Tips for Success
                   </h4>
                   <p className="text-xs text-slate-600 leading-relaxed font-medium">
                     This is a learning journey. You can study and review materials multiple times to master the concepts.
                   </p>
-                  </div>
                 </div>
-              )}
+              </div>
+            )}
           </div>
         </div>
 
         {/* Mobile-only floating Zoom Controls for theory/notes */}
         {lessonType !== 'video' && lessonType !== 'mcq' && lessonType !== 'quiz' && (
-          <div className="absolute bottom-6 right-6 z-50 flex items-center gap-1.5 bg-slate-950/40 backdrop-blur-md p-1.5 rounded-2xl border border-white/10 shadow-2xl sm:hidden animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="absolute bottom-4 right-4 z-50 flex items-center gap-1 bg-slate-950/80 backdrop-blur-md p-1.5 rounded-2xl border border-white/10 shadow-2xl sm:hidden animate-in fade-in slide-in-from-bottom-4 duration-300">
             <button 
               onClick={handleZoomOut}
               disabled={zoomLevel <= 12}
-              className="p-2 hover:bg-white/10 active:bg-white/5 disabled:opacity-40 rounded-xl text-white transition-all cursor-pointer"
+              className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center hover:bg-white/10 active:bg-white/5 disabled:opacity-40 rounded-xl text-white transition-all cursor-pointer"
               title="Zoom Out"
             >
               <ZoomOut size={16} />
@@ -1183,7 +1183,7 @@ export default function LessonViewer({
             <button 
               onClick={handleZoomIn}
               disabled={zoomLevel >= 28}
-              className="p-2 hover:bg-white/10 active:bg-white/5 disabled:opacity-40 rounded-xl text-white transition-all cursor-pointer"
+              className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center hover:bg-white/10 active:bg-white/5 disabled:opacity-40 rounded-xl text-white transition-all cursor-pointer"
               title="Zoom In"
             >
               <ZoomIn size={16} />

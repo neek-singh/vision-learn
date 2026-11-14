@@ -149,21 +149,21 @@ export default async function AssignmentsPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-3 animate-in fade-in duration-300 pb-16">
-      <div className="bg-white rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs flex items-center justify-between gap-3">
+      <div className="bg-white rounded-2xl p-3 sm:p-4 border border-slate-200/80 shadow-2xs flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">Active Projects</h1>
+          <h1 className="text-base sm:text-xl font-bold text-slate-900 tracking-tight">Active Projects</h1>
           <p className="hidden sm:block text-xs text-slate-500 font-medium">Manage tasks, assignments & deliverables</p>
         </div>
         <div className="shrink-0">
-          <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-150 px-2.5 py-1 rounded-full">
+          <span className="text-[10px] sm:text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-150 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full">
             {allAssignments.length} {allAssignments.length === 1 ? "Project" : "Projects"}
           </span>
         </div>
       </div>
 
       {allAssignments.length === 0 ? (
-        <div className="p-10 text-center bg-white rounded-2xl border border-slate-200/80 shadow-2xs">
-          <div className="w-11 h-11 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 mx-auto mb-2.5 border border-slate-100">
+        <div className="p-6 sm:p-10 text-center bg-white rounded-2xl border border-slate-200/80 shadow-2xs">
+          <div className="w-10 h-10 sm:w-11 sm:h-11 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 mx-auto mb-2.5 border border-slate-100">
             <BookOpen size={20} />
           </div>
           <h2 className="text-xs font-bold text-slate-700">No projects available yet</h2>

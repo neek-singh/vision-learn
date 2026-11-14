@@ -107,13 +107,14 @@ export default function StudentNotificationsClient({
   };
 
   return (
-    <div className="space-y-3.5">
+    <div className="space-y-3 sm:space-y-3.5">
       {/* ── Compact Header ── */}
       <div className="flex items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-              Notification Inbox
+              <span className="sm:hidden">Notifications</span>
+              <span className="hidden sm:inline">Notification Inbox</span>
             </h1>
             {unreadCount > 0 && (
               <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-50 text-rose-600 border border-rose-200/60 animate-pulse">
@@ -131,7 +132,7 @@ export default function StudentNotificationsClient({
             onClick={markAllRead}
             disabled={loading === "all"}
             aria-label="Mark all notifications as read"
-            className="px-2.5 py-1.5 rounded-xl text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200/60 hover:bg-indigo-100 active:scale-95 transition-all flex items-center gap-1.5 shrink-0"
+            className="min-h-[36px] px-3 py-1.5 rounded-xl text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200/60 hover:bg-indigo-100 active:scale-95 transition-all flex items-center gap-1.5 shrink-0 touch-manipulation"
           >
             {loading === "all" ? (
               <Loader2 className="animate-spin" size={13} />
@@ -148,7 +149,7 @@ export default function StudentNotificationsClient({
       <div className="flex items-center gap-1.5">
         <button
           onClick={() => setFilter("all")}
-          className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+          className={`min-h-[36px] px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all touch-manipulation flex items-center justify-center ${
             filter === "all"
               ? "bg-slate-900 text-white shadow-2xs"
               : "bg-slate-100 text-slate-600 hover:bg-slate-200/70"
@@ -158,7 +159,7 @@ export default function StudentNotificationsClient({
         </button>
         <button
           onClick={() => setFilter("unread")}
-          className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+          className={`min-h-[36px] px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all touch-manipulation flex items-center justify-center ${
             filter === "unread"
               ? "bg-indigo-600 text-white shadow-2xs"
               : "bg-slate-100 text-slate-600 hover:bg-slate-200/70"
@@ -171,7 +172,7 @@ export default function StudentNotificationsClient({
       {/* ── Compact Notification List ── */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
         {filteredNotifications.length === 0 ? (
-          <div className="py-12 px-4 text-center">
+          <div className="py-10 sm:py-12 px-4 text-center">
             <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-2">
               <Bell size={18} />
             </div>
@@ -179,9 +180,14 @@ export default function StudentNotificationsClient({
               {filter === "unread" ? "No unread notifications" : "Inbox is empty"}
             </p>
             <p className="text-[11px] text-slate-400 mt-0.5">
-              {filter === "unread"
-                ? "You are all caught up!"
-                : "We'll notify you when an update or announcement is posted."}
+              {filter === "unread" ? (
+                "You are all caught up!"
+              ) : (
+                <>
+                  <span className="hidden sm:inline">We'll notify you when an update or announcement is posted.</span>
+                  <span className="sm:hidden">We'll notify you when updates arrive.</span>
+                </>
+              )}
             </p>
           </div>
         ) : (
@@ -196,7 +202,7 @@ export default function StudentNotificationsClient({
               return (
                 <div
                   key={un.id}
-                  className={`p-3.5 sm:px-4 sm:py-3.5 flex items-start gap-3 transition-colors ${
+                  className={`p-3 sm:px-4 sm:py-3.5 flex items-start gap-2.5 sm:gap-3 transition-colors ${
                     !un.is_read
                       ? "bg-indigo-50/25 hover:bg-indigo-50/40"
                       : "hover:bg-slate-50/70"
@@ -204,9 +210,9 @@ export default function StudentNotificationsClient({
                 >
                   {/* Compact Icon */}
                   <div
-                    className={`w-8 h-8 rounded-lg ${style.bg} ${style.color} border ${style.border} flex items-center justify-center shrink-0 mt-0.5`}
+                    className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg ${style.bg} ${style.color} border ${style.border} flex items-center justify-center shrink-0 mt-0.5`}
                   >
-                    <Icon size={15} />
+                    <Icon size={14} className="sm:w-[15px] sm:h-[15px]" />
                   </div>
 
                   {/* Body Content */}
@@ -226,7 +232,7 @@ export default function StudentNotificationsClient({
                         </span>
                       </div>
 
-                      {/* Top Right Quick Actions */}
+                      {/* Top Right Quick Actions with touch-friendly 32px targets */}
                       <div className="flex items-center gap-1 shrink-0">
                         {!un.is_read ? (
                           <button
@@ -234,7 +240,7 @@ export default function StudentNotificationsClient({
                             disabled={isLoading}
                             title="Mark as read"
                             aria-label="Mark as read"
-                            className="p-1 rounded-md text-slate-400 hover:text-indigo-600 hover:bg-indigo-100/70 active:scale-90 transition-all"
+                            className="min-h-[32px] min-w-[32px] sm:min-h-[28px] sm:min-w-[28px] p-1.5 sm:p-1 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-100/70 active:scale-90 transition-all flex items-center justify-center touch-manipulation"
                           >
                             {isLoading ? (
                               <Loader2 size={13} className="animate-spin text-indigo-600" />
@@ -245,7 +251,7 @@ export default function StudentNotificationsClient({
                         ) : (
                           <span
                             title="Opened"
-                            className="text-slate-300 p-1"
+                            className="text-slate-300 min-h-[32px] min-w-[32px] sm:min-h-[28px] sm:min-w-[28px] p-1.5 sm:p-1 flex items-center justify-center"
                           >
                             <MailOpen size={13} />
                           </span>
@@ -255,7 +261,7 @@ export default function StudentNotificationsClient({
                           disabled={isLoading}
                           title="Delete notification"
                           aria-label="Delete notification"
-                          className="p-1 rounded-md text-slate-300 hover:text-rose-600 hover:bg-rose-50 active:scale-90 transition-all"
+                          className="min-h-[32px] min-w-[32px] sm:min-h-[28px] sm:min-w-[28px] p-1.5 sm:p-1 rounded-lg text-slate-300 hover:text-rose-600 hover:bg-rose-50 active:scale-90 transition-all flex items-center justify-center touch-manipulation"
                         >
                           <Trash2 size={13} />
                         </button>
@@ -272,7 +278,7 @@ export default function StudentNotificationsClient({
                     </h3>
 
                     {/* Notification Message */}
-                    <p className="text-xs text-slate-500 font-normal leading-relaxed mt-0.5">
+                    <p className="text-xs text-slate-500 font-normal leading-relaxed mt-0.5 break-words">
                       {notif?.message}
                     </p>
                   </div>

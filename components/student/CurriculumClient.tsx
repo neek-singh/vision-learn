@@ -849,7 +849,7 @@ export function CurriculumClient({
   return (
     <div className="max-w-7xl mx-auto space-y-2.5 pb-6 px-1 sm:px-3">
       {/* 1. Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 py-0">
+      <nav className="hidden sm:flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 py-0">
         <Link href="/dashboard" className="text-slate-400 hover:text-slate-700 transition-colors flex items-center gap-1">
           <Home size={12} />
         </Link>
@@ -877,7 +877,7 @@ export function CurriculumClient({
         {/* Left Side: 9 cols (increased width for content) */}
         <div className="lg:col-span-9 space-y-2.5">
           {/* 2. Hero Course Banner */}
-          <div className="bg-gradient-to-r from-sky-100/90 via-sky-50 to-blue-100/70 border border-sky-200/60 rounded-xl p-3.5 sm:p-4 relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-3 shadow-2xs">
+          <div className="bg-gradient-to-r from-sky-100/90 via-sky-50 to-blue-100/70 border border-sky-200/60 rounded-xl p-3 sm:p-4 relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-3 shadow-2xs">
             {/* Background Desk Image without separate card */}
             <div className="absolute right-0 top-0 bottom-0 w-2/5 max-w-[260px] pointer-events-none hidden md:block">
               <img
@@ -889,32 +889,32 @@ export function CurriculumClient({
               <div className="absolute inset-0 bg-gradient-to-r from-sky-50 via-sky-50/40 to-transparent" />
             </div>
 
-            <div className="flex items-start sm:items-center gap-3 relative z-10 min-w-0 max-w-xl">
-              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-sky-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-sky-500/20">
-                <Monitor size={24} className="stroke-[1.75]" />
+            <div className="flex items-start sm:items-center gap-2.5 sm:gap-3 relative z-10 min-w-0 max-w-xl">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-sky-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-sky-500/20">
+                <Monitor size={22} className="stroke-[1.75]" />
               </div>
               <div className="min-w-0">
                 <h1 className="text-sm sm:text-base font-semibold text-slate-800 tracking-tight leading-snug">
                   {courseTitle}
                 </h1>
-                <p className="text-[11px] text-slate-600 font-medium mt-0.5 max-w-lg line-clamp-1">
+                <p className="hidden sm:block text-[11px] text-slate-600 font-medium mt-0.5 max-w-lg line-clamp-1">
                   {courseDescription}
                 </p>
-                <div className="flex items-center gap-3.5 mt-2 flex-wrap text-[11px] font-semibold text-slate-700">
-                  <span className="flex items-center gap-1.5">
-                    <Clock size={12} className="text-emerald-600" />
+                <div className="flex items-center gap-2.5 sm:gap-3.5 mt-1.5 sm:mt-2 flex-wrap text-[10px] sm:text-[11px] font-semibold text-slate-700">
+                  <span className="flex items-center gap-1">
+                    <Clock size={11} className="text-emerald-600" />
                     <span>{courseDuration}</span>
                   </span>
-                  <span className="flex items-center gap-1.5">
-                    <Layers size={12} className="text-sky-600" />
+                  <span className="flex items-center gap-1">
+                    <Layers size={11} className="text-sky-600" />
                     <span>{batchModules.length} Modules</span>
                   </span>
-                  <span className="flex items-center gap-1.5">
-                    <BookOpen size={12} className="text-sky-600" />
+                  <span className="flex items-center gap-1">
+                    <BookOpen size={11} className="text-sky-600" />
                     <span>{totalLessonsCount}+ Lessons</span>
                   </span>
-                  <span className="flex items-center gap-1.5">
-                    <Award size={12} className="text-emerald-600" />
+                  <span className="hidden sm:flex items-center gap-1">
+                    <Award size={11} className="text-emerald-600" />
                     <span>{certificateBadgeText}</span>
                   </span>
                 </div>
@@ -923,7 +923,7 @@ export function CurriculumClient({
           </div>
 
           {/* 3. Horizontal Navigation Tabs */}
-          <div className="border-b border-slate-200 flex items-center gap-6 sm:gap-7 overflow-x-auto text-xs sm:text-sm font-medium text-slate-500 pb-2">
+          <div className="border-b border-slate-200 flex items-center gap-4 sm:gap-7 overflow-x-auto scrollbar-none text-xs sm:text-sm font-medium text-slate-500 pb-2 -mx-1 px-1 sm:mx-0 sm:px-0">
             <button
               onClick={() => {
                 setActiveTab('syllabus');
@@ -1026,7 +1026,7 @@ export function CurriculumClient({
                       </div>
                       <div className="min-w-0">
                         <p className="text-[11px] font-semibold text-slate-800 leading-tight">Beginner Friendly</p>
-                        <p className="text-[9px] text-slate-400 mt-0.5">Step by step learning</p>
+                        <p className="hidden sm:block text-[9px] text-slate-400 mt-0.5">Step by step learning</p>
                       </div>
                     </div>
 
@@ -1036,7 +1036,7 @@ export function CurriculumClient({
                       </div>
                       <div className="min-w-0">
                         <p className="text-[11px] font-semibold text-slate-800 leading-tight">Hands-on Projects</p>
-                        <p className="text-[9px] text-slate-400 mt-0.5">Build real websites</p>
+                        <p className="hidden sm:block text-[9px] text-slate-400 mt-0.5">Build real websites</p>
                       </div>
                     </div>
 
@@ -1046,7 +1046,7 @@ export function CurriculumClient({
                       </div>
                       <div className="min-w-0">
                         <p className="text-[11px] font-semibold text-slate-800 leading-tight">Video + Notes</p>
-                        <p className="text-[9px] text-slate-400 mt-0.5">Learn with practice</p>
+                        <p className="hidden sm:block text-[9px] text-slate-400 mt-0.5">Learn with practice</p>
                       </div>
                     </div>
 
@@ -1056,7 +1056,7 @@ export function CurriculumClient({
                       </div>
                       <div className="min-w-0">
                         <p className="text-[11px] font-semibold text-slate-800 leading-tight">Certificate</p>
-                        <p className="text-[9px] text-slate-400 mt-0.5">Get on completion</p>
+                        <p className="hidden sm:block text-[9px] text-slate-400 mt-0.5">Get on completion</p>
                       </div>
                     </div>
                   </div>
@@ -1168,11 +1168,11 @@ export function CurriculumClient({
               /* Assignments View - Exact match to reference screenshot */
               <div className="space-y-3">
                 {/* 1. Filter Pills Header */}
-                <div className="flex flex-wrap items-center justify-between gap-2.5 pb-1">
-                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-1">
+                  <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5 -mx-1 px-1 sm:mx-0 sm:px-0">
                     <button
                       onClick={() => setAssignmentFilter('all')}
-                      className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${assignmentFilter === 'all'
+                      className={`shrink-0 px-3.5 py-1.5 min-h-[34px] rounded-full text-xs font-bold transition-all cursor-pointer flex items-center ${assignmentFilter === 'all'
                           ? 'bg-blue-600 text-white shadow-xs'
                           : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200/80 hover:bg-slate-50'
                         }`}
@@ -1181,7 +1181,7 @@ export function CurriculumClient({
                     </button>
                     <button
                       onClick={() => setAssignmentFilter('not_started')}
-                      className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${assignmentFilter === 'not_started'
+                      className={`shrink-0 px-3 py-1.5 min-h-[34px] rounded-full text-xs font-semibold transition-all cursor-pointer flex items-center ${assignmentFilter === 'not_started'
                           ? 'bg-blue-600 text-white shadow-xs'
                           : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200/80 hover:bg-slate-50'
                         }`}
@@ -1190,7 +1190,7 @@ export function CurriculumClient({
                     </button>
                     <button
                       onClick={() => setAssignmentFilter('in_progress')}
-                      className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${assignmentFilter === 'in_progress'
+                      className={`shrink-0 px-3 py-1.5 min-h-[34px] rounded-full text-xs font-semibold transition-all cursor-pointer flex items-center ${assignmentFilter === 'in_progress'
                           ? 'bg-blue-600 text-white shadow-xs'
                           : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200/80 hover:bg-slate-50'
                         }`}
@@ -1199,7 +1199,7 @@ export function CurriculumClient({
                     </button>
                     <button
                       onClick={() => setAssignmentFilter('submitted')}
-                      className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${assignmentFilter === 'submitted'
+                      className={`shrink-0 px-3 py-1.5 min-h-[34px] rounded-full text-xs font-semibold transition-all cursor-pointer flex items-center ${assignmentFilter === 'submitted'
                           ? 'bg-blue-600 text-white shadow-xs'
                           : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200/80 hover:bg-slate-50'
                         }`}
@@ -1208,7 +1208,7 @@ export function CurriculumClient({
                     </button>
                     <button
                       onClick={() => setAssignmentFilter('graded')}
-                      className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${assignmentFilter === 'graded'
+                      className={`shrink-0 px-3 py-1.5 min-h-[34px] rounded-full text-xs font-semibold transition-all cursor-pointer flex items-center ${assignmentFilter === 'graded'
                           ? 'bg-blue-600 text-white shadow-xs'
                           : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200/80 hover:bg-slate-50'
                         }`}
@@ -1218,11 +1218,11 @@ export function CurriculumClient({
                   </div>
 
                   {/* Right Module Filter Dropdown */}
-                  <div className="relative">
+                  <div className="relative w-full sm:w-auto">
                     <select
                       value={assignmentModuleFilter}
                       onChange={(e) => setAssignmentModuleFilter(e.target.value)}
-                      className="appearance-none bg-white border border-slate-200/80 text-slate-700 font-semibold text-xs rounded-full pl-3.5 pr-8 py-1.5 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer shadow-2xs"
+                      className="w-full sm:w-auto appearance-none bg-white border border-slate-200/80 text-slate-700 font-semibold text-xs rounded-full pl-3.5 pr-8 py-1.5 min-h-[34px] hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer shadow-2xs"
                     >
                       <option value="all">All Modules</option>
                       {batchModules.map((m: any, idx: number) => (
@@ -1470,11 +1470,11 @@ export function CurriculumClient({
               /* Projects View - Exact match to reference screenshot without description */
               <div className="space-y-3">
                 {/* 1. Filter Pills Header */}
-                <div className="flex flex-wrap items-center justify-between gap-2.5 pb-1">
-                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-1">
+                  <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5 -mx-1 px-1 sm:mx-0 sm:px-0">
                     <button
                       onClick={() => setProjectFilter('all')}
-                      className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${projectFilter === 'all'
+                      className={`shrink-0 px-3.5 py-1.5 min-h-[34px] rounded-full text-xs font-bold transition-all cursor-pointer flex items-center ${projectFilter === 'all'
                           ? 'bg-blue-600 text-white shadow-xs'
                           : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200/80 hover:bg-slate-50'
                         }`}
@@ -1483,7 +1483,7 @@ export function CurriculumClient({
                     </button>
                     <button
                       onClick={() => setProjectFilter('in_progress')}
-                      className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${projectFilter === 'in_progress'
+                      className={`shrink-0 px-3 py-1.5 min-h-[34px] rounded-full text-xs font-semibold transition-all cursor-pointer flex items-center ${projectFilter === 'in_progress'
                           ? 'bg-blue-600 text-white shadow-xs'
                           : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200/80 hover:bg-slate-50'
                         }`}
@@ -1492,7 +1492,7 @@ export function CurriculumClient({
                     </button>
                     <button
                       onClick={() => setProjectFilter('completed')}
-                      className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${projectFilter === 'completed'
+                      className={`shrink-0 px-3 py-1.5 min-h-[34px] rounded-full text-xs font-semibold transition-all cursor-pointer flex items-center ${projectFilter === 'completed'
                           ? 'bg-blue-600 text-white shadow-xs'
                           : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200/80 hover:bg-slate-50'
                         }`}
@@ -1501,7 +1501,7 @@ export function CurriculumClient({
                     </button>
                     <button
                       onClick={() => setProjectFilter('upcoming')}
-                      className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${projectFilter === 'upcoming'
+                      className={`shrink-0 px-3 py-1.5 min-h-[34px] rounded-full text-xs font-semibold transition-all cursor-pointer flex items-center ${projectFilter === 'upcoming'
                           ? 'bg-blue-600 text-white shadow-xs'
                           : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200/80 hover:bg-slate-50'
                         }`}
@@ -1511,11 +1511,11 @@ export function CurriculumClient({
                   </div>
 
                   {/* Right Module Filter Dropdown */}
-                  <div className="relative">
+                  <div className="relative w-full sm:w-auto">
                     <select
                       value={projectModuleFilter}
                       onChange={(e) => setProjectModuleFilter(e.target.value)}
-                      className="appearance-none bg-white border border-slate-200/80 text-slate-700 font-semibold text-xs rounded-full pl-3.5 pr-8 py-1.5 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer shadow-2xs"
+                      className="w-full sm:w-auto appearance-none bg-white border border-slate-200/80 text-slate-700 font-semibold text-xs rounded-full pl-3.5 pr-8 py-1.5 min-h-[34px] hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer shadow-2xs"
                     >
                       <option value="all">All Modules</option>
                       {batchModules.map((m: any, idx: number) => (
@@ -1714,15 +1714,15 @@ export function CurriculumClient({
               <div className="space-y-3">
                 {/* 1. Header with title, subtitle & count pill */}
                 <div className="flex items-center justify-between pb-0.5">
-                  <div>
+                  <div className="min-w-0">
                     <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">
                       Notes & Materials
                     </h3>
-                    <p className="text-xs text-slate-500 mt-0.5 font-normal">
+                    <p className="hidden sm:block text-xs text-slate-500 mt-0.5 font-normal">
                       Download module notes, cheatsheets & guides
                     </p>
                   </div>
-                  <div className="px-3 py-1 rounded-full border border-blue-200 bg-blue-50/60 text-blue-700 text-xs font-semibold shadow-2xs">
+                  <div className="px-2.5 sm:px-3 py-1 rounded-full border border-blue-200 bg-blue-50/60 text-blue-700 text-[11px] sm:text-xs font-semibold shadow-2xs shrink-0">
                     {effectiveMaterials.length} Items
                   </div>
                 </div>
@@ -1750,10 +1750,10 @@ export function CurriculumClient({
 
                 {/* 3. Filter Pills */}
                 {availableMaterialTypes.length > 0 && (
-                  <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide py-0.5">
+                  <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5 -mx-1 px-1 sm:mx-0 sm:px-0">
                     <button
                       onClick={() => setResourceTypeFilter("all")}
-                      className={`shrink-0 px-3 py-1 rounded-lg text-xs font-semibold transition-all ${resourceTypeFilter === "all"
+                      className={`shrink-0 px-3 py-1.5 min-h-[34px] rounded-lg text-xs font-semibold transition-all flex items-center cursor-pointer ${resourceTypeFilter === "all"
                           ? "bg-slate-950 text-white shadow-2xs"
                           : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200"
                         }`}
@@ -1764,7 +1764,7 @@ export function CurriculumClient({
                       <button
                         key={label}
                         onClick={() => setResourceTypeFilter(label)}
-                        className={`shrink-0 px-3 py-1 rounded-lg text-xs font-semibold transition-all ${resourceTypeFilter === label
+                        className={`shrink-0 px-3 py-1.5 min-h-[34px] rounded-lg text-xs font-semibold transition-all flex items-center cursor-pointer ${resourceTypeFilter === label
                             ? "bg-blue-600 text-white shadow-2xs"
                             : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200"
                           }`}
@@ -2511,7 +2511,7 @@ function ModuleItem({
             <h3 className="text-xs sm:text-sm font-semibold text-slate-800 leading-tight truncate">
               {module.title?.toLowerCase().startsWith("module") ? module.title : `Module ${mIdx + 1}: ${module.title}`}
             </h3>
-            <p className="text-[11px] text-slate-500 font-normal mt-0.5 line-clamp-1">
+            <p className="hidden sm:block text-[11px] text-slate-500 font-normal mt-0.5 line-clamp-1">
               {module.description || "Foundational concepts, practice tasks, and exercises."}
             </p>
           </div>
@@ -2734,7 +2734,7 @@ function LessonItem({
   return (
     <div
       onClick={() => !isLocked && openLesson(lesson)}
-      className={`flex items-center justify-between px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl transition-all duration-150 group border ${!isLocked ? 'cursor-pointer hover:bg-slate-50/80 border-slate-100 hover:border-slate-200' : 'cursor-default opacity-85 border-slate-100/70 bg-slate-50/30'
+      className={`flex items-center justify-between px-2.5 py-2 sm:px-3.5 sm:py-2.5 rounded-xl transition-all duration-150 group border ${!isLocked ? 'cursor-pointer hover:bg-slate-50/80 border-slate-100 hover:border-slate-200' : 'cursor-default opacity-85 border-slate-100/70 bg-slate-50/30'
         } ${isInProgress ? 'bg-sky-50/30 border-sky-100' : isCompleted ? 'bg-white' : 'bg-white'
         }`}
     >
@@ -2769,7 +2769,7 @@ function LessonItem({
       </div>
 
       {/* Right side: Status Pill, Type Pill, Duration, Action Button */}
-      <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-3">
+      <div className="flex items-center gap-1.5 sm:gap-3 shrink-0 ml-2 sm:ml-3">
         {/* Status Pill */}
         {isCompleted ? (
           <span className="bg-emerald-50 text-emerald-600 border border-emerald-100/80 text-[10px] font-semibold px-2 py-0.5 rounded-md">
@@ -2784,26 +2784,26 @@ function LessonItem({
             Next
           </span>
         ) : (
-          <span className="bg-slate-50 text-slate-500 border border-slate-200/60 text-[10px] font-semibold px-2 py-0.5 rounded-md">
+          <span className="bg-slate-50 text-slate-500 border border-slate-200/60 text-[10px] font-semibold px-2 py-0.5 rounded-md hidden sm:inline-block">
             Not Started
           </span>
         )}
 
-        {/* Type Pill */}
+        {/* Type Pill - hidden on mobile to give space for title */}
         {lessonType === 'video' ? (
-          <span className="bg-sky-50 text-sky-600 border border-sky-100/70 text-[10px] font-semibold px-2 py-0.5 rounded-md flex items-center gap-1">
+          <span className="hidden sm:inline-flex bg-sky-50 text-sky-600 border border-sky-100/70 text-[10px] font-semibold px-2 py-0.5 rounded-md items-center gap-1">
             <Play size={9} className="fill-current" /> Video
           </span>
         ) : lessonType === 'mcq' ? (
-          <span className="bg-purple-50 text-purple-600 border border-purple-100/70 text-[10px] font-semibold px-2 py-0.5 rounded-md flex items-center gap-1">
+          <span className="hidden sm:inline-flex bg-purple-50 text-purple-600 border border-purple-100/70 text-[10px] font-semibold px-2 py-0.5 rounded-md items-center gap-1">
             <HelpCircle size={10} /> MCQ Test
           </span>
         ) : lessonType === 'assignment' || lessonType === 'project' ? (
-          <span className="bg-amber-50 text-amber-600 border border-amber-100/70 text-[10px] font-semibold px-2 py-0.5 rounded-md flex items-center gap-1">
+          <span className="hidden sm:inline-flex bg-amber-50 text-amber-600 border border-amber-100/70 text-[10px] font-semibold px-2 py-0.5 rounded-md items-center gap-1">
             <PenTool size={9} /> Practical
           </span>
         ) : (
-          <span className="bg-sky-50 text-sky-600 border border-sky-100/70 text-[10px] font-semibold px-2 py-0.5 rounded-md flex items-center gap-1">
+          <span className="hidden sm:inline-flex bg-sky-50 text-sky-600 border border-sky-100/70 text-[10px] font-semibold px-2 py-0.5 rounded-md items-center gap-1">
             <BookOpen size={9} /> Theory
           </span>
         )}
@@ -2820,14 +2820,14 @@ function LessonItem({
               e.stopPropagation();
               openLesson(lesson);
             }}
-            className="w-5 h-5 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-2xs transition-transform active:scale-90 cursor-pointer shrink-0"
+            className="w-6 h-6 sm:w-5 sm:h-5 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-2xs transition-transform active:scale-90 cursor-pointer shrink-0"
             title="Start / View Lesson"
           >
-            <Play size={9} className="fill-current translate-x-[0.5px]" />
+            <Play size={10} className="fill-current translate-x-[0.5px]" />
           </button>
         ) : (
-          <div className="w-5 h-5 rounded-full border border-slate-200 text-slate-300 flex items-center justify-center shrink-0">
-            <Lock size={9} />
+          <div className="w-6 h-6 sm:w-5 sm:h-5 rounded-full border border-slate-200 text-slate-300 flex items-center justify-center shrink-0">
+            <Lock size={10} />
           </div>
         )}
       </div>
