@@ -152,19 +152,59 @@ export async function clearAllOfflineData(): Promise<void> {
 }
 
 /**
- * Performs a safe logout by purging all student offline data first,
- * calling the logout endpoint, and redirecting to /login.
+ * Performs a fast, secure logout by clearing client storage,
+ * invalidating the session cookie, and redirecting instantly to the root welcome screen ('/').
  */
 export async function handleStudentLogout(): Promise<void> {
-  await clearAllOfflineData();
+  if (typeof window === 'undefined') return;
+
+  // 1. Synchronously purge student-specific keys from localStorage (<1ms)
   try {
-    await fetch('/api/logout', { method: 'POST' });
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const key = window.localStorage.key(i);
+      if (
+        key &&
+        (key.startsWith('vl_offline_') ||
+          key.startsWith('vision_') ||
+          key.startsWith('supabase.'))
+      ) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach((k) => window.localStorage.removeItem(k));
   } catch (err) {
-    console.warn('[OfflineStore] Network logout failed, proceeding with client redirect:', err);
+    console.warn('[OfflineStore] Failed to clear localStorage on logout:', err);
   }
-  if (typeof window !== 'undefined') {
-    window.location.href = '/login';
+
+  // 2. Client-side cookie fallback purge
+  try {
+    document.cookie = 'vision_learn_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; Max-Age=0; SameSite=Lax';
+  } catch {}
+
+  // 3. Clear heavy IndexedDB tables and CacheStorage in the background without blocking the UI
+  clearAllOfflineData().catch((err) => {
+    console.warn('[OfflineStore] Background offline data purge:', err);
+  });
+
+  // 4. Invalidate server session cookie cleanly
+  try {
+    await fetch('/api/logout', {
+      method: 'POST',
+      headers: { Accept: 'application/json' },
+      keepalive: true,
+    });
+  } catch (err) {
+    console.warn('[OfflineStore] Network logout ping:', err);
   }
+
+  // 5. Navigate to http://localhost:3000 (or configured main website in production)
+  const redirectUrl = process.env.NEXT_PUBLIC_MAIN_WEBSITE_URL ||
+    (typeof window !== 'undefined' && window.location.hostname === 'localhost'
+      ? 'http://localhost:3000'
+      : (process.env.NODE_ENV === 'production' ? 'https://visionitinstitute.com' : 'http://localhost:3000'));
+
+  window.location.replace(redirectUrl);
 }
 
 /**

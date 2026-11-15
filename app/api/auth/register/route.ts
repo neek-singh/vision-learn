@@ -5,7 +5,7 @@ import { createToken } from "@/lib/auth-custom";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, phone, studying, interests } = body;
+    const { name, phone, studying, studentClass, interests } = body;
 
     if (!name || typeof name !== "string" || !name.trim()) {
       return NextResponse.json(
@@ -26,6 +26,7 @@ export async function POST(request: Request) {
       name: name.trim(),
       phone: cleanPhone,
       studying: studying || "School Student",
+      studentClass: studentClass || "",
       interests: Array.isArray(interests) ? interests : [],
     });
 

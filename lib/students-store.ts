@@ -95,13 +95,14 @@ export async function registerStudent(params: {
   name: string;
   phone: string;
   studying?: string;
+  studentClass?: string;
   interests?: string[];
 }): Promise<{
   student: StudentRecord;
   student_id: string;
   isExisting: boolean;
 }> {
-  const { name, phone, studying = "School Student", interests = [] } = params;
+  const { name, phone, studying = "School Student", studentClass = "", interests = [] } = params;
   const cleanDigits = phone.trim().replace(/\D/g, "");
   const last10 = cleanDigits.length >= 10 ? cleanDigits.slice(-10) : cleanDigits;
 
@@ -144,13 +145,19 @@ export async function registerStudent(params: {
   const salt = await bcrypt.genSalt(10);
   const password_hash = await bcrypt.hash(last10, salt);
 
+  const formattedClass = studentClass
+    ? (studentClass.startsWith("Class ")
+      ? studentClass
+      : (studying === "School Student" ? `Class ${studentClass}` : studentClass))
+    : studying;
+
   const studentRecord: StudentRecord = {
     id: crypto.randomUUID(),
     student_id,
     name: name.trim(),
     phone: last10,
-    education: studying,
-    qualification: studying,
+    education: formattedClass ? `${studying} (${formattedClass})` : studying,
+    qualification: formattedClass,
     course: interests.join(", ") || "General Computer Studies",
     category: studying,
     address: interests.join(", "),

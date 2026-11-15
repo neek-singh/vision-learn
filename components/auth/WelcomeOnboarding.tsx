@@ -122,12 +122,12 @@ function TypewriterHeading({
   const [part1, part2] = displayText.split("\n");
 
   return (
-    <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight mb-2 min-h-[5.5rem]">
+    <h1 className="text-3xl sm:text-4xl font-medium text-slate-800 tracking-tight leading-tight mb-2 min-h-[5.5rem]">
       {part1 || "\u00A0"}
       {displayText.includes("\n") && (
         <>
           <br />
-          <span className="text-indigo-600">{part2 || ""}</span>
+          <span className="text-indigo-600 font-medium">{part2 || ""}</span>
         </>
       )}
       {!isDone && (
@@ -143,12 +143,13 @@ export function WelcomeOnboarding() {
   // Screen modes: "welcome" | "auth" | "signup"
   const [screen, setScreen] = useState<"welcome" | "auth" | "signup">("welcome");
   
-  // Sign up multi-step state (1 to 5)
+  // Sign up multi-step state (1 to 6)
   const [step, setStep] = useState<number>(1);
 
   // Form Data
   const [name, setName] = useState("");
   const [studying, setStudying] = useState<string>("");
+  const [selectedClass, setSelectedClass] = useState<string>("");
   const [interests, setInterests] = useState<string[]>([]);
   const [phone, setPhone] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -156,6 +157,58 @@ export function WelcomeOnboarding() {
   const [createdStudentId, setCreatedStudentId] = useState<string>("VIT001");
   const [isExistingAccount, setIsExistingAccount] = useState<boolean>(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  // Dynamic Class / Level Bubbles based on Studying Status
+  const getClassConfig = () => {
+    switch (studying) {
+      case "School Student":
+        return {
+          title: "Which class are you in?",
+          subtitle: "Select your standard to get the right syllabus & study material.",
+          bubbles: ["6th", "7th", "8th", "9th", "10th", "11th", "12th"],
+        };
+      case "College Student":
+        return {
+          title: "What are you studying in college?",
+          subtitle: "Select your degree level or current college year.",
+          bubbles: [
+            "Graduation / UG",
+            "Post Graduation (PG)",
+            "Diploma / Poly",
+            "1st Year",
+            "2nd Year",
+            "3rd Year",
+            "Final Year",
+          ],
+        };
+      case "Working Professional":
+        return {
+          title: "What is your professional domain?",
+          subtitle: "Select your field of work.",
+          bubbles: [
+            "Software & IT",
+            "Finance & Accounts",
+            "Sales & Marketing",
+            "Teaching / Education",
+            "Govt / Competitive",
+            "Business & Other",
+          ],
+        };
+      case "Other":
+      default:
+        return {
+          title: "What is your primary goal?",
+          subtitle: "Choose the learning pathway you want to explore.",
+          bubbles: [
+            "Competitive Exams",
+            "Computer Skills",
+            "Career Switch",
+            "Self-Learning",
+            "Hobby & Growth",
+          ],
+        };
+    }
+  };
 
   // Synchronous step key check ensures elements never flash before typing starts
   const currentStepKey = `${screen}-${step}`;
@@ -180,10 +233,10 @@ export function WelcomeOnboarding() {
 
   // Study Status Options
   const STUDY_OPTIONS = [
-    { id: "School Student", label: "School Student", icon: School, desc: "Classes 6th - 12th" },
-    { id: "College Student", label: "College Student", icon: GraduationCap, desc: "UG / PG Degree" },
-    { id: "Working Professional", label: "Working Professional", icon: Briefcase, desc: "Job / Career Upskilling" },
-    { id: "Other", label: "Other", icon: Layers, desc: "Self-learner / Explorer" },
+    { id: "School Student", label: "School Student", icon: School },
+    { id: "College Student", label: "College Student", icon: GraduationCap },
+    { id: "Working Professional", label: "Working Professional", icon: Briefcase },
+    { id: "Other", label: "Other", icon: Layers },
   ];
 
   // Learning Interest Options
@@ -216,6 +269,7 @@ export function WelcomeOnboarding() {
           name: name.trim(),
           phone: phone.trim(),
           studying: studying || "School Student",
+          studentClass: selectedClass || (studying === "School Student" ? "Class 10th" : studying),
           interests,
         }),
       });
@@ -237,7 +291,7 @@ export function WelcomeOnboarding() {
     } finally {
       setIsSubmitting(false);
       setSubmitSuccess(true);
-      setStep(5);
+      setStep(6);
     }
   };
 
@@ -291,12 +345,12 @@ export function WelcomeOnboarding() {
       {screen === "welcome" && (
         <div className="relative z-10 flex-1 flex flex-col justify-between p-6 sm:p-8 max-w-sm mx-auto w-full animate-in fade-in duration-300">
           <div className="pt-2 text-center">
-            <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+            <span className="text-[11px] font-medium uppercase tracking-widest text-slate-400">
               Vision IT Institute
             </span>
           </div>
 
-          <div className="flex-1 flex flex-col items-center justify-center py-8 text-center">
+          <div className="flex-1 flex flex-col items-center justify-center py-6 text-center">
             <div className="relative mb-6 flex items-center justify-center">
               <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-white p-3.5 shadow-xl shadow-indigo-500/10 border border-slate-100 flex items-center justify-center">
                 <img
@@ -316,7 +370,7 @@ export function WelcomeOnboarding() {
             />
 
             <p
-              className={`text-xs sm:text-sm text-slate-500 font-medium max-w-xs mt-1 transition-all duration-400 transform ${
+              className={`text-xs sm:text-sm text-slate-500 font-normal max-w-xs mt-1 transition-all duration-400 transform ${
                 isTypingDone
                   ? "opacity-100 translate-y-0"
                   : "opacity-0 translate-y-2 pointer-events-none"
@@ -324,24 +378,28 @@ export function WelcomeOnboarding() {
             >
               Your personal digital classroom for courses, attendance, and tests.
             </p>
+
+            {/* Action button placed directly below the text for natural eye and thumb ergonomics */}
+            <div
+              className={`w-full max-w-xs mt-7 transition-all duration-400 delay-150 transform ${
+                isTypingDone
+                  ? "opacity-100 translate-y-0 pointer-events-auto"
+                  : "opacity-0 translate-y-3 pointer-events-none"
+              }`}
+            >
+              <button
+                type="button"
+                onClick={() => setScreen("auth")}
+                className="w-full min-h-[52px] bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white font-medium text-base rounded-2xl shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2 touch-manipulation cursor-pointer"
+              >
+                <span>Get Started</span>
+                <ArrowRight size={18} />
+              </button>
+            </div>
           </div>
 
-          <div
-            className={`w-full pb-4 space-y-3 transition-all duration-400 delay-150 transform ${
-              isTypingDone
-                ? "opacity-100 translate-y-0 pointer-events-auto"
-                : "opacity-0 translate-y-3 pointer-events-none"
-            }`}
-          >
-            <button
-              type="button"
-              onClick={() => setScreen("auth")}
-              className="w-full min-h-[52px] bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white font-bold text-base rounded-2xl shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2 touch-manipulation cursor-pointer"
-            >
-              <span>Get Started</span>
-              <ArrowRight size={18} />
-            </button>
-            <p className="text-[11px] text-center text-slate-400">
+          <div className="text-center pb-4">
+            <p className="text-[11px] text-slate-400">
               Empowering Digital Education
             </p>
           </div>
@@ -357,12 +415,12 @@ export function WelcomeOnboarding() {
             <button
               type="button"
               onClick={() => setScreen("welcome")}
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-indigo-600 p-2 -ml-2 rounded-xl transition-colors touch-manipulation cursor-pointer"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-indigo-600 p-2 -ml-2 rounded-xl transition-colors touch-manipulation cursor-pointer"
             >
               <ArrowLeft size={16} />
               <span>Back</span>
             </button>
-            <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+            <span className="text-[11px] font-medium uppercase tracking-widest text-slate-400">
               Vision Learn
             </span>
           </div>
@@ -376,7 +434,7 @@ export function WelcomeOnboarding() {
               />
             </div>
 
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-1.5 min-h-[2.5rem] flex items-center justify-center">
+            <h2 className="text-2xl sm:text-3xl font-medium text-slate-800 tracking-tight mb-1.5 min-h-[2.5rem] flex items-center justify-center">
               <TypewriterText
                 text="Welcome"
                 speed={28}
@@ -384,7 +442,7 @@ export function WelcomeOnboarding() {
               />
             </h2>
             <p
-              className={`text-xs sm:text-sm text-slate-500 font-medium max-w-xs mb-8 transition-all duration-400 transform ${
+              className={`text-xs sm:text-sm text-slate-500 font-normal max-w-xs mb-6 transition-all duration-400 transform ${
                 isTypingDone
                   ? "opacity-100 translate-y-0"
                   : "opacity-0 translate-y-2 pointer-events-none"
@@ -394,7 +452,7 @@ export function WelcomeOnboarding() {
             </p>
 
             <div
-              className={`w-full space-y-3 transition-all duration-400 delay-100 transform ${
+              className={`w-full max-w-xs space-y-3 transition-all duration-400 delay-100 transform ${
                 isTypingDone
                   ? "opacity-100 translate-y-0 pointer-events-auto"
                   : "opacity-0 translate-y-3 pointer-events-none"
@@ -403,7 +461,7 @@ export function WelcomeOnboarding() {
               <button
                 type="button"
                 onClick={() => router.push("/login")}
-                className="w-full min-h-[52px] bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white font-bold text-base rounded-2xl shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2.5 touch-manipulation cursor-pointer"
+                className="w-full min-h-[52px] bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white font-medium text-base rounded-2xl shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2.5 touch-manipulation cursor-pointer"
               >
                 <LogIn size={18} />
                 <span>Login</span>
@@ -412,7 +470,7 @@ export function WelcomeOnboarding() {
               <button
                 type="button"
                 onClick={handleStartSignUp}
-                className="w-full min-h-[52px] bg-white hover:bg-slate-50 active:scale-[0.98] text-slate-800 font-bold text-base rounded-2xl border-2 border-slate-200 hover:border-slate-300 transition-all flex items-center justify-center gap-2.5 touch-manipulation cursor-pointer shadow-xs"
+                className="w-full min-h-[52px] bg-white hover:bg-slate-50 active:scale-[0.98] text-slate-800 font-medium text-base rounded-2xl border-2 border-slate-200 hover:border-slate-300 transition-all flex items-center justify-center gap-2.5 touch-manipulation cursor-pointer shadow-xs"
               >
                 <UserPlus size={18} className="text-indigo-600" />
                 <span>Sign Up</span>
@@ -431,7 +489,7 @@ export function WelcomeOnboarding() {
               Need assistance?{" "}
               <a
                 href="tel:+918103170595"
-                className="font-bold text-indigo-600 hover:underline"
+                className="font-medium text-indigo-600 hover:underline"
               >
                 Contact Institute
               </a>
@@ -445,8 +503,8 @@ export function WelcomeOnboarding() {
       ───────────────────────────────────────────────────────────── */}
       {screen === "signup" && (
         <div className="relative z-10 flex-1 flex flex-col justify-between p-6 sm:p-8 max-w-sm mx-auto w-full animate-in fade-in duration-300">
-          {/* Header & Step Progress Bar (Steps 1 to 4) */}
-          {step < 5 && (
+          {/* Header & Step Progress Bar (Steps 1 to 5) */}
+          {step < 6 && (
             <div className="pt-2">
               <div className="flex items-center justify-between mb-3">
                 <button
@@ -458,19 +516,19 @@ export function WelcomeOnboarding() {
                       setScreen("auth");
                     }
                   }}
-                  className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-indigo-600 p-2 -ml-2 rounded-xl transition-colors touch-manipulation cursor-pointer"
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-indigo-600 p-2 -ml-2 rounded-xl transition-colors touch-manipulation cursor-pointer"
                 >
                   <ArrowLeft size={16} />
                   <span>Back</span>
                 </button>
-                <span className="text-xs font-bold text-indigo-600">
-                  Step {step} of 4
+                <span className="text-xs font-medium text-indigo-600">
+                  Step {step} of 5
                 </span>
               </div>
 
-              {/* 4-Segment Smooth Animated Progress Line */}
-              <div className="w-full h-1.5 flex gap-1.5" role="progressbar" aria-valuenow={step} aria-valuemin={1} aria-valuemax={4}>
-                {[1, 2, 3, 4].map((seg) => (
+              {/* 5-Segment Smooth Animated Progress Line */}
+              <div className="w-full h-1.5 flex gap-1.5" role="progressbar" aria-valuenow={step} aria-valuemin={1} aria-valuemax={5}>
+                {[1, 2, 3, 4, 5].map((seg) => (
                   <div
                     key={seg}
                     className="flex-1 h-full bg-slate-200/80 rounded-full overflow-hidden"
@@ -488,9 +546,9 @@ export function WelcomeOnboarding() {
 
           {/* ── STEP 1: WELCOME & NAME ── */}
           {step === 1 && (
-            <div className="flex-1 flex flex-col justify-center py-6 animate-in fade-in slide-in-from-right-4 duration-200">
-              <div className="mb-6">
-                <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight min-h-[3.75rem] flex items-center">
+            <div className="flex-1 flex flex-col justify-center py-4 animate-in fade-in slide-in-from-right-4 duration-200">
+              <div className="mb-5">
+                <h2 className="text-2xl sm:text-3xl font-medium text-slate-800 tracking-tight min-h-[3.75rem] flex items-center">
                   <TypewriterText
                     text="What's your name?"
                     speed={22}
@@ -498,7 +556,7 @@ export function WelcomeOnboarding() {
                   />
                 </h2>
                 <p
-                  className={`text-xs sm:text-sm text-slate-500 font-medium mt-1 transition-all duration-400 transform ${
+                  className={`text-xs sm:text-sm text-slate-500 font-normal mt-1 transition-all duration-400 transform ${
                     isTypingDone
                       ? "opacity-100 translate-y-0"
                       : "opacity-0 translate-y-2 pointer-events-none"
@@ -521,17 +579,31 @@ export function WelcomeOnboarding() {
                   placeholder="Enter your name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-4 py-3.5 rounded-2xl bg-white border-2 border-slate-200 focus:border-indigo-600 outline-none text-base font-bold text-slate-800 placeholder-slate-400 shadow-xs transition-all"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && name.trim()) setStep(2);
+                  }}
+                  className="w-full px-4 py-3.5 rounded-2xl bg-white border-2 border-slate-200 focus:border-indigo-600 outline-none text-base font-normal text-slate-800 placeholder-slate-400 shadow-xs transition-all"
                 />
+
+                {/* Continue button directly below the input field */}
+                <button
+                  type="button"
+                  disabled={!name.trim()}
+                  onClick={() => setStep(2)}
+                  className="w-full min-h-[52px] bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] text-white font-medium text-base rounded-2xl shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2 touch-manipulation cursor-pointer"
+                >
+                  <span>Continue</span>
+                  <ArrowRight size={18} />
+                </button>
               </div>
             </div>
           )}
 
           {/* ── STEP 2: WHAT ARE YOU CURRENTLY STUDYING? ── */}
           {step === 2 && (
-            <div className="flex-1 flex flex-col justify-center py-6 animate-in fade-in slide-in-from-right-4 duration-200">
-              <div className="mb-5">
-                <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight min-h-[3.75rem] flex items-center">
+            <div className="flex-1 flex flex-col justify-center py-4 animate-in fade-in slide-in-from-right-4 duration-200">
+              <div className="mb-4">
+                <h2 className="text-2xl sm:text-3xl font-medium text-slate-800 tracking-tight min-h-[3.75rem] flex items-center">
                   <TypewriterText
                     text="What are you currently studying?"
                     speed={20}
@@ -539,7 +611,7 @@ export function WelcomeOnboarding() {
                   />
                 </h2>
                 <p
-                  className={`text-xs sm:text-sm text-slate-500 font-medium mt-1 transition-all duration-400 transform ${
+                  className={`text-xs sm:text-sm text-slate-500 font-normal mt-1 transition-all duration-400 transform ${
                     isTypingDone
                       ? "opacity-100 translate-y-0"
                       : "opacity-0 translate-y-2 pointer-events-none"
@@ -557,7 +629,10 @@ export function WelcomeOnboarding() {
                     <button
                       key={opt.id}
                       type="button"
-                      onClick={() => setStudying(opt.id)}
+                      onClick={() => {
+                        setStudying(opt.id);
+                        setSelectedClass("");
+                      }}
                       style={{
                         transitionDelay: isTypingDone ? `${idx * 70}ms` : "0ms",
                       }}
@@ -581,14 +656,9 @@ export function WelcomeOnboarding() {
                         >
                           <Icon size={20} />
                         </div>
-                        <div>
-                          <p className="font-bold text-sm text-slate-900 leading-tight">
-                            {opt.label}
-                          </p>
-                          <p className="text-[11px] text-slate-400 mt-0.5">
-                            {opt.desc}
-                          </p>
-                        </div>
+                        <span className="font-medium text-sm text-slate-800">
+                          {opt.label}
+                        </span>
                       </div>
 
                       <div
@@ -604,22 +674,113 @@ export function WelcomeOnboarding() {
                   );
                 })}
               </div>
+
+              {/* Continue button directly below the options */}
+              <div
+                className={`mt-4 transition-all duration-400 delay-150 transform ${
+                  isTypingDone
+                    ? "opacity-100 translate-y-0 pointer-events-auto"
+                    : "opacity-0 translate-y-3 pointer-events-none"
+                }`}
+              >
+                <button
+                  type="button"
+                  disabled={!studying}
+                  onClick={() => setStep(3)}
+                  className="w-full min-h-[52px] bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] text-white font-medium text-base rounded-2xl shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2 touch-manipulation cursor-pointer"
+                >
+                  <span>Continue</span>
+                  <ArrowRight size={18} />
+                </button>
+              </div>
             </div>
           )}
 
-          {/* ── STEP 3: WHAT DO YOU WANT TO LEARN? ── */}
+          {/* ── STEP 3: CLASS / LEVEL BUBBLE SELECTION (DYNAMIC BASED ON STUDYING STATUS) ── */}
           {step === 3 && (
-            <div className="flex-1 flex flex-col justify-center py-6 animate-in fade-in slide-in-from-right-4 duration-200">
-              <div className="mb-5">
-                <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight min-h-[3.75rem] flex items-center">
+            <div className="flex-1 flex flex-col justify-center py-4 animate-in fade-in slide-in-from-right-4 duration-200">
+              <div className="mb-5 text-center">
+                <h2 className="text-2xl sm:text-3xl font-medium text-slate-800 tracking-tight min-h-[3.75rem] flex items-center justify-center">
                   <TypewriterText
-                    text="What do you want to learn?"
+                    text={getClassConfig().title}
                     speed={20}
                     onComplete={() => setCompletedStepKey("signup-3")}
                   />
                 </h2>
                 <p
-                  className={`text-xs sm:text-sm text-slate-500 font-medium mt-1 transition-all duration-400 transform ${
+                  className={`text-xs sm:text-sm text-slate-500 font-normal mt-1 max-w-xs mx-auto transition-all duration-400 transform ${
+                    isTypingDone
+                      ? "opacity-100 translate-y-0"
+                      : "opacity-0 translate-y-2 pointer-events-none"
+                  }`}
+                >
+                  {getClassConfig().subtitle}
+                </p>
+              </div>
+
+              {/* Bubble Text Pills */}
+              <div className="flex flex-wrap gap-2.5 justify-center py-2 max-w-xs mx-auto">
+                {getClassConfig().bubbles.map((bubble, idx) => {
+                  const isSelected = selectedClass === bubble;
+                  return (
+                    <button
+                      key={bubble}
+                      type="button"
+                      onClick={() => setSelectedClass(bubble)}
+                      style={{
+                        transitionDelay: isTypingDone ? `${idx * 40}ms` : "0ms",
+                      }}
+                      className={`px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl text-xs sm:text-sm font-medium border-2 transition-all duration-200 active:scale-95 touch-manipulation cursor-pointer flex items-center gap-1.5 transform ${
+                        isTypingDone
+                          ? "opacity-100 translate-y-0 pointer-events-auto"
+                          : "opacity-0 translate-y-3 pointer-events-none"
+                      } ${
+                        isSelected
+                          ? "bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-200 scale-[1.04]"
+                          : "bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50 shadow-2xs"
+                      }`}
+                    >
+                      {isSelected && <Check size={14} className="stroke-[3]" />}
+                      <span>{bubble}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Continue button directly below the bubble chips */}
+              <div
+                className={`w-full max-w-xs mx-auto mt-6 transition-all duration-400 delay-150 transform ${
+                  isTypingDone
+                    ? "opacity-100 translate-y-0 pointer-events-auto"
+                    : "opacity-0 translate-y-3 pointer-events-none"
+                }`}
+              >
+                <button
+                  type="button"
+                  disabled={!selectedClass}
+                  onClick={() => setStep(4)}
+                  className="w-full min-h-[52px] bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] text-white font-medium text-base rounded-2xl shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2 touch-manipulation cursor-pointer"
+                >
+                  <span>Continue</span>
+                  <ArrowRight size={18} />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── STEP 4: WHAT DO YOU WANT TO LEARN? ── */}
+          {step === 4 && (
+            <div className="flex-1 flex flex-col justify-center py-4 animate-in fade-in slide-in-from-right-4 duration-200">
+              <div className="mb-4">
+                <h2 className="text-2xl sm:text-3xl font-medium text-slate-800 tracking-tight min-h-[3.75rem] flex items-center">
+                  <TypewriterText
+                    text="What do you want to learn?"
+                    speed={20}
+                    onComplete={() => setCompletedStepKey("signup-4")}
+                  />
+                </h2>
+                <p
+                  className={`text-xs sm:text-sm text-slate-500 font-normal mt-1 transition-all duration-400 transform ${
                     isTypingDone
                       ? "opacity-100 translate-y-0"
                       : "opacity-0 translate-y-2 pointer-events-none"
@@ -629,7 +790,7 @@ export function WelcomeOnboarding() {
                 </p>
               </div>
 
-              <div className="space-y-2.5">
+              <div className="space-y-2">
                 {INTEREST_OPTIONS.map((opt, idx) => {
                   const Icon = opt.icon;
                   const isSelected = interests.includes(opt.id);
@@ -639,9 +800,9 @@ export function WelcomeOnboarding() {
                       type="button"
                       onClick={() => toggleInterest(opt.id)}
                       style={{
-                        transitionDelay: isTypingDone ? `${idx * 60}ms` : "0ms",
+                        transitionDelay: isTypingDone ? `${idx * 50}ms` : "0ms",
                       }}
-                      className={`w-full p-3.5 rounded-2xl border-2 text-left flex items-center justify-between touch-manipulation cursor-pointer transition-all duration-400 transform ${
+                      className={`w-full p-2.5 rounded-2xl border-2 text-left flex items-center justify-between touch-manipulation cursor-pointer transition-all duration-400 transform ${
                         isTypingDone
                           ? "opacity-100 translate-y-0 pointer-events-auto"
                           : "opacity-0 translate-y-3 pointer-events-none"
@@ -653,11 +814,11 @@ export function WelcomeOnboarding() {
                     >
                       <div className="flex items-center gap-3">
                         <div
-                          className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${opt.color}`}
+                          className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border ${opt.color}`}
                         >
-                          <Icon size={20} />
+                          <Icon size={16} />
                         </div>
-                        <p className="font-bold text-sm text-slate-900">
+                        <p className="font-medium text-sm text-slate-800">
                           {opt.label}
                         </p>
                       </div>
@@ -675,22 +836,41 @@ export function WelcomeOnboarding() {
                   );
                 })}
               </div>
+
+              {/* Continue button directly below the options */}
+              <div
+                className={`mt-4 transition-all duration-400 delay-150 transform ${
+                  isTypingDone
+                    ? "opacity-100 translate-y-0 pointer-events-auto"
+                    : "opacity-0 translate-y-3 pointer-events-none"
+                }`}
+              >
+                <button
+                  type="button"
+                  disabled={interests.length === 0}
+                  onClick={() => setStep(5)}
+                  className="w-full min-h-[52px] bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] text-white font-medium text-base rounded-2xl shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2 touch-manipulation cursor-pointer"
+                >
+                  <span>Continue ({interests.length} selected)</span>
+                  <ArrowRight size={18} />
+                </button>
+              </div>
             </div>
           )}
 
-          {/* ── STEP 4: MOBILE NUMBER ── */}
-          {step === 4 && (
-            <div className="flex-1 flex flex-col justify-center py-6 animate-in fade-in slide-in-from-right-4 duration-200">
-              <div className="mb-6">
-                <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight min-h-[3.75rem] flex items-center">
+          {/* ── STEP 5: MOBILE NUMBER ── */}
+          {step === 5 && (
+            <div className="flex-1 flex flex-col justify-center py-4 animate-in fade-in slide-in-from-right-4 duration-200">
+              <div className="mb-5">
+                <h2 className="text-2xl sm:text-3xl font-medium text-slate-800 tracking-tight min-h-[3.75rem] flex items-center">
                   <TypewriterText
                     text="What's your mobile number?"
                     speed={20}
-                    onComplete={() => setCompletedStepKey("signup-4")}
+                    onComplete={() => setCompletedStepKey("signup-5")}
                   />
                 </h2>
                 <p
-                  className={`text-xs sm:text-sm text-slate-500 font-medium mt-1 transition-all duration-400 transform ${
+                  className={`text-xs sm:text-sm text-slate-500 font-normal mt-1 transition-all duration-400 transform ${
                     isTypingDone
                       ? "opacity-100 translate-y-0"
                       : "opacity-0 translate-y-2 pointer-events-none"
@@ -701,14 +881,14 @@ export function WelcomeOnboarding() {
               </div>
 
               <div
-                className={`space-y-4 transition-all duration-400 delay-100 transform ${
+                className={`space-y-3.5 transition-all duration-400 delay-100 transform ${
                   isTypingDone
                     ? "opacity-100 translate-y-0 pointer-events-auto"
                     : "opacity-0 translate-y-3 pointer-events-none"
                 }`}
               >
                 <div className="relative flex items-center">
-                  <div className="absolute left-4 flex items-center gap-1.5 text-sm font-bold text-slate-500 pointer-events-none">
+                  <div className="absolute left-4 flex items-center gap-1.5 text-sm font-medium text-slate-500 pointer-events-none">
                     <span>🇮🇳</span>
                     <span>+91</span>
                     <span className="text-slate-300">|</span>
@@ -720,36 +900,52 @@ export function WelcomeOnboarding() {
                     placeholder="98765 43210"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
-                    className="w-full pl-20 pr-4 py-3.5 rounded-2xl bg-white border-2 border-slate-200 focus:border-indigo-600 outline-none text-base font-bold text-slate-800 placeholder-slate-400 shadow-xs transition-all tracking-wider"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && phone.length === 10 && !isSubmitting) {
+                        handleSubmitRegistration();
+                      }
+                    }}
+                    className="w-full pl-20 pr-4 py-3.5 rounded-2xl bg-white border-2 border-slate-200 focus:border-indigo-600 outline-none text-base font-normal text-slate-800 placeholder-slate-400 shadow-xs transition-all tracking-wider"
                   />
                 </div>
 
-                <div className="p-3 bg-indigo-50/60 rounded-xl border border-indigo-100 flex items-start gap-2 text-[11px] text-indigo-900">
+                <div className="p-3 bg-indigo-50/60 rounded-xl border border-indigo-100 flex items-start gap-2 text-[11px] text-indigo-900 font-normal">
                   <Phone size={14} className="text-indigo-600 shrink-0 mt-0.5" />
                   <span>Your number is safely verified with Vision IT Institute. No spam calls.</span>
                 </div>
+
+                {/* Submit button directly below the disclaimer */}
+                <button
+                  type="button"
+                  disabled={phone.length < 10 || isSubmitting}
+                  onClick={handleSubmitRegistration}
+                  className="w-full min-h-[52px] bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] text-white font-medium text-base rounded-2xl shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2 touch-manipulation cursor-pointer"
+                >
+                  <span>{isSubmitting ? "Submitting..." : "Submit Registration"}</span>
+                  <ArrowRight size={18} />
+                </button>
               </div>
             </div>
           )}
 
-          {/* ── STEP 5: REGISTRATION COMPLETE & CONFIRMATION (COMPACT & FULLY IN VIEWPORT) ── */}
-          {step === 5 && (
+          {/* ── STEP 6: REGISTRATION COMPLETE & CONFIRMATION (COMPACT & FULLY IN VIEWPORT) ── */}
+          {step === 6 && (
             <div className="flex-1 flex flex-col items-center justify-center py-2 text-center animate-in fade-in zoom-in-95 duration-300">
               <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mb-2 shadow-xs">
                 <CheckCircle2 size={28} className="stroke-[2.5]" />
               </div>
 
-              <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+              <h2 className="text-2xl font-semibold text-slate-800 tracking-tight">
                 {isExistingAccount ? "Welcome Back!" : "Account Created!"}
               </h2>
-              <p className="text-xs text-slate-500 font-medium max-w-xs mt-0.5 mb-4">
+              <p className="text-xs text-slate-500 font-normal max-w-xs mt-0.5 mb-4">
                 {isExistingAccount ? (
                   <>
-                    Aapka account pehle se registered hai, <span className="font-bold text-slate-800">{name}</span>!
+                    Aapka account pehle se registered hai, <span className="font-semibold text-slate-800">{name}</span>!
                   </>
                 ) : (
                   <>
-                    Welcome, <span className="font-bold text-slate-800">{name}</span>! Here are your login credentials:
+                    Welcome, <span className="font-semibold text-slate-800">{name}</span>! Here are your login credentials:
                   </>
                 )}
               </p>
@@ -759,22 +955,22 @@ export function WelcomeOnboarding() {
                 {/* Student ID */}
                 <div className="flex items-center justify-between pb-3">
                   <div>
-                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
+                    <span className="text-[10px] uppercase font-medium text-slate-400 tracking-wider block">
                       Student ID
                     </span>
-                    <span className="font-mono text-lg font-black text-indigo-600 tracking-wide">
+                    <span className="font-mono text-lg font-bold text-indigo-600 tracking-wide">
                       {createdStudentId}
                     </span>
                   </div>
                   <button
                     type="button"
                     onClick={() => handleCopy(createdStudentId, "id")}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 active:scale-95 transition-all cursor-pointer"
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 active:scale-95 transition-all cursor-pointer"
                   >
                     {copiedField === "id" ? (
                       <>
                         <Check size={13} className="text-emerald-600" />
-                        <span className="text-emerald-600 font-bold">Copied</span>
+                        <span className="text-emerald-600 font-semibold">Copied</span>
                       </>
                     ) : (
                       <>
@@ -788,22 +984,22 @@ export function WelcomeOnboarding() {
                 {/* Password */}
                 <div className="flex items-center justify-between pt-3">
                   <div>
-                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
+                    <span className="text-[10px] uppercase font-medium text-slate-400 tracking-wider block">
                       Password (Mobile No.)
                     </span>
-                    <span className="font-mono text-base font-bold text-slate-900 tracking-wide">
+                    <span className="font-mono text-base font-medium text-slate-800 tracking-wide">
                       {phone}
                     </span>
                   </div>
                   <button
                     type="button"
                     onClick={() => handleCopy(phone, "pass")}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 active:scale-95 transition-all cursor-pointer"
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 active:scale-95 transition-all cursor-pointer"
                   >
                     {copiedField === "pass" ? (
                       <>
                         <Check size={13} className="text-emerald-600" />
-                        <span className="text-emerald-600 font-bold">Copied</span>
+                        <span className="text-emerald-600 font-semibold">Copied</span>
                       </>
                     ) : (
                       <>
@@ -820,7 +1016,7 @@ export function WelcomeOnboarding() {
                 <button
                   type="button"
                   onClick={() => router.push("/dashboard")}
-                  className="w-full min-h-[48px] bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white font-bold text-sm sm:text-base rounded-2xl shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2 touch-manipulation cursor-pointer"
+                  className="w-full min-h-[48px] bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white font-medium text-sm sm:text-base rounded-2xl shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2 touch-manipulation cursor-pointer"
                 >
                   <LogIn size={18} />
                   <span>{isExistingAccount ? "Continue to Dashboard" : "Login to Vision Learn"}</span>
@@ -830,7 +1026,7 @@ export function WelcomeOnboarding() {
                   href={`https://wa.me/918103170595?text=Hello%20Vision%20IT%20Institute%2C%20my%20name%20is%20${encodeURIComponent(name)}.%20I%20have%20registered%20on%20Vision%20Learn%20app%20with%20Student%20ID%20${encodeURIComponent(createdStudentId)}%20for%20${encodeURIComponent(interests.join(", ") || "Course Admission")}.%20Please%20guide%20me.`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full min-h-[44px] bg-white hover:bg-slate-50 active:scale-[0.98] text-slate-700 border border-slate-200 font-bold text-xs sm:text-sm rounded-2xl transition-all flex items-center justify-center gap-2 touch-manipulation cursor-pointer shadow-2xs"
+                  className="w-full min-h-[44px] bg-white hover:bg-slate-50 active:scale-[0.98] text-slate-700 border border-slate-200 font-medium text-xs sm:text-sm rounded-2xl transition-all flex items-center justify-center gap-2 touch-manipulation cursor-pointer shadow-2xs"
                 >
                   <MessageCircle size={16} className="text-emerald-600" />
                   <span>WhatsApp Admission Helpdesk</span>
@@ -839,64 +1035,8 @@ export function WelcomeOnboarding() {
             </div>
           )}
 
-          {/* Bottom Action Bar for Steps 1-4 */}
-          {step < 5 && (
-            <div
-              className={`pb-4 pt-2 transition-all duration-400 delay-200 transform ${
-                isTypingDone
-                  ? "opacity-100 translate-y-0 pointer-events-auto"
-                  : "opacity-0 translate-y-3 pointer-events-none"
-              }`}
-            >
-              {step === 1 && (
-                <button
-                  type="button"
-                  disabled={!name.trim()}
-                  onClick={() => setStep(2)}
-                  className="w-full min-h-[52px] bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] text-white font-bold text-base rounded-2xl shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2 touch-manipulation cursor-pointer"
-                >
-                  <span>Continue</span>
-                  <ArrowRight size={18} />
-                </button>
-              )}
-
-              {step === 2 && (
-                <button
-                  type="button"
-                  disabled={!studying}
-                  onClick={() => setStep(3)}
-                  className="w-full min-h-[52px] bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] text-white font-bold text-base rounded-2xl shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2 touch-manipulation cursor-pointer"
-                >
-                  <span>Continue</span>
-                  <ArrowRight size={18} />
-                </button>
-              )}
-
-              {step === 3 && (
-                <button
-                  type="button"
-                  disabled={interests.length === 0}
-                  onClick={() => setStep(4)}
-                  className="w-full min-h-[52px] bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] text-white font-bold text-base rounded-2xl shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2 touch-manipulation cursor-pointer"
-                >
-                  <span>Continue ({interests.length} selected)</span>
-                  <ArrowRight size={18} />
-                </button>
-              )}
-
-              {step === 4 && (
-                <button
-                  type="button"
-                  disabled={phone.length < 10 || isSubmitting}
-                  onClick={handleSubmitRegistration}
-                  className="w-full min-h-[52px] bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] text-white font-bold text-base rounded-2xl shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2 touch-manipulation cursor-pointer"
-                >
-                  <span>{isSubmitting ? "Submitting..." : "Submit Registration"}</span>
-                  <ArrowRight size={18} />
-                </button>
-              )}
-            </div>
-          )}
+          {/* Bottom spacing */}
+          <div className="pb-2" />
         </div>
       )}
     </main>

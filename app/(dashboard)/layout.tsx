@@ -224,6 +224,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         const pagesToWarm = [
           "/dashboard",
           "/courses",
+          "/settings",
           "/attendance",
           "/fees",
           "/tests",
