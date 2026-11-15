@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { verifyToken } from "@/lib/auth-custom";
 import { createPublicSupabaseClient } from "@/lib/supabase-server";
+import { getStudentById } from "@/lib/students-store";
 import SettingsClient from "@/components/settings/SettingsClient";
 import { ProfilePageSkeleton } from "@/components/dashboard/DashboardSkeletons";
 
@@ -25,7 +26,7 @@ export default async function SettingsPage() {
 
   // Fetch Student Profile and Enrollments
   const [studentRes, enrollmentRes] = await Promise.all([
-    supabase.from("students").select("*").eq("id", userId).single(),
+    supabase.from("students").select("*").eq("id", userId).maybeSingle(),
     supabase.from("enrollments").select(`
       id,
       batch,
@@ -35,7 +36,22 @@ export default async function SettingsPage() {
     `).eq("student_id", userId)
   ]);
 
-  const student = studentRes.data;
+  let student = studentRes.data;
+  if (!student) {
+    student = await getStudentById(userId);
+  }
+
+  // Final fallback to payload info
+  if (!student) {
+    student = {
+      id: payload.id,
+      student_id: payload.student_id,
+      name: payload.name,
+      status: "active",
+      admission_status: "unadmitted",
+    };
+  }
+
   const enrollments = enrollmentRes.data || [];
   const mainCourse = enrollments[0]?.courses;
 

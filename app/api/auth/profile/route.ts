@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth-custom";
 import { createPublicSupabaseClient } from "@/lib/supabase-server";
+import { getStudentById, updateStudentProfile } from "@/lib/students-store";
 
 export async function GET() {
   try {
@@ -18,17 +19,53 @@ export async function GET() {
     }
 
     const supabase = createPublicSupabaseClient();
-    const { data: student, error } = await supabase
-      .from("students")
-      .select("id, name, photo_url, student_id")
-      .eq("id", payload.id)
-      .single();
+    let student: any = null;
 
-    if (error || !student) {
+    const { data: dbStudent } = await supabase
+      .from("students")
+      .select("*")
+      .eq("id", payload.id)
+      .maybeSingle();
+
+    if (dbStudent) {
+      student = dbStudent;
+    } else {
+      student = await getStudentById(payload.id);
+    }
+
+    if (!student) {
       return NextResponse.json({ error: "Student not found" }, { status: 404 });
     }
 
-    return NextResponse.json(student);
+    // Check enrollments count
+    let enrollmentsCount = 0;
+    try {
+      const { count } = await supabase
+        .from("enrollments")
+        .select("id", { count: "exact", head: true })
+        .eq("student_id", payload.id);
+      enrollmentsCount = count || 0;
+    } catch (e) {
+      console.warn("Could not fetch enrollments count:", e);
+    }
+
+    const isUnadmitted =
+      enrollmentsCount === 0 ||
+      student?.admission_status === "unadmitted" ||
+      student?.admission_status === "pending" ||
+      student?.status === "unadmitted" ||
+      student?.status === "pending";
+
+    return NextResponse.json({
+      id: student.id,
+      name: student.name,
+      photo_url: student.photo_url || null,
+      student_id: student.student_id,
+      status: student.status,
+      admission_status: student.admission_status,
+      is_unadmitted: isUnadmitted,
+      enrollments_count: enrollmentsCount,
+    });
   } catch (error) {
     console.error("Profile API Error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -50,7 +87,7 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json();
-    const { name, full_name, phone, gender, bio } = body;
+    const { name, full_name, phone, gender, bio, dob, email, interests, photo_url, course, education, qualification } = body;
 
     const updateData: Record<string, any> = {};
     const updatedName = name ?? full_name;
@@ -66,19 +103,29 @@ export async function PATCH(request: Request) {
     if (bio !== undefined) {
       updateData.bio = bio;
     }
-
-    const supabase = createPublicSupabaseClient();
-    const { data: updatedStudent, error } = await supabase
-      .from("students")
-      .update(updateData)
-      .eq("id", payload.id)
-      .select()
-      .single();
-
-    if (error) {
-      console.error("Profile update error:", error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    if (dob !== undefined) {
+      updateData.dob = dob;
     }
+    if (email !== undefined) {
+      updateData.email = email;
+    }
+    if (interests !== undefined) {
+      updateData.interests = interests;
+    }
+    if (photo_url !== undefined) {
+      updateData.photo_url = photo_url;
+    }
+    if (course !== undefined) {
+      updateData.course = course;
+    }
+    if (education !== undefined) {
+      updateData.education = education;
+    }
+    if (qualification !== undefined) {
+      updateData.qualification = qualification;
+    }
+
+    const updatedStudent = await updateStudentProfile(payload.id, updateData);
 
     return NextResponse.json({ 
       profile: updatedStudent,

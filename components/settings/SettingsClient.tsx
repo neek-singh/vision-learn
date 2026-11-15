@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { saveOfflineData, OFFLINE_KEYS } from "@/lib/offline-store";
 import { 
   Home, 
   ChevronRight, 
-  Settings as SettingsIcon, 
   User, 
   UserCheck,
   Camera, 
@@ -16,19 +16,17 @@ import {
   X, 
   ShieldCheck, 
   CheckCircle2, 
-  Zap, 
   Lock, 
   Download, 
   Check, 
   AlertCircle,
-  Share2,
-  Bell,
-  Globe,
-  SlidersHorizontal,
+  Bell, 
+  Globe, 
+  SlidersHorizontal, 
   KeyRound,
-  ExternalLink,
-  Shield,
-  Smartphone
+  Phone,
+  Mail,
+  GraduationCap
 } from "lucide-react";
 
 const settingsNavItems = [
@@ -50,25 +48,64 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
   // Active Tab state
   const [activeTab, setActiveTab] = useState<string>("profile");
 
-  // Form states with fallback to reference data
-  const [name, setName] = useState(student?.name || "Neeraj Singh");
-  const studentId = student?.student_id || "VIT2026STD001";
-  const email = student?.email || "neerajsingh@example.com";
-  const [phone, setPhone] = useState(student?.phone || "Not Added");
+  const isUnadmitted = Boolean(
+    student?.is_unadmitted ||
+    student?.admission_status === "unadmitted" ||
+    student?.admission_status === "pending" ||
+    student?.status === "unadmitted" ||
+    student?.status === "pending" ||
+    enrollments.length === 0
+  );
+
+  const formatForDateInput = (val?: string | null): string => {
+    if (!val) return "";
+    try {
+      const parsed = new Date(val);
+      if (!isNaN(parsed.getTime())) {
+        const year = parsed.getFullYear();
+        const month = String(parsed.getMonth() + 1).padStart(2, "0");
+        const day = String(parsed.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      }
+    } catch {}
+    return "";
+  };
+
+  // Form states with actual student data
+  const [name, setName] = useState(student?.name || "");
+  const studentId = student?.student_id || "";
+  const [email, setEmail] = useState(student?.email || "");
+  const [phone, setPhone] = useState(student?.phone || "");
   const [isEditingPhone, setIsEditingPhone] = useState(false);
-  const [dob, setDob] = useState(student?.dob ? new Date(student.dob).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "15 Jan 2008");
-  const [gender, setGender] = useState(student?.gender ? (student.gender.charAt(0).toUpperCase() + student.gender.slice(1)) : "Male");
-  const [courseName, setCourseName] = useState(student?.course || course?.title || "Web Development");
-  const [batch, setBatch] = useState(student?.batch || enrollments[0]?.batch || "WD-2026-A");
-  
+  const [dob, setDob] = useState(formatForDateInput(student?.dob));
+  const dateInputRef = React.useRef<HTMLInputElement>(null);
+  const [gender, setGender] = useState(
+    student?.gender
+      ? (student.gender.charAt(0).toUpperCase() + student.gender.slice(1).toLowerCase())
+      : "Not Specified"
+  );
+
+  const resolveInitialClass = () => {
+    const val = student?.education || student?.qualification || student?.course || "";
+    if (val === "College Student") return "Graduation / UG";
+    if (val === "Working Professional") return "Professional";
+    return val;
+  };
+
+  const [studentClass, setStudentClass] = useState(resolveInitialClass());
+  const [batch] = useState(
+    student?.batch || enrollments[0]?.batch || ""
+  );
+
   // Bio & Interests state
-  const [bio, setBio] = useState(student?.bio || "Passionate about web development and technology. Exploring new skills and building real projects.");
-  const [interests, setInterests] = useState<string[]>([
-    "Web Development", 
-    "UI/UX Design", 
-    "JavaScript", 
-    "AI Tools"
-  ]);
+  const [bio, setBio] = useState(student?.bio || "");
+  const [interests, setInterests] = useState<string[]>(
+    student?.interests && Array.isArray(student.interests) && student.interests.length > 0
+      ? student.interests
+      : student?.category
+      ? [student.category]
+      : ["Computer Basics", "AI"]
+  );
   const [newInterestInput, setNewInterestInput] = useState("");
   const [showInterestInput, setShowInterestInput] = useState(false);
 
@@ -78,19 +115,98 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
   const [contentNotifications, setContentNotifications] = useState(true);
   const [emailUpdates, setEmailUpdates] = useState(true);
 
+  const applyTheme = (t: string) => {
+    if (typeof window === "undefined") return;
+    if (t === "Dark") {
+      document.documentElement.classList.add("dark");
+    } else if (t === "Light") {
+      document.documentElement.classList.remove("dark");
+    } else {
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      if (prefersDark) {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+    }
+  };
+
+  // Load preferences from localStorage if available
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedLang = localStorage.getItem("vision_pref_lang");
+      if (savedLang) setLanguage(savedLang);
+      const savedTheme = localStorage.getItem("vision_pref_theme");
+      if (savedTheme) {
+        setTheme(savedTheme);
+        applyTheme(savedTheme);
+      }
+      const savedContentNotif = localStorage.getItem("vision_pref_content_notif");
+      if (savedContentNotif !== null) setContentNotifications(savedContentNotif === "true");
+      const savedEmailUpdates = localStorage.getItem("vision_pref_email_updates");
+      if (savedEmailUpdates !== null) setEmailUpdates(savedEmailUpdates === "true");
+    }
+  }, []);
+
+  const handleLanguageChange = (newLang: string) => {
+    setLanguage(newLang);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("vision_pref_lang", newLang);
+    }
+    setToastMessage(`Language set to ${newLang}`);
+    setSaveSuccess(true);
+    setTimeout(() => setSaveSuccess(false), 2500);
+  };
+
+  const handleThemeChange = (newTheme: string) => {
+    setTheme(newTheme);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("vision_pref_theme", newTheme);
+      applyTheme(newTheme);
+    }
+    setToastMessage(`Theme switched to ${newTheme}`);
+    setSaveSuccess(true);
+    setTimeout(() => setSaveSuccess(false), 2500);
+  };
+
+  const handleToggleContentNotif = () => {
+    const next = !contentNotifications;
+    setContentNotifications(next);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("vision_pref_content_notif", String(next));
+    }
+    setToastMessage(`Content notifications ${next ? "enabled" : "disabled"}`);
+    setSaveSuccess(true);
+    setTimeout(() => setSaveSuccess(false), 2500);
+  };
+
+  const handleToggleEmailUpdates = () => {
+    const next = !emailUpdates;
+    setEmailUpdates(next);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("vision_pref_email_updates", String(next));
+    }
+    setToastMessage(`Email updates ${next ? "enabled" : "disabled"}`);
+    setSaveSuccess(true);
+    setTimeout(() => setSaveSuccess(false), 2500);
+  };
+
   // Save changes toast state
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [toastMessage, setToastMessage] = useState("Settings updated successfully!");
   const [isSaving, setIsSaving] = useState(false);
 
-  // Modal States
+  // Password Modal State
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordState, setPasswordState] = useState({ current: "", newPass: "", confirm: "" });
   const [passwordSuccess, setPasswordSuccess] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
   // Avatar Photo handling
   const [avatarPreview, setAvatarPreview] = useState<string | null>(student?.photo_url || null);
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 2 * 1024 * 1024) {
@@ -98,8 +214,27 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
         return;
       }
       const reader = new FileReader();
-      reader.onload = (event) => {
-        setAvatarPreview(event.target?.result as string);
+      reader.onload = async (event) => {
+        const base64 = event.target?.result as string;
+        setAvatarPreview(base64);
+        try {
+          const res = await fetch("/api/auth/profile", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ photo_url: base64 })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.student) {
+              saveOfflineData(OFFLINE_KEYS.PROFILE, data.student);
+            }
+            setToastMessage("Profile photo updated!");
+            setSaveSuccess(true);
+            setTimeout(() => setSaveSuccess(false), 2500);
+          }
+        } catch (err) {
+          console.warn("Avatar upload error:", err);
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -122,24 +257,80 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
   const handleSaveChanges = async () => {
     setIsSaving(true);
     try {
-      await fetch("/api/auth/profile", {
+      const res = await fetch("/api/auth/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name,
-          phone: phone === "Not Added" ? null : phone,
-          gender,
-          bio
+          name: name.trim(),
+          email: email.trim() || null,
+          phone: phone.trim() || null,
+          gender: gender === "Not Specified" ? null : gender,
+          dob: dob.trim() || null,
+          bio: bio.trim() || null,
+          interests,
+          course: studentClass || null,
+          education: studentClass || null,
+          qualification: studentClass || null
         })
-      }).catch(() => {});
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.student) {
+          saveOfflineData(OFFLINE_KEYS.PROFILE, data.student);
+        }
+        setToastMessage("Profile settings saved successfully!");
+        setSaveSuccess(true);
+        setIsEditingPhone(false);
+        setTimeout(() => setSaveSuccess(false), 3000);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || "Failed to save profile");
+      }
     } catch (e) {
-      // offline/fallback
-    }
-    setTimeout(() => {
+      console.error("Save profile error:", e);
+    } finally {
       setIsSaving(false);
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
-    }, 600);
+    }
+  };
+
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError("");
+
+    if (passwordState.newPass !== passwordState.confirm) {
+      setPasswordError("New passwords do not match");
+      return;
+    }
+
+    if (passwordState.newPass.length < 6) {
+      setPasswordError("Password must be at least 6 characters");
+      return;
+    }
+
+    setIsUpdatingPassword(true);
+    try {
+      const res = await fetch("/api/auth/profile/password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          currentPassword: passwordState.current,
+          newPassword: passwordState.newPass
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setPasswordError(data.error || "Failed to update password");
+        return;
+      }
+
+      setPasswordSuccess(true);
+      setPasswordState({ current: "", newPass: "", confirm: "" });
+    } catch (err) {
+      setPasswordError("Network error. Please try again.");
+    } finally {
+      setIsUpdatingPassword(false);
+    }
   };
 
   const handleDownloadData = () => {
@@ -147,20 +338,20 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
       profile: {
         name,
         studentId,
-        email,
-        phone,
-        dob,
+        email: email || "Not Provided",
+        phone: phone || "Not Provided",
+        dob: dob || "Not Provided",
         gender,
-        course: courseName,
+        course: studentClass || "Not Selected",
+        class: studentClass || "Not Selected",
         batch,
-        bio,
+        bio: bio || "None",
         interests
       },
       accountStatus: {
-        emailVerified: true,
-        profileComplete: true,
-        enrolledCoursesCount: enrollments.length || 3,
-        activeStanding: true
+        isAdmitted: !isUnadmitted,
+        enrolledCoursesCount: enrollments.length,
+        status: student?.status || "Active"
       },
       preferences: {
         language,
@@ -174,15 +365,15 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `vision_learn_profile_${studentId}.json`;
+    a.download = `vision_learn_profile_${studentId || "student"}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
-  // Student initials
-  const initials = student?.name 
-    ? student.name.split(" ").map((n: string) => n[0]).join("").substring(0, 2).toUpperCase()
-    : "NS";
+  // Student initials calculation
+  const initials = name
+    ? name.trim().split(/\s+/).map((n: string) => n[0]).join("").substring(0, 2).toUpperCase()
+    : "ST";
 
   return (
     <div className="space-y-3.5 sm:space-y-4 animate-in fade-in duration-300 pb-16">
@@ -200,13 +391,13 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
       {saveSuccess && (
         <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-xl flex items-center gap-2 text-xs font-semibold animate-in fade-in slide-in-from-top-2 duration-200">
           <Check size={16} className="text-emerald-600 shrink-0" />
-          <span>Profile settings saved successfully!</span>
+          <span>{toastMessage}</span>
         </div>
       )}
 
-      {/* Settings Layout: Sub-Navigation Menu + Content Area */}
+      {/* Settings Layout */}
       <div className="flex flex-col lg:flex-row gap-3.5 sm:gap-5 items-start">
-        {/* Sub-Navigation: Sticky responsive horizontal bar on mobile, sidebar on desktop */}
+        {/* Navigation Menu */}
         <aside className="w-full lg:w-56 shrink-0 bg-white rounded-2xl border border-slate-200/80 p-1.5 sm:p-2.5 shadow-2xs flex flex-row overflow-x-auto scrollbar-hide lg:flex-col gap-1 sm:gap-1.5 sticky top-2 z-10 lg:static">
           {settingsNavItems.map((item) => {
             const isActive = activeTab === item.id;
@@ -216,7 +407,7 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
                 key={item.id}
                 type="button"
                 onClick={() => setActiveTab(item.id)}
-                className={`min-h-[38px] px-3 py-1.5 lg:py-2.5 lg:px-3.5 rounded-xl font-semibold text-xs sm:text-sm transition-all duration-150 text-left shrink-0 whitespace-nowrap lg:w-full flex items-center gap-2 touch-manipulation active:scale-95 ${
+                className={`min-h-[38px] px-3 py-1.5 lg:py-2.5 lg:px-3.5 rounded-xl font-semibold text-xs sm:text-sm transition-all duration-150 text-left shrink-0 whitespace-nowrap lg:w-full flex items-center gap-2 touch-manipulation active:scale-95 cursor-pointer ${
                   isActive
                     ? "bg-blue-50 text-blue-700 border border-blue-200/60 font-bold shadow-2xs"
                     : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent"
@@ -234,7 +425,6 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
           {/* TAB 1: PROFILE */}
           {activeTab === "profile" && (
             <div className="space-y-4 sm:space-y-5 animate-in fade-in duration-200">
-              {/* Card 1: Profile Information */}
               <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-6 shadow-2xs space-y-4 sm:space-y-5">
                 {/* Header */}
                 <div className="flex items-start gap-3">
@@ -290,7 +480,7 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
                   </div>
                 </div>
 
-                {/* Form Fields: Responsive grid with touch-friendly 42px controls */}
+                {/* Form Fields */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4 pt-1">
                   {/* Full Name */}
                   <div className="space-y-1 sm:space-y-1.5">
@@ -315,11 +505,11 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
                       type="text" 
                       value={studentId} 
                       disabled
-                      className="w-full min-h-[42px] px-3.5 py-2 sm:py-2.5 rounded-xl border border-slate-200 bg-slate-100 text-xs font-medium text-slate-500 cursor-not-allowed select-none"
+                      className="w-full min-h-[42px] px-3.5 py-2 sm:py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-medium text-slate-600 cursor-not-allowed select-none font-mono"
                     />
                   </div>
 
-                  {/* Email Address (Readonly) */}
+                  {/* Email Address */}
                   <div className="space-y-1 sm:space-y-1.5">
                     <label className="text-xs font-semibold text-slate-700 block">
                       Email Address
@@ -327,12 +517,13 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
                     <input 
                       type="email" 
                       value={email} 
-                      disabled
-                      className="w-full min-h-[42px] px-3.5 py-2 sm:py-2.5 rounded-xl border border-slate-200 bg-slate-100 text-xs font-medium text-slate-500 cursor-not-allowed select-none"
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full min-h-[42px] px-3.5 py-2 sm:py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all touch-manipulation"
+                      placeholder="Enter email address"
                     />
                   </div>
 
-                  {/* Phone Number with Add/Edit button */}
+                  {/* Phone Number */}
                   <div className="space-y-1 sm:space-y-1.5">
                     <label className="text-xs font-semibold text-slate-700 block">
                       Phone Number
@@ -342,19 +533,16 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
                         type="text" 
                         value={phone} 
                         onChange={(e) => setPhone(e.target.value)}
-                        disabled={!isEditingPhone && phone !== "Not Added"}
+                        disabled={!isEditingPhone && Boolean(phone)}
                         className="w-full min-h-[42px] px-3.5 py-2 sm:py-2.5 pr-16 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all disabled:bg-slate-50 disabled:text-slate-600 touch-manipulation"
-                        placeholder="Enter phone number"
+                        placeholder="Enter 10-digit mobile number"
                       />
                       <button
                         type="button"
-                        onClick={() => {
-                          if (phone === "Not Added") setPhone("");
-                          setIsEditingPhone(!isEditingPhone);
-                        }}
-                        className="absolute right-1.5 min-h-[32px] px-2.5 py-1 text-xs font-semibold text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-blue-200/80 touch-manipulation flex items-center justify-center"
+                        onClick={() => setIsEditingPhone(!isEditingPhone)}
+                        className="absolute right-1.5 min-h-[32px] px-2.5 py-1 text-xs font-semibold text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-blue-200/80 touch-manipulation flex items-center justify-center cursor-pointer"
                       >
-                        {isEditingPhone ? "Done" : phone === "Not Added" ? "Add" : "Edit"}
+                        {isEditingPhone ? "Done" : !phone ? "Add" : "Edit"}
                       </button>
                     </div>
                   </div>
@@ -366,12 +554,18 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
                     </label>
                     <div className="relative flex items-center">
                       <input 
-                        type="text" 
+                        ref={dateInputRef}
+                        type="date" 
                         value={dob} 
                         onChange={(e) => setDob(e.target.value)}
-                        className="w-full min-h-[42px] px-3.5 py-2 sm:py-2.5 pr-10 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all touch-manipulation"
+                        onClick={() => {
+                          try {
+                            dateInputRef.current?.showPicker();
+                          } catch {}
+                        }}
+                        max={new Date().toISOString().split("T")[0]}
+                        className="w-full min-h-[42px] px-3.5 py-2 sm:py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all touch-manipulation cursor-pointer"
                       />
-                      <CalendarIcon size={15} className="absolute right-3 text-slate-400 pointer-events-none" />
                     </div>
                   </div>
 
@@ -386,6 +580,7 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
                         onChange={(e) => setGender(e.target.value)}
                         className="w-full min-h-[42px] px-3.5 py-2 sm:py-2.5 pr-10 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all appearance-none cursor-pointer touch-manipulation"
                       >
+                        <option value="Not Specified">Not Specified</option>
                         <option value="Male">Male</option>
                         <option value="Female">Female</option>
                         <option value="Other">Other</option>
@@ -394,31 +589,48 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
                     </div>
                   </div>
 
-                  {/* Class / Course */}
-                  <div className="space-y-1 sm:space-y-1.5">
+                  {/* Class */}
+                  <div className={`space-y-1 sm:space-y-1.5 ${!isUnadmitted && batch ? "" : "sm:col-span-2"}`}>
                     <label className="text-xs font-semibold text-slate-700 block">
-                      Class / Course
+                      Class
                     </label>
-                    <input 
-                      type="text" 
-                      value={courseName} 
-                      onChange={(e) => setCourseName(e.target.value)}
-                      className="w-full min-h-[42px] px-3.5 py-2 sm:py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all touch-manipulation"
-                    />
+                    <div className="relative flex items-center">
+                      <select
+                        value={studentClass}
+                        onChange={(e) => setStudentClass(e.target.value)}
+                        className="w-full min-h-[42px] px-3.5 py-2 sm:py-2.5 pr-10 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all appearance-none cursor-pointer touch-manipulation"
+                      >
+                        <option value="">Select Class</option>
+                        <option value="Class 6th">Class 6th</option>
+                        <option value="Class 7th">Class 7th</option>
+                        <option value="Class 8th">Class 8th</option>
+                        <option value="Class 9th">Class 9th</option>
+                        <option value="Class 10th">Class 10th</option>
+                        <option value="Class 11th">Class 11th</option>
+                        <option value="Class 12th">Class 12th</option>
+                        <option value="Graduation / UG">Graduation / UG</option>
+                        <option value="Post Graduation (PG)">Post Graduation (PG)</option>
+                        <option value="Professional">Professional</option>
+                        <option value="Other">Other</option>
+                      </select>
+                      <ChevronDown size={15} className="absolute right-3 text-slate-400 pointer-events-none" />
+                    </div>
                   </div>
 
-                  {/* Batch */}
-                  <div className="space-y-1 sm:space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-700 block">
-                      Batch
-                    </label>
-                    <input 
-                      type="text" 
-                      value={batch} 
-                      onChange={(e) => setBatch(e.target.value)}
-                      className="w-full min-h-[42px] px-3.5 py-2 sm:py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all touch-manipulation"
-                    />
-                  </div>
+                  {/* Batch - only shown when an active batch is allocated */}
+                  {!isUnadmitted && batch && (
+                    <div className="space-y-1 sm:space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-700 block">
+                        Batch
+                      </label>
+                      <input 
+                        type="text" 
+                        value={batch} 
+                        disabled
+                        className="w-full min-h-[42px] px-3.5 py-2 sm:py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-medium text-slate-600 cursor-not-allowed select-none"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Save Changes Button */}
@@ -427,7 +639,7 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
                     type="button"
                     onClick={handleSaveChanges}
                     disabled={isSaving}
-                    className="w-full sm:w-auto px-5 py-2.5 min-h-[44px] bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white rounded-xl text-xs font-bold transition-all shadow-xs active:scale-95 flex items-center justify-center gap-2 touch-manipulation"
+                    className="w-full sm:w-auto px-6 py-2.5 min-h-[42px] bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white rounded-xl text-xs font-bold transition-all shadow-xs active:scale-95 flex items-center justify-center gap-2 touch-manipulation cursor-pointer"
                   >
                     {isSaving ? "Saving..." : "Save Changes"}
                   </button>
@@ -436,7 +648,6 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
 
               {/* Card 2: About You */}
               <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-6 shadow-2xs space-y-4">
-                {/* Header */}
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center shrink-0 mt-0.5">
                     <FileText size={17} />
@@ -446,7 +657,7 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
                       About You
                     </h3>
                     <p className="hidden sm:block text-xs text-slate-500 font-normal mt-1">
-                      Tell us a little bit about yourself.
+                      Add a bio and select your areas of interest.
                     </p>
                   </div>
                 </div>
@@ -479,14 +690,14 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
                     {interests.map((tag) => (
                       <span
                         key={tag}
-                        className="px-3 py-1.5 rounded-xl bg-blue-50/70 border border-blue-200/80 text-blue-700 text-xs font-medium inline-flex items-center gap-1.5 hover:bg-blue-100/70 transition-colors"
+                        className="px-3 py-1.5 rounded-xl bg-blue-50/70 border border-blue-200/80 text-blue-700 text-xs font-medium inline-flex items-center gap-1.5"
                       >
                         <span>{tag}</span>
                         <button
                           type="button"
                           onClick={() => handleRemoveInterest(tag)}
                           aria-label={`Remove interest ${tag}`}
-                          className="min-h-[24px] min-w-[24px] flex items-center justify-center text-blue-500 hover:text-blue-800 cursor-pointer touch-manipulation"
+                          className="min-h-[20px] min-w-[20px] flex items-center justify-center text-blue-500 hover:text-blue-800 cursor-pointer touch-manipulation"
                         >
                           <X size={12} className="stroke-[2.5]" />
                         </button>
@@ -505,14 +716,14 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
                         />
                         <button 
                           type="submit" 
-                          className="min-h-[36px] px-3 py-1 bg-blue-600 text-white rounded-xl text-xs font-semibold touch-manipulation"
+                          className="min-h-[36px] px-3 py-1 bg-blue-600 text-white rounded-xl text-xs font-semibold touch-manipulation cursor-pointer"
                         >
                           Add
                         </button>
                         <button 
                           type="button"
                           onClick={() => setShowInterestInput(false)}
-                          className="min-h-[36px] min-w-[36px] flex items-center justify-center p-1 text-slate-400 hover:text-slate-600 touch-manipulation"
+                          className="min-h-[36px] min-w-[36px] flex items-center justify-center p-1 text-slate-400 hover:text-slate-600 touch-manipulation cursor-pointer"
                         >
                           <X size={14} />
                         </button>
@@ -521,7 +732,7 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
                       <button
                         type="button"
                         onClick={() => setShowInterestInput(true)}
-                        className="min-h-[36px] px-3 py-1.5 rounded-xl border border-dashed border-blue-400 text-blue-600 hover:bg-blue-50 text-xs font-semibold inline-flex items-center gap-1 transition-all shadow-2xs active:scale-95 touch-manipulation"
+                        className="min-h-[34px] px-3 py-1.5 rounded-xl border border-dashed border-blue-400 text-blue-600 hover:bg-blue-50 text-xs font-semibold inline-flex items-center gap-1 transition-all shadow-2xs active:scale-95 touch-manipulation cursor-pointer"
                       >
                         <Plus size={13} className="stroke-[2.5]" />
                         <span>Add Interest</span>
@@ -536,7 +747,6 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
           {/* TAB 2: ACCOUNT */}
           {activeTab === "account" && (
             <div className="space-y-4 sm:space-y-5 animate-in fade-in duration-200">
-              {/* Account Status Card */}
               <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-6 shadow-2xs space-y-4">
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center shrink-0 mt-0.5">
@@ -552,22 +762,30 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
                   </div>
                 </div>
 
-                <div className="bg-emerald-50/60 border border-emerald-100 rounded-xl p-3 sm:p-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3.5 sm:p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="flex items-center gap-2">
                     <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
-                    <span className="text-xs font-semibold text-slate-800">Email Verified</span>
+                    <span className="text-xs font-semibold text-slate-800">
+                      Mobile Verified ({phone || studentId})
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
-                    <span className="text-xs font-semibold text-slate-800">Profile Complete</span>
+                    <span className="text-xs font-semibold text-slate-800">
+                      Profile Active
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 size={16} className={isUnadmitted ? "text-amber-500 shrink-0" : "text-emerald-600 shrink-0"} />
+                    <span className="text-xs font-semibold text-slate-800">
+                      {isUnadmitted ? "Admission Pending (0 Enrolled)" : `Enrolled in ${enrollments.length} Course(s)`}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
-                    <span className="text-xs font-semibold text-slate-800">Enrolled in {enrollments.length || 3} Courses</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
-                    <span className="text-xs font-semibold text-slate-800">Active Academic Standing</span>
+                    <span className="text-xs font-semibold text-slate-800">
+                      Account Status: {student?.status || "Active"}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -583,7 +801,7 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
                       Export Learning Data
                     </h3>
                     <p className="hidden sm:block text-xs text-slate-500 font-normal mt-1">
-                      Download a complete JSON archive of your personal learning profile and progress.
+                      Download a JSON archive of your personal learning profile.
                     </p>
                   </div>
                 </div>
@@ -591,7 +809,7 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
                 <button
                   type="button"
                   onClick={handleDownloadData}
-                  className="w-full min-h-[48px] p-3 sm:p-3.5 rounded-xl border border-slate-200/80 hover:bg-slate-50/80 active:bg-slate-100 flex items-center justify-between transition-all touch-manipulation group"
+                  className="w-full min-h-[46px] p-3 sm:p-3.5 rounded-xl border border-slate-200/80 hover:bg-slate-50/80 active:bg-slate-100 flex items-center justify-between transition-all touch-manipulation group cursor-pointer"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
@@ -599,11 +817,10 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
                     </div>
                     <div className="text-left min-w-0">
                       <p className="text-xs font-bold text-slate-800 group-hover:text-blue-600 transition-colors truncate">
-                        Download My Data
+                        Download My Data (JSON)
                       </p>
                       <p className="text-[10px] text-slate-400 truncate">
-                        <span className="hidden sm:inline">Export profile and progress as JSON</span>
-                        <span className="sm:hidden">JSON profile export</span>
+                        Export personal profile and course details
                       </p>
                     </div>
                   </div>
@@ -641,7 +858,7 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
                     <div className="relative flex items-center">
                       <select
                         value={language}
-                        onChange={(e) => setLanguage(e.target.value)}
+                        onChange={(e) => handleLanguageChange(e.target.value)}
                         className="w-full min-h-[42px] px-3.5 py-2 sm:py-2.5 pr-10 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 appearance-none cursor-pointer touch-manipulation"
                       >
                         <option value="English">English</option>
@@ -659,7 +876,7 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
                     <div className="relative flex items-center">
                       <select
                         value={theme}
-                        onChange={(e) => setTheme(e.target.value)}
+                        onChange={(e) => handleThemeChange(e.target.value)}
                         className="w-full min-h-[42px] px-3.5 py-2 sm:py-2.5 pr-10 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 appearance-none cursor-pointer touch-manipulation"
                       >
                         <option value="Light">Light</option>
@@ -673,19 +890,18 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
 
                 {/* Toggles */}
                 <div className="space-y-3.5 pt-3 border-t border-slate-100">
-                  {/* Content Notifications Toggle */}
                   <div className="flex items-center justify-between gap-3 min-h-[44px]">
                     <div className="min-w-0 flex-1">
                       <p className="text-xs font-bold text-slate-800">
                         Content Notifications
                       </p>
                       <p className="hidden sm:block text-[10px] text-slate-400 leading-tight mt-0.5">
-                        Get notified about new lessons, tests and materials
+                        Get notified about new lectures, materials, and batch updates
                       </p>
                     </div>
                     <button
                       type="button"
-                      onClick={() => setContentNotifications(!contentNotifications)}
+                      onClick={handleToggleContentNotif}
                       className={`w-11 h-6 rounded-full relative p-0.5 transition-colors cursor-pointer shrink-0 min-h-[26px] touch-manipulation ${
                         contentNotifications ? "bg-blue-600" : "bg-slate-300"
                       }`}
@@ -699,19 +915,18 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
                     </button>
                   </div>
 
-                  {/* Email Updates Toggle */}
                   <div className="flex items-center justify-between gap-3 min-h-[44px]">
                     <div className="min-w-0 flex-1">
                       <p className="text-xs font-bold text-slate-800">
                         Email Updates
                       </p>
                       <p className="hidden sm:block text-[10px] text-slate-400 leading-tight mt-0.5">
-                        Receive important updates and announcements via email
+                        Receive important announcements and fee notices via email
                       </p>
                     </div>
                     <button
                       type="button"
-                      onClick={() => setEmailUpdates(!emailUpdates)}
+                      onClick={handleToggleEmailUpdates}
                       className={`w-11 h-6 rounded-full relative p-0.5 transition-colors cursor-pointer shrink-0 min-h-[26px] touch-manipulation ${
                         emailUpdates ? "bg-blue-600" : "bg-slate-300"
                       }`}
@@ -734,7 +949,7 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
             <div className="space-y-4 sm:space-y-5 animate-in fade-in duration-200">
               <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-6 shadow-2xs space-y-4">
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center shrink-0 mt-0.5">
+                  <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center shrink-0 mt-0.5">
                     <Bell size={17} />
                   </div>
                   <div>
@@ -759,9 +974,9 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
                     </div>
                     <button
                       type="button"
-                      onClick={() => setContentNotifications(!contentNotifications)}
+                      onClick={handleToggleContentNotif}
                       className={`w-11 h-6 rounded-full relative p-0.5 transition-colors cursor-pointer shrink-0 min-h-[26px] touch-manipulation ${
-                        contentNotifications ? "bg-indigo-600" : "bg-slate-300"
+                        contentNotifications ? "bg-blue-600" : "bg-slate-300"
                       }`}
                       aria-label="Toggle in-app alerts"
                     >
@@ -779,14 +994,14 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
                         Email Digests
                       </p>
                       <p className="hidden sm:block text-[10px] text-slate-400 leading-tight mt-0.5">
-                        Important administrative announcements and weekly digests
+                        Weekly summary and administrative announcements
                       </p>
                     </div>
                     <button
                       type="button"
-                      onClick={() => setEmailUpdates(!emailUpdates)}
+                      onClick={handleToggleEmailUpdates}
                       className={`w-11 h-6 rounded-full relative p-0.5 transition-colors cursor-pointer shrink-0 min-h-[26px] touch-manipulation ${
-                        emailUpdates ? "bg-indigo-600" : "bg-slate-300"
+                        emailUpdates ? "bg-blue-600" : "bg-slate-300"
                       }`}
                       aria-label="Toggle email digests"
                     >
@@ -799,26 +1014,25 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
                   </div>
                 </div>
 
-                {/* Direct shortcut to Notifications Inbox */}
                 <div className="pt-3 border-t border-slate-100">
                   <Link
                     href="/notifications"
-                    className="w-full min-h-[48px] p-3 sm:p-3.5 rounded-xl bg-indigo-50/70 border border-indigo-200/70 hover:bg-indigo-100/70 active:scale-[0.99] flex items-center justify-between text-indigo-900 transition-all touch-manipulation"
+                    className="w-full min-h-[46px] p-3 rounded-xl bg-blue-50/70 border border-blue-200/70 hover:bg-blue-100/70 flex items-center justify-between text-blue-900 transition-all touch-manipulation"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center shrink-0">
+                      <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0">
                         <Bell size={15} />
                       </div>
                       <div className="text-left min-w-0">
-                        <p className="text-xs font-bold text-indigo-950 truncate">
+                        <p className="text-xs font-bold text-blue-950 truncate">
                           Open Notification Inbox
                         </p>
-                        <p className="text-[10px] text-indigo-700/80 truncate">
-                          View all official messages and system updates
+                        <p className="text-[10px] text-blue-700/80 truncate">
+                          View all official messages and updates
                         </p>
                       </div>
                     </div>
-                    <ChevronRight size={15} className="text-indigo-600 shrink-0" />
+                    <ChevronRight size={15} className="text-blue-600 shrink-0" />
                   </Link>
                 </div>
               </div>
@@ -844,11 +1058,14 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
                 </div>
 
                 <div className="space-y-2 pt-1">
-                  {/* Change Password Button */}
                   <button
                     type="button"
-                    onClick={() => setShowPasswordModal(true)}
-                    className="w-full min-h-[48px] p-3 sm:p-3.5 rounded-xl border border-slate-200/80 hover:bg-slate-50/80 active:bg-slate-100 flex items-center justify-between transition-all touch-manipulation group"
+                    onClick={() => {
+                      setPasswordError("");
+                      setPasswordSuccess(false);
+                      setShowPasswordModal(true);
+                    }}
+                    className="w-full min-h-[46px] p-3 sm:p-3.5 rounded-xl border border-slate-200/80 hover:bg-slate-50/80 active:bg-slate-100 flex items-center justify-between transition-all touch-manipulation group cursor-pointer"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
@@ -859,8 +1076,7 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
                           Change Password
                         </p>
                         <p className="text-[10px] text-slate-400 truncate">
-                          <span className="hidden sm:inline">Update your student account password</span>
-                          <span className="sm:hidden">Update password</span>
+                          Update your student account login password
                         </p>
                       </div>
                     </div>
@@ -868,9 +1084,8 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
                   </button>
                 </div>
 
-                {/* Security Standing Guardrails */}
                 <div className="bg-slate-50 rounded-xl p-3 sm:p-4 space-y-2 border border-slate-200/60 mt-3">
-                  <h4 className="text-xs font-bold text-slate-800">Active Security Safeguards</h4>
+                  <h4 className="text-xs font-bold text-slate-800">Security Safeguards</h4>
                   <div className="space-y-1.5 text-xs text-slate-600">
                     <div className="flex items-center gap-2">
                       <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />
@@ -878,7 +1093,7 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
                     </div>
                     <div className="flex items-center gap-2">
                       <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />
-                      <span>Sandboxed Student Data Isolation</span>
+                      <span>Protected Student Data Isolation</span>
                     </div>
                   </div>
                 </div>
@@ -896,10 +1111,10 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
                   </div>
                   <div>
                     <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-none">
-                      Connected Accounts
+                      Connected Accounts & Identity
                     </h3>
                     <p className="hidden sm:block text-xs text-slate-500 font-normal mt-1">
-                      Identity providers and services linked to your learning profile.
+                      Identity and verified credentials linked to your learning profile.
                     </p>
                   </div>
                 </div>
@@ -907,8 +1122,8 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
                 <div className="divide-y divide-slate-100">
                   <div className="py-3 flex items-center justify-between gap-3 min-h-[48px]">
                     <div className="min-w-0">
-                      <p className="text-xs font-bold text-slate-800">Vision Student Identity</p>
-                      <p className="text-[10px] text-slate-400 truncate">{studentId}</p>
+                      <p className="text-xs font-bold text-slate-800">Vision Student ID</p>
+                      <p className="text-xs text-slate-500 font-mono">{studentId}</p>
                     </div>
                     <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/60 shrink-0">
                       Primary
@@ -917,11 +1132,21 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
 
                   <div className="py-3 flex items-center justify-between gap-3 min-h-[48px]">
                     <div className="min-w-0">
-                      <p className="text-xs font-bold text-slate-800">Google SSO</p>
-                      <p className="text-[10px] text-slate-400 truncate">{email}</p>
+                      <p className="text-xs font-bold text-slate-800">Mobile Number</p>
+                      <p className="text-xs text-slate-500">{phone || "Not Added"}</p>
                     </div>
                     <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200/60 shrink-0">
-                      Linked
+                      {phone ? "Verified" : "Pending"}
+                    </span>
+                  </div>
+
+                  <div className="py-3 flex items-center justify-between gap-3 min-h-[48px]">
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-slate-800">Email Address</p>
+                      <p className="text-xs text-slate-500">{email || "Not Provided"}</p>
+                    </div>
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 shrink-0">
+                      {email ? "Linked" : "Optional"}
                     </span>
                   </div>
                 </div>
@@ -931,7 +1156,7 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
         </div>
       </div>
 
-      {/* MODAL 1: Change Password Modal */}
+      {/* MODAL: Change Password Modal */}
       {showPasswordModal && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-md w-full p-4 sm:p-6 space-y-4 animate-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto">
@@ -943,8 +1168,8 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
                 <h3 className="text-sm font-bold text-slate-900">Change Password</h3>
               </div>
               <button 
-                onClick={() => { setShowPasswordModal(false); setPasswordSuccess(false); }}
-                className="min-h-[36px] min-w-[36px] flex items-center justify-center text-slate-400 hover:text-slate-600 p-1 rounded-lg touch-manipulation"
+                onClick={() => { setShowPasswordModal(false); setPasswordSuccess(false); setPasswordError(""); }}
+                className="min-h-[36px] min-w-[36px] flex items-center justify-center text-slate-400 hover:text-slate-600 p-1 rounded-lg touch-manipulation cursor-pointer"
                 aria-label="Close modal"
               >
                 <X size={18} />
@@ -960,23 +1185,20 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
                 <p className="text-xs text-slate-500">Your account password has been changed successfully.</p>
                 <button
                   onClick={() => { setShowPasswordModal(false); setPasswordSuccess(false); }}
-                  className="mt-3 min-h-[42px] px-5 py-2 bg-blue-600 text-white rounded-xl text-xs font-semibold touch-manipulation"
+                  className="mt-3 min-h-[40px] px-5 py-2 bg-blue-600 text-white rounded-xl text-xs font-semibold touch-manipulation cursor-pointer"
                 >
                   Close
                 </button>
               </div>
             ) : (
-              <form 
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (passwordState.newPass !== passwordState.confirm) {
-                    alert("New passwords do not match!");
-                    return;
-                  }
-                  setPasswordSuccess(true);
-                }} 
-                className="space-y-3"
-              >
+              <form onSubmit={handlePasswordSubmit} className="space-y-3">
+                {passwordError && (
+                  <div className="bg-rose-50 border border-rose-200 text-rose-700 px-3 py-2 rounded-xl text-xs flex items-center gap-2 font-medium">
+                    <AlertCircle size={15} className="shrink-0" />
+                    <span>{passwordError}</span>
+                  </div>
+                )}
+
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-slate-700">Current Password</label>
                   <input 
@@ -985,7 +1207,7 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
                     value={passwordState.current}
                     onChange={(e) => setPasswordState(prev => ({ ...prev, current: e.target.value }))}
                     className="w-full min-h-[42px] px-3.5 py-2 sm:py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none touch-manipulation"
-                    placeholder="••••••••"
+                    placeholder="Enter current password"
                   />
                 </div>
                 <div className="space-y-1">
@@ -996,7 +1218,7 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
                     value={passwordState.newPass}
                     onChange={(e) => setPasswordState(prev => ({ ...prev, newPass: e.target.value }))}
                     className="w-full min-h-[42px] px-3.5 py-2 sm:py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none touch-manipulation"
-                    placeholder="••••••••"
+                    placeholder="At least 6 characters"
                   />
                 </div>
                 <div className="space-y-1">
@@ -1007,7 +1229,7 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
                     value={passwordState.confirm}
                     onChange={(e) => setPasswordState(prev => ({ ...prev, confirm: e.target.value }))}
                     className="w-full min-h-[42px] px-3.5 py-2 sm:py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none touch-manipulation"
-                    placeholder="••••••••"
+                    placeholder="Repeat new password"
                   />
                 </div>
 
@@ -1015,15 +1237,16 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
                   <button
                     type="button"
                     onClick={() => setShowPasswordModal(false)}
-                    className="min-h-[42px] px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-semibold hover:bg-slate-50 touch-manipulation"
+                    className="min-h-[40px] px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-semibold hover:bg-slate-50 touch-manipulation cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="min-h-[42px] px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold transition-all shadow-xs touch-manipulation"
+                    disabled={isUpdatingPassword}
+                    className="min-h-[40px] px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white rounded-xl text-xs font-semibold transition-all shadow-xs touch-manipulation cursor-pointer"
                   >
-                    Update Password
+                    {isUpdatingPassword ? "Updating..." : "Update Password"}
                   </button>
                 </div>
               </form>

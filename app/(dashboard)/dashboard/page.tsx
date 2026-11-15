@@ -2,7 +2,9 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { verifyToken } from "@/lib/auth-custom";
 import { createPublicSupabaseClient } from "@/lib/supabase-server";
+import { getStudentById } from "@/lib/students-store";
 import DashboardClient from "@/components/dashboard/DashboardClient";
+import { UnadmittedDashboard } from "@/components/dashboard/UnadmittedDashboard";
 
 export default async function DashboardPage() {
   const cookieStore = await cookies();
@@ -36,8 +38,34 @@ export default async function DashboardPage() {
     supabase.from("lms_modules").select(`id, course_id, title, order_index, batches, lessons (id, title, order_index, type, lesson_type, batches)`).order("order_index")
   ]);
 
-  const student = studentRes.data;
+  let student = studentRes.data;
+  if (!student) {
+    student = await getStudentById(userId);
+  }
+
   const enrollments = enrollmentsRes.data || [];
+
+  const isUnadmitted =
+    enrollments.length === 0 ||
+    student?.admission_status === "unadmitted" ||
+    student?.admission_status === "pending" ||
+    student?.status === "unadmitted" ||
+    student?.status === "pending";
+
+  if (isUnadmitted) {
+    const { data: coursesData } = await supabase
+      .from("courses")
+      .select("id, course_code, title, duration, category, course_level, curriculum, skills_developed, description")
+      .order("title");
+
+    return (
+      <UnadmittedDashboard
+        student={student || { student_id: payload.student_id, name: payload.name }}
+        courses={coursesData || []}
+      />
+    );
+  }
+
   const progressRecords = progressRes.data || [];
   const notifications = notificationsRes.data || [];
   const attendanceRows = attendanceRes.data || [];

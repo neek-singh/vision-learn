@@ -168,6 +168,33 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const supabase = createClient();
   const { permission, requestPermission } = usePushNotifications(student?.id);
 
+  const isUnadmitted = Boolean(
+    student?.is_unadmitted ||
+    student?.admission_status === "unadmitted" ||
+    student?.admission_status === "pending" ||
+    student?.status === "unadmitted" ||
+    student?.status === "pending" ||
+    (student?.enrollments_count !== undefined && student?.enrollments_count === 0)
+  );
+
+  const displayedLinks = isUnadmitted
+    ? [
+        { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+        { name: "Courses", href: "/courses", icon: BookOpen },
+        { name: "Profile", href: "/settings", icon: User },
+      ]
+    : sidebarLinks;
+
+  // Protect enrolled-only routes from unadmitted users
+  useEffect(() => {
+    if (isUnadmitted) {
+      const restrictedRoutes = ["/calendar", "/attendance", "/certificates", "/fees", "/tests"];
+      if (restrictedRoutes.some((route) => pathname.startsWith(route))) {
+        router.replace("/dashboard");
+      }
+    }
+  }, [isUnadmitted, pathname, router]);
+
   const onLogoutClick = async (e: React.MouseEvent | React.FormEvent) => {
     e.preventDefault();
     if (isLoggingOut) return;
@@ -429,7 +456,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         <nav className="flex-1 px-3 py-2 space-y-1">
-          {sidebarLinks.map((link) => {
+          {displayedLinks.map((link) => {
             const isClasses = link.name === "My Classes";
             return (
               <div key={link.href}>
@@ -501,7 +528,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </button>
         </div>
         <nav className="px-4 space-y-2 flex-1 overflow-y-auto custom-scrollbar pb-4">
-          {sidebarLinks.map((link) => {
+          {displayedLinks.map((link) => {
             const isClasses = link.name === "My Classes";
             return (
               <div key={link.href}>
@@ -598,11 +625,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Mobile Bottom Navigation */}
         {!isMobileMenuOpen && (
           <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200/80 px-2 py-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] z-50 flex items-center justify-around shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.06)] animate-in slide-in-from-bottom duration-300">
-            <MobileBottomLink href="/dashboard" icon={LayoutDashboard} name="Home" isActive={pathname === '/dashboard'} />
-            <MobileBottomLink href="/courses" icon={BookOpen} name="Courses" isActive={pathname === '/courses'} />
-            <MobileBottomLink href="/calendar" icon={Calendar} name="Calendar" isActive={pathname === '/calendar'} />
-            <MobileBottomLink href="/attendance" icon={CheckCircle2} name="Attendance" isActive={pathname === '/attendance'} />
-            <MobileBottomLink href="/tests" icon={FileText} name="Tests" isActive={pathname === '/tests'} />
+            {isUnadmitted ? (
+              <>
+                <MobileBottomLink href="/dashboard" icon={LayoutDashboard} name="Home" isActive={pathname === '/dashboard'} />
+                <MobileBottomLink href="/courses" icon={BookOpen} name="Courses" isActive={pathname === '/courses'} />
+                <MobileBottomLink href="/settings" icon={User} name="Profile" isActive={pathname === '/settings'} />
+              </>
+            ) : (
+              <>
+                <MobileBottomLink href="/dashboard" icon={LayoutDashboard} name="Home" isActive={pathname === '/dashboard'} />
+                <MobileBottomLink href="/courses" icon={BookOpen} name="Courses" isActive={pathname === '/courses'} />
+                <MobileBottomLink href="/calendar" icon={Calendar} name="Calendar" isActive={pathname === '/calendar'} />
+                <MobileBottomLink href="/attendance" icon={CheckCircle2} name="Attendance" isActive={pathname === '/attendance'} />
+                <MobileBottomLink href="/tests" icon={FileText} name="Tests" isActive={pathname === '/tests'} />
+              </>
+            )}
           </nav>
         )}
       </div>

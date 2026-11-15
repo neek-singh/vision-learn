@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ShieldCheck, AlertCircle, Loader2, User, Lock, Eye, EyeOff } from "lucide-react";
+import Link from "next/link";
+import { ShieldCheck, AlertCircle, Loader2, User, Lock, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import Image from "next/image";
 import { clearAllOfflineData } from "@/lib/offline-store";
 
@@ -13,6 +14,16 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const prefillId = params.get("studentId");
+      if (prefillId) {
+        setStudentId(prefillId);
+      }
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,6 +67,18 @@ export default function LoginPage() {
       
       <div className="relative w-full max-w-sm">
         <div className="bg-white p-6 md:p-8 rounded-[2rem] shadow-2xl shadow-indigo-100/50 border border-slate-100 z-10">
+          {/* Back Action */}
+          <div className="mb-3 -mt-1">
+            <button
+              type="button"
+              onClick={() => router.push("/")}
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-indigo-600 -ml-1 py-1 px-2 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer touch-manipulation"
+            >
+              <ArrowLeft size={16} />
+              <span>Back</span>
+            </button>
+          </div>
+
           <div className="mb-8 text-center flex flex-col items-center">
             <div className="w-16 h-16 relative flex items-center justify-center mb-4">
               <Image 
@@ -88,7 +111,7 @@ export default function LoginPage() {
                 <input
                   type="text"
                   required
-                  placeholder="VIT-2026..."
+                  placeholder="VIT001"
                   value={studentId}
                   onChange={(e) => setStudentId(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border-2 border-transparent focus:border-indigo-600 focus:bg-white outline-none transition-all font-bold text-sm text-slate-700"
@@ -123,7 +146,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3.5 mt-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-base transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed shadow-lg shadow-indigo-100 flex items-center justify-center gap-2"
+              className="w-full py-3.5 mt-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-base transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed shadow-lg shadow-indigo-100 flex items-center justify-center gap-2 cursor-pointer"
             >
               {isLoading ? (
                 <>
@@ -135,6 +158,19 @@ export default function LoginPage() {
               )}
             </button>
           </form>
+
+          {/* Sign Up Link */}
+          <div className="mt-5 text-center">
+            <p className="text-xs text-slate-500 font-medium">
+              Don&apos;t have an account?{" "}
+              <Link
+                href="/?signup=true"
+                className="font-bold text-indigo-600 hover:text-indigo-700 hover:underline"
+              >
+                Sign Up
+              </Link>
+            </p>
+          </div>
 
           <div className="mt-8 text-center">
             <p className="text-slate-400 text-[10px] font-bold tracking-tight">

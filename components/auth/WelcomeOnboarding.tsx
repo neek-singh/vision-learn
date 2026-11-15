@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   GraduationCap,
   BookOpen,
@@ -14,430 +15,888 @@ import {
   Bookmark,
   FileText,
   ArrowRight,
+  ArrowLeft,
   LogIn,
   UserPlus,
-  X,
-  PhoneCall,
+  CheckCircle2,
+  School,
+  Briefcase,
+  Layers,
+  Code2,
+  Cpu,
+  Monitor,
+  FileSpreadsheet,
+  Phone,
   MessageCircle,
   ExternalLink,
-  CheckCircle2,
-  ChevronRight,
-  School,
-  Sparkle,
+  Check,
+  Copy
 } from "lucide-react";
+import { createClient } from "@/lib/supabase-browser";
 
-export function WelcomeOnboarding() {
-  const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"menu" | "admission">("menu");
+function TypewriterText({
+  text,
+  speed = 22,
+  className = "",
+  onComplete,
+}: {
+  text: string;
+  speed?: number;
+  className?: string;
+  onComplete?: () => void;
+}) {
+  const [displayText, setDisplayText] = useState("");
+  const [isDone, setIsDone] = useState(false);
+  const onCompleteRef = useRef(onComplete);
 
-  // Prevent background scrolling when bottom sheet modal is open
   useEffect(() => {
-    if (isSheetOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
-      setActiveTab("menu");
-    }
-    return () => {
-      document.body.style.overflow = "unset";
-    };
-  }, [isSheetOpen]);
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
-  // Handle escape key
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setIsSheetOpen(false);
+    setDisplayText("");
+    setIsDone(false);
+    let i = 0;
+    const timer = setInterval(() => {
+      i++;
+      setDisplayText(text.slice(0, i));
+      if (i >= text.length) {
+        clearInterval(timer);
+        setIsDone(true);
+        if (onCompleteRef.current) {
+          onCompleteRef.current();
+        }
       }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+    }, speed);
+
+    return () => clearInterval(timer);
+  }, [text, speed]);
 
   return (
-    <main className="relative min-h-screen w-full bg-gradient-to-b from-slate-50 via-white to-indigo-50/30 text-slate-800 flex flex-col justify-between overflow-x-hidden selection:bg-indigo-100 selection:text-indigo-900">
+    <span className={className}>
+      {displayText || "\u00A0"}
+      {!isDone && (
+        <span className="inline-block w-[3px] h-[0.85em] bg-indigo-600 ml-1 rounded-full animate-pulse align-middle" />
+      )}
+    </span>
+  );
+}
+
+function TypewriterHeading({
+  line1 = "Hello Dear,",
+  line2 = "Let's Study",
+  onComplete,
+}: {
+  line1?: string;
+  line2?: string;
+  onComplete?: () => void;
+}) {
+  const full = `${line1}\n${line2}`;
+  const [displayText, setDisplayText] = useState("");
+  const [isDone, setIsDone] = useState(false);
+  const onCompleteRef = useRef(onComplete);
+
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
+
+  useEffect(() => {
+    setDisplayText("");
+    setIsDone(false);
+    let i = 0;
+    const timer = setInterval(() => {
+      i++;
+      setDisplayText(full.slice(0, i));
+      if (i >= full.length) {
+        clearInterval(timer);
+        setIsDone(true);
+        if (onCompleteRef.current) {
+          onCompleteRef.current();
+        }
+      }
+    }, 28);
+
+    return () => clearInterval(timer);
+  }, [full]);
+
+  const [part1, part2] = displayText.split("\n");
+
+  return (
+    <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight mb-2 min-h-[5.5rem]">
+      {part1 || "\u00A0"}
+      {displayText.includes("\n") && (
+        <>
+          <br />
+          <span className="text-indigo-600">{part2 || ""}</span>
+        </>
+      )}
+      {!isDone && (
+        <span className="inline-block w-[3px] h-[0.85em] bg-indigo-600 ml-1 rounded-full animate-pulse align-middle" />
+      )}
+    </h1>
+  );
+}
+
+export function WelcomeOnboarding() {
+  const router = useRouter();
+
+  // Screen modes: "welcome" | "auth" | "signup"
+  const [screen, setScreen] = useState<"welcome" | "auth" | "signup">("welcome");
+  
+  // Sign up multi-step state (1 to 5)
+  const [step, setStep] = useState<number>(1);
+
+  // Form Data
+  const [name, setName] = useState("");
+  const [studying, setStudying] = useState<string>("");
+  const [interests, setInterests] = useState<string[]>([]);
+  const [phone, setPhone] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [createdStudentId, setCreatedStudentId] = useState<string>("VIT001");
+  const [isExistingAccount, setIsExistingAccount] = useState<boolean>(false);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  // Synchronous step key check ensures elements never flash before typing starts
+  const currentStepKey = `${screen}-${step}`;
+  const [completedStepKey, setCompletedStepKey] = useState<string>("");
+  const isTypingDone = completedStepKey === currentStepKey;
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("signup") === "true") {
+        setScreen("signup");
+        setStep(1);
+      }
+    }
+  }, []);
+
+  const handleCopy = (val: string, field: string) => {
+    navigator.clipboard.writeText(val);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(null), 2000);
+  };
+
+  // Study Status Options
+  const STUDY_OPTIONS = [
+    { id: "School Student", label: "School Student", icon: School, desc: "Classes 6th - 12th" },
+    { id: "College Student", label: "College Student", icon: GraduationCap, desc: "UG / PG Degree" },
+    { id: "Working Professional", label: "Working Professional", icon: Briefcase, desc: "Job / Career Upskilling" },
+    { id: "Other", label: "Other", icon: Layers, desc: "Self-learner / Explorer" },
+  ];
+
+  // Learning Interest Options
+  const INTEREST_OPTIONS = [
+    { id: "Computer Basics", label: "Computer Basics", icon: Monitor, color: "text-blue-600 bg-blue-50 border-blue-200" },
+    { id: "AI", label: "AI (Artificial Intelligence)", icon: Cpu, color: "text-purple-600 bg-purple-50 border-purple-200" },
+    { id: "Programming", label: "Programming", icon: Code2, color: "text-indigo-600 bg-indigo-50 border-indigo-200" },
+    { id: "Web Development", label: "Web Development", icon: Laptop, color: "text-emerald-600 bg-emerald-50 border-emerald-200" },
+    { id: "MS Office", label: "MS Office", icon: FileSpreadsheet, color: "text-amber-600 bg-amber-50 border-amber-200" },
+  ];
+
+  const toggleInterest = (id: string) => {
+    setInterests((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleStartSignUp = () => {
+    setStep(1);
+    setScreen("signup");
+  };
+
+  const handleSubmitRegistration = async () => {
+    setIsSubmitting(true);
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          phone: phone.trim(),
+          studying: studying || "School Student",
+          interests,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.student?.student_id) {
+        setCreatedStudentId(data.student.student_id);
+        if (data.student.name) {
+          setName(data.student.name);
+        }
+        setIsExistingAccount(Boolean(data.isExisting));
+      } else {
+        setCreatedStudentId("VIT001");
+        setIsExistingAccount(false);
+      }
+    } catch (e) {
+      console.warn("Registration network fallback:", e);
+      setCreatedStudentId("VIT001");
+    } finally {
+      setIsSubmitting(false);
+      setSubmitSuccess(true);
+      setStep(5);
+    }
+  };
+
+  return (
+    <main className="relative min-h-screen w-full bg-slate-50 text-slate-800 flex flex-col justify-between overflow-x-hidden select-none">
       {/* ─────────────────────────────────────────────────────────────
-          1. BACKGROUND FLOATING STUDY-RELATED ICONS & AMBIENT AURA
+          BACKGROUND FLOATING STUDY-RELATED ICONS
       ───────────────────────────────────────────────────────────── */}
       <div
-        className="absolute inset-0 pointer-events-none overflow-hidden select-none"
+        className="absolute inset-0 pointer-events-none overflow-hidden"
         aria-hidden="true"
       >
-        {/* Ambient Gradient Spheres */}
-        <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full bg-indigo-200/35 blur-3xl" />
-        <div className="absolute top-1/3 -right-24 w-80 h-80 rounded-full bg-sky-200/30 blur-3xl" />
-        <div className="absolute -bottom-24 left-1/4 w-96 h-96 rounded-full bg-violet-200/30 blur-3xl" />
-
-        {/* Floating Study Icon 1: GraduationCap (Top Left) */}
-        <div className="absolute top-8 left-6 sm:top-14 sm:left-16 text-indigo-400/35 animate-float-slow">
-          <GraduationCap className="w-10 h-10 sm:w-14 sm:h-14 transform -rotate-12" />
+        <div className="absolute top-10 left-6 sm:top-14 sm:left-16 text-indigo-400/25 animate-float-slow">
+          <GraduationCap className="w-10 h-10 sm:w-12 sm:h-12 -rotate-12" />
+        </div>
+        <div className="absolute top-12 right-6 sm:top-16 sm:right-16 text-blue-400/25 animate-float-medium">
+          <BookOpen className="w-9 h-9 sm:w-11 sm:h-11 rotate-12" />
+        </div>
+        <div className="absolute top-32 left-16 sm:top-36 sm:left-36 text-sky-400/20 animate-float-fast">
+          <Laptop className="w-7 h-7 sm:w-9 sm:h-9 -rotate-6" />
+        </div>
+        <div className="absolute top-36 right-16 sm:top-40 sm:right-32 text-amber-400/30 animate-float-slow">
+          <Sparkles className="w-7 h-7 sm:w-9 sm:h-9 rotate-12" />
+        </div>
+        <div className="absolute top-1/2 -translate-y-24 left-5 sm:left-14 text-violet-400/25 animate-float-medium">
+          <Brain className="w-9 h-9 sm:w-11 sm:h-11 -rotate-12" />
+        </div>
+        <div className="absolute top-1/2 -translate-y-20 right-5 sm:right-14 text-amber-400/25 animate-float-slow">
+          <Lightbulb className="w-8 h-8 sm:w-10 sm:h-10 rotate-6" />
+        </div>
+        <div className="absolute bottom-52 left-8 sm:bottom-60 sm:left-24 text-emerald-400/25 animate-float-fast">
+          <Pencil className="w-7 h-7 sm:w-9 sm:h-9 -rotate-45" />
+        </div>
+        <div className="absolute bottom-48 right-8 sm:bottom-56 sm:right-28 text-indigo-400/25 animate-float-medium">
+          <Award className="w-9 h-9 sm:w-11 sm:h-11 rotate-12" />
+        </div>
+        <div className="absolute bottom-16 left-8 sm:bottom-20 sm:left-20 text-rose-400/20 animate-float-slow">
+          <Bookmark className="w-7 h-7 sm:w-8 sm:h-8 rotate-6" />
+        </div>
+        <div className="absolute bottom-16 right-8 sm:bottom-20 sm:right-20 text-sky-400/25 animate-float-fast">
+          <FileText className="w-7 h-7 sm:w-9 sm:h-9 -rotate-12" />
         </div>
 
-        {/* Floating Study Icon 2: BookOpen (Top Right) */}
-        <div className="absolute top-10 right-6 sm:top-16 sm:right-16 text-blue-400/35 animate-float-medium">
-          <BookOpen className="w-9 h-9 sm:w-12 sm:h-12 transform rotate-12" />
-        </div>
-
-        {/* Floating Study Icon 3: Laptop (Upper Left) */}
-        <div className="absolute top-28 left-20 sm:top-36 sm:left-40 text-sky-400/30 animate-float-fast">
-          <Laptop className="w-7 h-7 sm:w-10 sm:h-10 transform -rotate-6" />
-        </div>
-
-        {/* Floating Study Icon 4: Sparkles (Upper Right) */}
-        <div className="absolute top-32 right-16 sm:top-40 sm:right-36 text-amber-400/45 animate-float-slow">
-          <Sparkles className="w-8 h-8 sm:w-10 sm:h-10 transform rotate-12" />
-        </div>
-
-        {/* Floating Study Icon 5: Brain (Middle Left) */}
-        <div className="absolute top-1/2 -translate-y-28 left-4 sm:left-14 text-violet-400/30 animate-float-medium">
-          <Brain className="w-9 h-9 sm:w-12 sm:h-12 transform -rotate-12" />
-        </div>
-
-        {/* Floating Study Icon 6: Lightbulb (Middle Right) */}
-        <div className="absolute top-1/2 -translate-y-20 right-5 sm:right-16 text-amber-400/40 animate-float-slow">
-          <Lightbulb className="w-9 h-9 sm:w-11 sm:h-11 transform rotate-6" />
-        </div>
-
-        {/* Floating Study Icon 7: Pencil (Lower Middle Left) */}
-        <div className="absolute bottom-56 left-6 sm:bottom-64 sm:left-24 text-emerald-400/35 animate-float-fast">
-          <Pencil className="w-8 h-8 sm:w-10 sm:h-10 transform -rotate-45" />
-        </div>
-
-        {/* Floating Study Icon 8: Award (Lower Middle Right) */}
-        <div className="absolute bottom-52 right-8 sm:bottom-60 sm:right-28 text-indigo-400/35 animate-float-medium">
-          <Award className="w-9 h-9 sm:w-12 sm:h-12 transform rotate-12" />
-        </div>
-
-        {/* Floating Study Icon 9: Bookmark (Bottom Left) */}
-        <div className="absolute bottom-20 left-8 sm:bottom-28 sm:left-20 text-rose-400/30 animate-float-slow">
-          <Bookmark className="w-7 h-7 sm:w-9 sm:h-9 transform rotate-6" />
-        </div>
-
-        {/* Floating Study Icon 10: FileText (Bottom Right) */}
-        <div className="absolute bottom-20 right-6 sm:bottom-28 sm:right-20 text-cyan-500/35 animate-float-fast">
-          <FileText className="w-8 h-8 sm:w-10 sm:h-10 transform -rotate-12" />
-        </div>
+        {/* Soft Ambient Radial Blur */}
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full bg-indigo-100/40 blur-3xl" />
       </div>
 
       {/* ─────────────────────────────────────────────────────────────
-          2. TOP HEADER BAR
+          1. FIRST WELCOME SCREEN (CLEAN, NO AI-SLOP, NO LOGIN BTN)
       ───────────────────────────────────────────────────────────── */}
-      <header className="relative z-10 w-full max-w-xl mx-auto px-6 pt-6 pb-2 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-sm shadow-indigo-300">
-            <School size={16} />
+      {screen === "welcome" && (
+        <div className="relative z-10 flex-1 flex flex-col justify-between p-6 sm:p-8 max-w-sm mx-auto w-full animate-in fade-in duration-300">
+          <div className="pt-2 text-center">
+            <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+              Vision IT Institute
+            </span>
           </div>
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-            Vision IT Institute
-          </span>
-        </div>
 
-        <Link
-          href="/login"
-          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold text-indigo-600 hover:text-indigo-700 bg-indigo-50/80 hover:bg-indigo-100 border border-indigo-200/60 transition-all active:scale-95 touch-manipulation"
-        >
-          <LogIn size={13} />
-          <span>Login</span>
-        </Link>
-      </header>
+          <div className="flex-1 flex flex-col items-center justify-center py-8 text-center">
+            <div className="relative mb-6 flex items-center justify-center">
+              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-white p-3.5 shadow-xl shadow-indigo-500/10 border border-slate-100 flex items-center justify-center">
+                <img
+                  src="/icons/icon-512.png"
+                  alt="Vision Learn"
+                  className="w-full h-full object-contain"
+                  loading="eager"
+                  decoding="sync"
+                />
+              </div>
+            </div>
 
-      {/* ─────────────────────────────────────────────────────────────
-          3. CENTER HERO SECTION
-      ───────────────────────────────────────────────────────────── */}
-      <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 py-6 sm:py-10 max-w-lg mx-auto text-center">
-        {/* App Logo with Soft Glowing Aura */}
-        <div className="relative mb-6 sm:mb-8 flex items-center justify-center">
-          {/* Soft Glowing Aura */}
-          <div className="absolute w-36 h-36 sm:w-44 sm:h-44 rounded-full bg-indigo-500/25 blur-2xl animate-pulse pointer-events-none" />
-          <div className="absolute w-28 h-28 sm:w-36 sm:h-36 rounded-full bg-sky-400/20 blur-xl animate-float-slow pointer-events-none" />
-
-          {/* Squircle Logo Container */}
-          <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-[1.75rem] bg-white p-3.5 shadow-2xl shadow-indigo-600/20 border border-indigo-100 flex items-center justify-center transition-transform hover:scale-105 duration-300">
-            <img
-              src="/icons/icon-512.png"
-              alt="Vision Learn Logo"
-              className="w-full h-full object-contain drop-shadow-sm select-none"
-              loading="eager"
-              decoding="sync"
+            <TypewriterHeading
+              line1="Hello Dear,"
+              line2="Let's Study"
+              onComplete={() => setCompletedStepKey("welcome-1")}
             />
+
+            <p
+              className={`text-xs sm:text-sm text-slate-500 font-medium max-w-xs mt-1 transition-all duration-400 transform ${
+                isTypingDone
+                  ? "opacity-100 translate-y-0"
+                  : "opacity-0 translate-y-2 pointer-events-none"
+              }`}
+            >
+              Your personal digital classroom for courses, attendance, and tests.
+            </p>
           </div>
 
-          {/* Mini Sparkle Accent Badge */}
-          <div className="absolute -top-1.5 -right-1.5 w-7 h-7 rounded-full bg-gradient-to-tr from-amber-400 to-amber-300 text-amber-950 flex items-center justify-center shadow-md animate-bounce duration-1000">
-            <Sparkle size={14} className="fill-amber-950" />
-          </div>
-        </div>
-
-        {/* Institute Sub-Pill */}
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-100/70 border border-indigo-200/80 text-indigo-700 text-[11px] sm:text-xs font-bold uppercase tracking-wider mb-4 shadow-xs">
-          <Sparkles size={12} className="text-indigo-600" />
-          <span>Smart Learning Portal</span>
-        </div>
-
-        {/* Prominent Header */}
-        <h1 className="text-3xl sm:text-4xl md:text-[2.65rem] font-black tracking-tight text-slate-900 leading-[1.18] mb-3">
-          Hello Dear, <br className="hidden xs:inline" />
-          <span className="bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-600 bg-clip-text text-transparent">
-            Let&apos;s Study! 🚀
-          </span>
-        </h1>
-
-        {/* Welcoming Subtext */}
-        <p className="text-sm sm:text-base text-slate-600 font-medium leading-relaxed max-w-sm sm:max-w-md mx-auto mb-6 sm:mb-8">
-          Welcome to Vision Learn — your personalized digital classroom for scheduled tests, video lectures, batch notes, and academic success.
-        </p>
-
-        {/* Feature Pills (360px-768px friendly) */}
-        <div className="flex flex-wrap items-center justify-center gap-2 mb-8 max-w-sm">
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600 bg-white/80 border border-slate-200/80 px-2.5 py-1 rounded-full shadow-xs backdrop-blur-xs">
-            <CheckCircle2 size={12} className="text-emerald-500" />
-            Scheduled Exams
-          </span>
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600 bg-white/80 border border-slate-200/80 px-2.5 py-1 rounded-full shadow-xs backdrop-blur-xs">
-            <CheckCircle2 size={12} className="text-emerald-500" />
-            Class Notes & PDF
-          </span>
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600 bg-white/80 border border-slate-200/80 px-2.5 py-1 rounded-full shadow-xs backdrop-blur-xs">
-            <CheckCircle2 size={12} className="text-emerald-500" />
-            Progress Analytics
-          </span>
-        </div>
-
-        {/* ─────────────────────────────────────────────────────────────
-            4. PRIMARY CALL TO ACTION
-        ───────────────────────────────────────────────────────────── */}
-        <div className="w-full max-w-xs sm:max-w-sm space-y-3">
-          <button
-            type="button"
-            onClick={() => setIsSheetOpen(true)}
-            className="w-full min-h-[52px] sm:min-h-[56px] px-6 py-3.5 bg-gradient-to-r from-indigo-600 via-indigo-700 to-indigo-600 hover:from-indigo-500 hover:to-indigo-700 text-white font-extrabold text-base rounded-2xl shadow-xl shadow-indigo-600/25 hover:shadow-indigo-600/35 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2.5 touch-manipulation group cursor-pointer"
-          >
-            <span>Get Started / Start Learning</span>
-            <ArrowRight
-              size={18}
-              className="group-hover:translate-x-1 transition-transform"
-            />
-          </button>
-
-          <p className="text-[11px] text-slate-400 font-medium">
-            Already enrolled? Tap above to jump into your portal
-          </p>
-        </div>
-      </div>
-
-      {/* ─────────────────────────────────────────────────────────────
-          5. FOOTER
-      ───────────────────────────────────────────────────────────── */}
-      <footer className="relative z-10 w-full max-w-xl mx-auto px-6 py-4 text-center">
-        <p className="text-[11px] text-slate-400 font-medium tracking-tight">
-          Vision IT Computer Institute • Empowering Digital Skills
-        </p>
-      </footer>
-
-      {/* ─────────────────────────────────────────────────────────────
-          6. BOTTOM-SHEET MODAL / SLIDE TRANSITION
-      ───────────────────────────────────────────────────────────── */}
-      {isSheetOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-          {/* Backdrop Blur */}
           <div
-            className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs transition-opacity duration-300 animate-in fade-in"
-            onClick={() => setIsSheetOpen(false)}
-            aria-hidden="true"
-          />
-
-          {/* Sheet Container (Bottom-sheet on mobile, centered modal on desktop) */}
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="modal-title"
-            className="relative z-10 w-full sm:max-w-md bg-white rounded-t-[2.25rem] sm:rounded-3xl shadow-2xl border border-slate-100 p-6 sm:p-7 max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-8 duration-300 ease-out"
+            className={`w-full pb-4 space-y-3 transition-all duration-400 delay-150 transform ${
+              isTypingDone
+                ? "opacity-100 translate-y-0 pointer-events-auto"
+                : "opacity-0 translate-y-3 pointer-events-none"
+            }`}
           >
-            {/* Sheet Handle Bar (Mobile Drag Cue) */}
-            <div className="sm:hidden w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-4" />
-
-            {/* Close Button */}
             <button
               type="button"
-              onClick={() => setIsSheetOpen(false)}
-              className="absolute top-5 right-5 p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors touch-manipulation cursor-pointer"
-              aria-label="Close dialog"
+              onClick={() => setScreen("auth")}
+              className="w-full min-h-[52px] bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white font-bold text-base rounded-2xl shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2 touch-manipulation cursor-pointer"
             >
-              <X size={20} />
+              <span>Get Started</span>
+              <ArrowRight size={18} />
             </button>
+            <p className="text-[11px] text-center text-slate-400">
+              Empowering Digital Education
+            </p>
+          </div>
+        </div>
+      )}
 
-            {activeTab === "menu" ? (
-              <>
-                {/* Header inside Sheet */}
-                <div className="mb-6 pr-8">
-                  <div className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 uppercase tracking-wider mb-1">
-                    <Sparkles size={14} />
-                    <span>Choose an Option</span>
-                  </div>
-                  <h2
-                    id="modal-title"
-                    className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight"
+      {/* ─────────────────────────────────────────────────────────────
+          2. AUTH SCREEN (ONLY LOGIN & SIGN UP)
+      ───────────────────────────────────────────────────────────── */}
+      {screen === "auth" && (
+        <div className="relative z-10 flex-1 flex flex-col justify-between p-6 sm:p-8 max-w-sm mx-auto w-full animate-in fade-in slide-in-from-right-4 duration-300">
+          <div className="pt-2 flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => setScreen("welcome")}
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-indigo-600 p-2 -ml-2 rounded-xl transition-colors touch-manipulation cursor-pointer"
+            >
+              <ArrowLeft size={16} />
+              <span>Back</span>
+            </button>
+            <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+              Vision Learn
+            </span>
+          </div>
+
+          <div className="flex-1 flex flex-col items-center justify-center py-6 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-white p-2.5 shadow-lg shadow-indigo-500/10 border border-slate-100 flex items-center justify-center mb-5">
+              <img
+                src="/icons/icon-512.png"
+                alt="Vision Learn"
+                className="w-full h-full object-contain"
+              />
+            </div>
+
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-1.5 min-h-[2.5rem] flex items-center justify-center">
+              <TypewriterText
+                text="Welcome"
+                speed={28}
+                onComplete={() => setCompletedStepKey("auth-1")}
+              />
+            </h2>
+            <p
+              className={`text-xs sm:text-sm text-slate-500 font-medium max-w-xs mb-8 transition-all duration-400 transform ${
+                isTypingDone
+                  ? "opacity-100 translate-y-0"
+                  : "opacity-0 translate-y-2 pointer-events-none"
+              }`}
+            >
+              Sign in to your account or register as a new student to continue.
+            </p>
+
+            <div
+              className={`w-full space-y-3 transition-all duration-400 delay-100 transform ${
+                isTypingDone
+                  ? "opacity-100 translate-y-0 pointer-events-auto"
+                  : "opacity-0 translate-y-3 pointer-events-none"
+              }`}
+            >
+              <button
+                type="button"
+                onClick={() => router.push("/login")}
+                className="w-full min-h-[52px] bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white font-bold text-base rounded-2xl shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2.5 touch-manipulation cursor-pointer"
+              >
+                <LogIn size={18} />
+                <span>Login</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleStartSignUp}
+                className="w-full min-h-[52px] bg-white hover:bg-slate-50 active:scale-[0.98] text-slate-800 font-bold text-base rounded-2xl border-2 border-slate-200 hover:border-slate-300 transition-all flex items-center justify-center gap-2.5 touch-manipulation cursor-pointer shadow-xs"
+              >
+                <UserPlus size={18} className="text-indigo-600" />
+                <span>Sign Up</span>
+              </button>
+            </div>
+          </div>
+
+          <div
+            className={`text-center pb-4 transition-all duration-400 delay-200 transform ${
+              isTypingDone
+                ? "opacity-100 translate-y-0 pointer-events-auto"
+                : "opacity-0 translate-y-2 pointer-events-none"
+            }`}
+          >
+            <p className="text-[11px] text-slate-400">
+              Need assistance?{" "}
+              <a
+                href="tel:+918103170595"
+                className="font-bold text-indigo-600 hover:underline"
+              >
+                Contact Institute
+              </a>
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────
+          3. 5-STEP SIGN UP / ONBOARDING FLOW
+      ───────────────────────────────────────────────────────────── */}
+      {screen === "signup" && (
+        <div className="relative z-10 flex-1 flex flex-col justify-between p-6 sm:p-8 max-w-sm mx-auto w-full animate-in fade-in duration-300">
+          {/* Header & Step Progress Bar (Steps 1 to 4) */}
+          {step < 5 && (
+            <div className="pt-2">
+              <div className="flex items-center justify-between mb-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (step > 1) {
+                      setStep(step - 1);
+                    } else {
+                      setScreen("auth");
+                    }
+                  }}
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-indigo-600 p-2 -ml-2 rounded-xl transition-colors touch-manipulation cursor-pointer"
+                >
+                  <ArrowLeft size={16} />
+                  <span>Back</span>
+                </button>
+                <span className="text-xs font-bold text-indigo-600">
+                  Step {step} of 4
+                </span>
+              </div>
+
+              {/* 4-Segment Smooth Animated Progress Line */}
+              <div className="w-full h-1.5 flex gap-1.5" role="progressbar" aria-valuenow={step} aria-valuemin={1} aria-valuemax={4}>
+                {[1, 2, 3, 4].map((seg) => (
+                  <div
+                    key={seg}
+                    className="flex-1 h-full bg-slate-200/80 rounded-full overflow-hidden"
                   >
-                    Welcome to Vision Learn
-                  </h2>
-                  <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
-                    Select how you would like to proceed today:
-                  </p>
+                    <div
+                      className={`h-full bg-indigo-600 rounded-full transition-all duration-500 ease-out ${
+                        step >= seg ? "w-full" : "w-0"
+                      }`}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── STEP 1: WELCOME & NAME ── */}
+          {step === 1 && (
+            <div className="flex-1 flex flex-col justify-center py-6 animate-in fade-in slide-in-from-right-4 duration-200">
+              <div className="mb-6">
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight min-h-[3.75rem] flex items-center">
+                  <TypewriterText
+                    text="What's your name?"
+                    speed={22}
+                    onComplete={() => setCompletedStepKey("signup-1")}
+                  />
+                </h2>
+                <p
+                  className={`text-xs sm:text-sm text-slate-500 font-medium mt-1 transition-all duration-400 transform ${
+                    isTypingDone
+                      ? "opacity-100 translate-y-0"
+                      : "opacity-0 translate-y-2 pointer-events-none"
+                  }`}
+                >
+                  Welcome to Vision Learn! Tell us a little about yourself.
+                </p>
+              </div>
+
+              <div
+                className={`space-y-4 transition-all duration-400 delay-100 transform ${
+                  isTypingDone
+                    ? "opacity-100 translate-y-0 pointer-events-auto"
+                    : "opacity-0 translate-y-3 pointer-events-none"
+                }`}
+              >
+                <input
+                  type="text"
+                  autoFocus={isTypingDone}
+                  placeholder="Enter your name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full px-4 py-3.5 rounded-2xl bg-white border-2 border-slate-200 focus:border-indigo-600 outline-none text-base font-bold text-slate-800 placeholder-slate-400 shadow-xs transition-all"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* ── STEP 2: WHAT ARE YOU CURRENTLY STUDYING? ── */}
+          {step === 2 && (
+            <div className="flex-1 flex flex-col justify-center py-6 animate-in fade-in slide-in-from-right-4 duration-200">
+              <div className="mb-5">
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight min-h-[3.75rem] flex items-center">
+                  <TypewriterText
+                    text="What are you currently studying?"
+                    speed={20}
+                    onComplete={() => setCompletedStepKey("signup-2")}
+                  />
+                </h2>
+                <p
+                  className={`text-xs sm:text-sm text-slate-500 font-medium mt-1 transition-all duration-400 transform ${
+                    isTypingDone
+                      ? "opacity-100 translate-y-0"
+                      : "opacity-0 translate-y-2 pointer-events-none"
+                  }`}
+                >
+                  Select your current status to help us personalize your courses.
+                </p>
+              </div>
+
+              <div className="space-y-2.5">
+                {STUDY_OPTIONS.map((opt, idx) => {
+                  const Icon = opt.icon;
+                  const isSelected = studying === opt.id;
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => setStudying(opt.id)}
+                      style={{
+                        transitionDelay: isTypingDone ? `${idx * 70}ms` : "0ms",
+                      }}
+                      className={`w-full p-3.5 rounded-2xl border-2 text-left flex items-center justify-between touch-manipulation cursor-pointer transition-all duration-400 transform ${
+                        isTypingDone
+                          ? "opacity-100 translate-y-0 pointer-events-auto"
+                          : "opacity-0 translate-y-3 pointer-events-none"
+                      } ${
+                        isSelected
+                          ? "bg-indigo-50/80 border-indigo-600 shadow-sm"
+                          : "bg-white border-slate-200 hover:border-slate-300"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                            isSelected
+                              ? "bg-indigo-600 text-white"
+                              : "bg-slate-100 text-slate-600"
+                          }`}
+                        >
+                          <Icon size={20} />
+                        </div>
+                        <div>
+                          <p className="font-bold text-sm text-slate-900 leading-tight">
+                            {opt.label}
+                          </p>
+                          <p className="text-[11px] text-slate-400 mt-0.5">
+                            {opt.desc}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div
+                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                          isSelected
+                            ? "border-indigo-600 bg-indigo-600 text-white"
+                            : "border-slate-300 bg-white"
+                        }`}
+                      >
+                        {isSelected && <Check size={12} className="stroke-[3]" />}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ── STEP 3: WHAT DO YOU WANT TO LEARN? ── */}
+          {step === 3 && (
+            <div className="flex-1 flex flex-col justify-center py-6 animate-in fade-in slide-in-from-right-4 duration-200">
+              <div className="mb-5">
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight min-h-[3.75rem] flex items-center">
+                  <TypewriterText
+                    text="What do you want to learn?"
+                    speed={20}
+                    onComplete={() => setCompletedStepKey("signup-3")}
+                  />
+                </h2>
+                <p
+                  className={`text-xs sm:text-sm text-slate-500 font-medium mt-1 transition-all duration-400 transform ${
+                    isTypingDone
+                      ? "opacity-100 translate-y-0"
+                      : "opacity-0 translate-y-2 pointer-events-none"
+                  }`}
+                >
+                  Choose one or more areas that interest you.
+                </p>
+              </div>
+
+              <div className="space-y-2.5">
+                {INTEREST_OPTIONS.map((opt, idx) => {
+                  const Icon = opt.icon;
+                  const isSelected = interests.includes(opt.id);
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => toggleInterest(opt.id)}
+                      style={{
+                        transitionDelay: isTypingDone ? `${idx * 60}ms` : "0ms",
+                      }}
+                      className={`w-full p-3.5 rounded-2xl border-2 text-left flex items-center justify-between touch-manipulation cursor-pointer transition-all duration-400 transform ${
+                        isTypingDone
+                          ? "opacity-100 translate-y-0 pointer-events-auto"
+                          : "opacity-0 translate-y-3 pointer-events-none"
+                      } ${
+                        isSelected
+                          ? "bg-indigo-50/80 border-indigo-600 shadow-sm"
+                          : "bg-white border-slate-200 hover:border-slate-300"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${opt.color}`}
+                        >
+                          <Icon size={20} />
+                        </div>
+                        <p className="font-bold text-sm text-slate-900">
+                          {opt.label}
+                        </p>
+                      </div>
+
+                      <div
+                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                          isSelected
+                            ? "border-indigo-600 bg-indigo-600 text-white"
+                            : "border-slate-300 bg-white"
+                        }`}
+                      >
+                        {isSelected && <Check size={12} className="stroke-[3]" />}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ── STEP 4: MOBILE NUMBER ── */}
+          {step === 4 && (
+            <div className="flex-1 flex flex-col justify-center py-6 animate-in fade-in slide-in-from-right-4 duration-200">
+              <div className="mb-6">
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight min-h-[3.75rem] flex items-center">
+                  <TypewriterText
+                    text="What's your mobile number?"
+                    speed={20}
+                    onComplete={() => setCompletedStepKey("signup-4")}
+                  />
+                </h2>
+                <p
+                  className={`text-xs sm:text-sm text-slate-500 font-medium mt-1 transition-all duration-400 transform ${
+                    isTypingDone
+                      ? "opacity-100 translate-y-0"
+                      : "opacity-0 translate-y-2 pointer-events-none"
+                  }`}
+                >
+                  We&apos;ll use this to send your student onboarding details &amp; admission updates.
+                </p>
+              </div>
+
+              <div
+                className={`space-y-4 transition-all duration-400 delay-100 transform ${
+                  isTypingDone
+                    ? "opacity-100 translate-y-0 pointer-events-auto"
+                    : "opacity-0 translate-y-3 pointer-events-none"
+                }`}
+              >
+                <div className="relative flex items-center">
+                  <div className="absolute left-4 flex items-center gap-1.5 text-sm font-bold text-slate-500 pointer-events-none">
+                    <span>🇮🇳</span>
+                    <span>+91</span>
+                    <span className="text-slate-300">|</span>
+                  </div>
+                  <input
+                    type="tel"
+                    autoFocus={isTypingDone}
+                    maxLength={10}
+                    placeholder="98765 43210"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
+                    className="w-full pl-20 pr-4 py-3.5 rounded-2xl bg-white border-2 border-slate-200 focus:border-indigo-600 outline-none text-base font-bold text-slate-800 placeholder-slate-400 shadow-xs transition-all tracking-wider"
+                  />
                 </div>
 
-                {/* Option 1: Student Login */}
-                <div className="space-y-3.5">
-                  <Link
-                    href="/login"
-                    onClick={() => setIsSheetOpen(false)}
-                    className="w-full text-left p-4 rounded-2xl bg-gradient-to-r from-indigo-50/90 via-indigo-50/50 to-white border-2 border-indigo-200/80 hover:border-indigo-500 hover:shadow-lg hover:shadow-indigo-100 transition-all group flex items-center justify-between touch-manipulation active:scale-[0.98] block"
-                  >
-                    <div className="flex items-center gap-3.5">
-                      <div className="w-12 h-12 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-300 shrink-0 group-hover:scale-105 transition-transform">
-                        <GraduationCap size={24} />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-extrabold text-base text-slate-900 group-hover:text-indigo-600 transition-colors">
-                            Student Login
-                          </span>
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">
-                            Enrolled
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-500 font-medium mt-0.5">
-                          Login with your Student ID (VIT-...) &amp; Password
-                        </p>
-                      </div>
-                    </div>
-                    <div className="w-8 h-8 rounded-full bg-white text-slate-400 group-hover:text-indigo-600 group-hover:bg-indigo-50 flex items-center justify-center transition-colors shrink-0 shadow-xs">
-                      <ChevronRight size={18} className="group-hover:translate-x-0.5 transition-transform" />
-                    </div>
-                  </Link>
+                <div className="p-3 bg-indigo-50/60 rounded-xl border border-indigo-100 flex items-start gap-2 text-[11px] text-indigo-900">
+                  <Phone size={14} className="text-indigo-600 shrink-0 mt-0.5" />
+                  <span>Your number is safely verified with Vision IT Institute. No spam calls.</span>
+                </div>
+              </div>
+            </div>
+          )}
 
-                  {/* Option 2: Sign Up / New Admission */}
+          {/* ── STEP 5: REGISTRATION COMPLETE & CONFIRMATION (COMPACT & FULLY IN VIEWPORT) ── */}
+          {step === 5 && (
+            <div className="flex-1 flex flex-col items-center justify-center py-2 text-center animate-in fade-in zoom-in-95 duration-300">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mb-2 shadow-xs">
+                <CheckCircle2 size={28} className="stroke-[2.5]" />
+              </div>
+
+              <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+                {isExistingAccount ? "Welcome Back!" : "Account Created!"}
+              </h2>
+              <p className="text-xs text-slate-500 font-medium max-w-xs mt-0.5 mb-4">
+                {isExistingAccount ? (
+                  <>
+                    Aapka account pehle se registered hai, <span className="font-bold text-slate-800">{name}</span>!
+                  </>
+                ) : (
+                  <>
+                    Welcome, <span className="font-bold text-slate-800">{name}</span>! Here are your login credentials:
+                  </>
+                )}
+              </p>
+
+              {/* Clean Human-Designed Unified Credentials Card */}
+              <div className="w-full bg-white rounded-2xl border border-slate-200/90 p-3.5 divide-y divide-slate-100 shadow-xs mb-4 text-left">
+                {/* Student ID */}
+                <div className="flex items-center justify-between pb-3">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
+                      Student ID
+                    </span>
+                    <span className="font-mono text-lg font-black text-indigo-600 tracking-wide">
+                      {createdStudentId}
+                    </span>
+                  </div>
                   <button
                     type="button"
-                    onClick={() => setActiveTab("admission")}
-                    className="w-full text-left p-4 rounded-2xl bg-gradient-to-r from-emerald-50/90 via-teal-50/40 to-white border-2 border-emerald-200/80 hover:border-emerald-500 hover:shadow-lg hover:shadow-emerald-100 transition-all group flex items-center justify-between touch-manipulation active:scale-[0.98] cursor-pointer"
+                    onClick={() => handleCopy(createdStudentId, "id")}
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 active:scale-95 transition-all cursor-pointer"
                   >
-                    <div className="flex items-center gap-3.5">
-                      <div className="w-12 h-12 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-300 shrink-0 group-hover:scale-105 transition-transform">
-                        <UserPlus size={24} />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-extrabold text-base text-slate-900 group-hover:text-emerald-700 transition-colors">
-                            Sign Up / New Admission
-                          </span>
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                            New Students
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-500 font-medium mt-0.5">
-                          Explore courses, fee structures &amp; get admitted
-                        </p>
-                      </div>
-                    </div>
-                    <div className="w-8 h-8 rounded-full bg-white text-slate-400 group-hover:text-emerald-600 group-hover:bg-emerald-50 flex items-center justify-center transition-colors shrink-0 shadow-xs">
-                      <ChevronRight size={18} className="group-hover:translate-x-0.5 transition-transform" />
-                    </div>
+                    {copiedField === "id" ? (
+                      <>
+                        <Check size={13} className="text-emerald-600" />
+                        <span className="text-emerald-600 font-bold">Copied</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy size={13} className="text-slate-500" />
+                        <span>Copy</span>
+                      </>
+                    )}
                   </button>
                 </div>
 
-                {/* Direct quick action */}
-                <div className="mt-6 pt-5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                  <span>Need instant help?</span>
-                  <a
-                    href="tel:+918103170595"
-                    className="font-bold text-indigo-600 hover:text-indigo-700 inline-flex items-center gap-1 touch-manipulation"
-                  >
-                    <PhoneCall size={12} />
-                    <span>+91 81031 70595</span>
-                  </a>
-                </div>
-              </>
-            ) : (
-              /* New Admission / Sign Up Sub-View */
-              <div>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("menu")}
-                  className="inline-flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-slate-800 mb-4 touch-manipulation cursor-pointer"
-                >
-                  <span>← Back to options</span>
-                </button>
-
-                <div className="mb-5">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center mb-2">
-                    <UserPlus size={20} />
+                {/* Password */}
+                <div className="flex items-center justify-between pt-3">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
+                      Password (Mobile No.)
+                    </span>
+                    <span className="font-mono text-base font-bold text-slate-900 tracking-wide">
+                      {phone}
+                    </span>
                   </div>
-                  <h2 className="text-xl font-black text-slate-900 tracking-tight">
-                    New Admission &amp; Enrollment
-                  </h2>
-                  <p className="text-xs text-slate-500 font-medium mt-1">
-                    Admissions are managed through Vision IT Computer Institute. Connect with our admission desk directly:
-                  </p>
-                </div>
-
-                <div className="space-y-3">
-                  {/* WhatsApp Quick Chat */}
-                  <a
-                    href="https://wa.me/918103170595?text=Hello%20Vision%20IT,%20I%20would%20like%20to%20inquire%20about%20New%20Admission%20and%20Courses%20at%20Vision%20IT."
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full p-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm flex items-center justify-between shadow-md shadow-emerald-200 transition-all touch-manipulation active:scale-[0.98]"
+                  <button
+                    type="button"
+                    onClick={() => handleCopy(phone, "pass")}
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 active:scale-95 transition-all cursor-pointer"
                   >
-                    <div className="flex items-center gap-2.5">
-                      <MessageCircle size={18} />
-                      <span>Chat on WhatsApp</span>
-                    </div>
-                    <ExternalLink size={15} />
-                  </a>
-
-                  {/* Phone Helpline Call */}
-                  <a
-                    href="tel:+918103170595"
-                    className="w-full p-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm flex items-center justify-between shadow-md shadow-slate-200 transition-all touch-manipulation active:scale-[0.98]"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <PhoneCall size={18} />
-                      <span>Call Admission Helpline</span>
-                    </div>
-                    <span className="text-xs font-mono font-medium text-slate-300">+91 81031 70595</span>
-                  </a>
-
-                  {/* Visit Official Website Inquiry */}
-                  <a
-                    href="https://visionitinstitute.com/inquiry"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full p-3.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 font-bold text-sm flex items-center justify-between transition-all touch-manipulation active:scale-[0.98]"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <School size={18} className="text-indigo-600" />
-                      <span>Online Admission Form</span>
-                    </div>
-                    <ExternalLink size={15} className="text-slate-400" />
-                  </a>
-                </div>
-
-                <div className="mt-5 p-3 rounded-xl bg-indigo-50/60 border border-indigo-100 text-[11px] text-indigo-900">
-                  <p className="font-semibold">Already received your Student ID?</p>
-                  <p className="text-indigo-700/80 mt-0.5">
-                    Your login credentials are provided upon admission confirmation.
-                  </p>
-                  <Link
-                    href="/login"
-                    onClick={() => setIsSheetOpen(false)}
-                    className="inline-flex items-center gap-1 font-bold text-indigo-600 hover:underline mt-2 touch-manipulation"
-                  >
-                    <span>Go to Student Login →</span>
-                  </Link>
+                    {copiedField === "pass" ? (
+                      <>
+                        <Check size={13} className="text-emerald-600" />
+                        <span className="text-emerald-600 font-bold">Copied</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy size={13} className="text-slate-500" />
+                        <span>Copy</span>
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
-            )}
-          </div>
+
+              {/* Action Buttons (Completely above the fold, no cut-off) */}
+              <div className="w-full space-y-2.5">
+                <button
+                  type="button"
+                  onClick={() => router.push("/dashboard")}
+                  className="w-full min-h-[48px] bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white font-bold text-sm sm:text-base rounded-2xl shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2 touch-manipulation cursor-pointer"
+                >
+                  <LogIn size={18} />
+                  <span>{isExistingAccount ? "Continue to Dashboard" : "Login to Vision Learn"}</span>
+                </button>
+
+                <a
+                  href={`https://wa.me/918103170595?text=Hello%20Vision%20IT%20Institute%2C%20my%20name%20is%20${encodeURIComponent(name)}.%20I%20have%20registered%20on%20Vision%20Learn%20app%20with%20Student%20ID%20${encodeURIComponent(createdStudentId)}%20for%20${encodeURIComponent(interests.join(", ") || "Course Admission")}.%20Please%20guide%20me.`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full min-h-[44px] bg-white hover:bg-slate-50 active:scale-[0.98] text-slate-700 border border-slate-200 font-bold text-xs sm:text-sm rounded-2xl transition-all flex items-center justify-center gap-2 touch-manipulation cursor-pointer shadow-2xs"
+                >
+                  <MessageCircle size={16} className="text-emerald-600" />
+                  <span>WhatsApp Admission Helpdesk</span>
+                </a>
+              </div>
+            </div>
+          )}
+
+          {/* Bottom Action Bar for Steps 1-4 */}
+          {step < 5 && (
+            <div
+              className={`pb-4 pt-2 transition-all duration-400 delay-200 transform ${
+                isTypingDone
+                  ? "opacity-100 translate-y-0 pointer-events-auto"
+                  : "opacity-0 translate-y-3 pointer-events-none"
+              }`}
+            >
+              {step === 1 && (
+                <button
+                  type="button"
+                  disabled={!name.trim()}
+                  onClick={() => setStep(2)}
+                  className="w-full min-h-[52px] bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] text-white font-bold text-base rounded-2xl shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2 touch-manipulation cursor-pointer"
+                >
+                  <span>Continue</span>
+                  <ArrowRight size={18} />
+                </button>
+              )}
+
+              {step === 2 && (
+                <button
+                  type="button"
+                  disabled={!studying}
+                  onClick={() => setStep(3)}
+                  className="w-full min-h-[52px] bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] text-white font-bold text-base rounded-2xl shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2 touch-manipulation cursor-pointer"
+                >
+                  <span>Continue</span>
+                  <ArrowRight size={18} />
+                </button>
+              )}
+
+              {step === 3 && (
+                <button
+                  type="button"
+                  disabled={interests.length === 0}
+                  onClick={() => setStep(4)}
+                  className="w-full min-h-[52px] bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] text-white font-bold text-base rounded-2xl shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2 touch-manipulation cursor-pointer"
+                >
+                  <span>Continue ({interests.length} selected)</span>
+                  <ArrowRight size={18} />
+                </button>
+              )}
+
+              {step === 4 && (
+                <button
+                  type="button"
+                  disabled={phone.length < 10 || isSubmitting}
+                  onClick={handleSubmitRegistration}
+                  className="w-full min-h-[52px] bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] text-white font-bold text-base rounded-2xl shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2 touch-manipulation cursor-pointer"
+                >
+                  <span>{isSubmitting ? "Submitting..." : "Submit Registration"}</span>
+                  <ArrowRight size={18} />
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
     </main>

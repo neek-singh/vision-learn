@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { createToken } from "@/lib/auth-custom";
-import { createPublicSupabaseClient } from "@/lib/supabase-server";
+import { getStudentForAuth } from "@/lib/students-store";
 
 // In-memory rate limiter
 const rateLimitMap = new Map<string, { attempts: number; resetTime: number }>();
@@ -45,24 +45,18 @@ export async function POST(request: Request) {
       );
     }
 
-    const supabase = createPublicSupabaseClient();
+    // 1. Fetch student via RPC or persistent student store
+    const student = await getStudentForAuth(studentId.trim());
 
-    // 1. Fetch student via SECURITY DEFINER RPC to bypass RLS safely
-    const { data: students, error: rpcError } = await supabase.rpc(
-      "get_student_for_auth",
-      { p_student_id: studentId.trim() }
-    );
-
-    const student = students && students.length > 0 ? students[0] : null;
-
-    if (rpcError || !student || student.is_deleted || student.is_blocked) {
+    if (!student || student.is_deleted || student.is_blocked) {
       return NextResponse.json(
         { error: "Invalid Student ID or Password." },
         { status: 401 }
       );
     }
 
-    if (student.status && student.status !== "active") {
+    const currentStatus = (student.status || "").toLowerCase();
+    if (currentStatus && !["active", "unadmitted", "pending"].includes(currentStatus)) {
       return NextResponse.json(
         { error: "Your account is currently inactive. Please contact administrator." },
         { status: 403 }
