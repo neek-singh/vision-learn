@@ -68,6 +68,8 @@ export function PWARegistration() {
           if ("caches" in window && navigator.onLine) {
             caches.open("app-pages").then((cache) => {
               const pagesToWarm = [
+                "/",
+                "/login",
                 "/dashboard",
                 "/courses",
                 "/attendance",

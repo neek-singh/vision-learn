@@ -3,7 +3,7 @@
   "name": "Vision Learn",
   "short_name": "VisionLearn",
   "description": "Premium Learning Management System for Vision IT Computer Institute students. Access courses, attendance, and tests offline.",
-  "start_url": "/dashboard",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",

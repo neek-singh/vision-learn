@@ -806,7 +806,7 @@ export function StudentFeesClient({ fee: initialFee }: { fee: any }) {
             <div className="space-y-1.5 text-[11px] text-slate-600 font-medium pt-0.5">
               <div className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                <span>Mon – Sat: 9:00 AM – 5:00 PM</span>
+                <span>Mon – Sat: 8:00 AM – 4:00 PM</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />

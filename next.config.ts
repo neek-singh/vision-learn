@@ -87,12 +87,12 @@ const withPWA = require('next-pwa')({
       }
     },
     {
-      // App Pages Caching: StaleWhileRevalidate for instant offline launch
-      // Uses exact same-origin URL regex matching url.href (https://domain.com/dashboard)
+      // App Pages Caching: NetworkFirst for reliable navigation and redirects (e.g. /dashboard -> /login)
       urlPattern: /^https?:\/\/[^/]+(?:\/(?:[?#].*)?$|\/?$|\/(?:dashboard|courses|lessons|curriculum|materials|tests|attendance|fees|calendar|certificates|settings|notifications|profile|offline|login)(?:$|[/?]))/i,
-      handler: 'StaleWhileRevalidate',
+      handler: 'NetworkFirst',
       options: {
         cacheName: 'app-pages',
+        networkTimeoutSeconds: 5,
         expiration: {
           maxEntries: 100,
           maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
