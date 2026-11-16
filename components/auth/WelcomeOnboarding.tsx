@@ -122,7 +122,7 @@ function TypewriterHeading({
   const [part1, part2] = displayText.split("\n");
 
   return (
-    <h1 className="text-3xl sm:text-4xl font-medium text-slate-800 tracking-tight leading-tight mb-2 min-h-[5.5rem]">
+    <h1 className="text-3xl sm:text-4xl font-medium text-black tracking-tight leading-tight mb-2 min-h-[5.5rem]">
       {part1 || "\u00A0"}
       {displayText.includes("\n") && (
         <>
@@ -345,7 +345,7 @@ export function WelcomeOnboarding() {
       {screen === "welcome" && (
         <div className="relative z-10 flex-1 flex flex-col justify-between p-6 sm:p-8 max-w-sm mx-auto w-full animate-in fade-in duration-300">
           <div className="pt-2 text-center">
-            <span className="text-[11px] font-medium uppercase tracking-widest text-slate-400">
+            <span className="text-[11px] font-semibold uppercase tracking-widest text-black">
               Vision IT Institute
             </span>
           </div>
@@ -369,19 +369,9 @@ export function WelcomeOnboarding() {
               onComplete={() => setCompletedStepKey("welcome-1")}
             />
 
-            <p
-              className={`text-xs sm:text-sm text-slate-500 font-normal max-w-xs mt-1 transition-all duration-400 transform ${
-                isTypingDone
-                  ? "opacity-100 translate-y-0"
-                  : "opacity-0 translate-y-2 pointer-events-none"
-              }`}
-            >
-              Your personal digital classroom for courses, attendance, and tests.
-            </p>
-
-            {/* Action button placed directly below the text for natural eye and thumb ergonomics */}
+            {/* Action button placed directly below the heading for natural eye and thumb ergonomics */}
             <div
-              className={`w-full max-w-xs mt-7 transition-all duration-400 delay-150 transform ${
+              className={`w-full max-w-xs mt-6 transition-all duration-400 delay-150 transform ${
                 isTypingDone
                   ? "opacity-100 translate-y-0 pointer-events-auto"
                   : "opacity-0 translate-y-3 pointer-events-none"
@@ -399,7 +389,7 @@ export function WelcomeOnboarding() {
           </div>
 
           <div className="text-center pb-4">
-            <p className="text-[11px] text-slate-400">
+            <p className="text-[11px] text-black font-medium">
               Empowering Digital Education
             </p>
           </div>
@@ -415,12 +405,12 @@ export function WelcomeOnboarding() {
             <button
               type="button"
               onClick={() => setScreen("welcome")}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-indigo-600 p-2 -ml-2 rounded-xl transition-colors touch-manipulation cursor-pointer"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-black hover:text-indigo-600 p-2 -ml-2 rounded-xl transition-colors touch-manipulation cursor-pointer"
             >
               <ArrowLeft size={16} />
               <span>Back</span>
             </button>
-            <span className="text-[11px] font-medium uppercase tracking-widest text-slate-400">
+            <span className="text-[11px] font-semibold uppercase tracking-widest text-black">
               Vision Learn
             </span>
           </div>
@@ -434,7 +424,7 @@ export function WelcomeOnboarding() {
               />
             </div>
 
-            <h2 className="text-2xl sm:text-3xl font-medium text-slate-800 tracking-tight mb-1.5 min-h-[2.5rem] flex items-center justify-center">
+            <h2 className="text-2xl sm:text-3xl font-medium text-black tracking-tight mb-1.5 min-h-[2.5rem] flex items-center justify-center">
               <TypewriterText
                 text="Welcome"
                 speed={28}
@@ -442,7 +432,7 @@ export function WelcomeOnboarding() {
               />
             </h2>
             <p
-              className={`text-xs sm:text-sm text-slate-500 font-normal max-w-xs mb-6 transition-all duration-400 transform ${
+              className={`text-xs sm:text-sm text-black font-normal max-w-xs mb-6 transition-all duration-400 transform ${
                 isTypingDone
                   ? "opacity-100 translate-y-0"
                   : "opacity-0 translate-y-2 pointer-events-none"
@@ -470,7 +460,7 @@ export function WelcomeOnboarding() {
               <button
                 type="button"
                 onClick={handleStartSignUp}
-                className="w-full min-h-[52px] bg-white hover:bg-slate-50 active:scale-[0.98] text-slate-800 font-medium text-base rounded-2xl border-2 border-slate-200 hover:border-slate-300 transition-all flex items-center justify-center gap-2.5 touch-manipulation cursor-pointer shadow-xs"
+                className="w-full min-h-[52px] bg-white hover:bg-slate-50 active:scale-[0.98] text-black font-medium text-base rounded-2xl border-2 border-slate-200 hover:border-slate-300 transition-all flex items-center justify-center gap-2.5 touch-manipulation cursor-pointer shadow-xs"
               >
                 <UserPlus size={18} className="text-indigo-600" />
                 <span>Sign Up</span>
@@ -485,11 +475,11 @@ export function WelcomeOnboarding() {
                 : "opacity-0 translate-y-2 pointer-events-none"
             }`}
           >
-            <p className="text-[11px] text-slate-400">
+            <p className="text-[11px] text-black font-medium">
               Need assistance?{" "}
               <a
                 href="tel:+918103170595"
-                className="font-medium text-indigo-600 hover:underline"
+                className="font-semibold text-indigo-600 hover:underline"
               >
                 Contact Institute
               </a>
@@ -516,12 +506,12 @@ export function WelcomeOnboarding() {
                       setScreen("auth");
                     }
                   }}
-                  className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-indigo-600 p-2 -ml-2 rounded-xl transition-colors touch-manipulation cursor-pointer"
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-black hover:text-indigo-600 p-2 -ml-2 rounded-xl transition-colors touch-manipulation cursor-pointer"
                 >
-                  <ArrowLeft size={16} />
+                  <ArrowLeft size={16} className="text-black" />
                   <span>Back</span>
                 </button>
-                <span className="text-xs font-medium text-indigo-600">
+                <span className="text-xs font-semibold text-indigo-600">
                   Step {step} of 5
                 </span>
               </div>
@@ -548,7 +538,7 @@ export function WelcomeOnboarding() {
           {step === 1 && (
             <div className="flex-1 flex flex-col justify-center py-4 animate-in fade-in slide-in-from-right-4 duration-200">
               <div className="mb-5">
-                <h2 className="text-2xl sm:text-3xl font-medium text-slate-800 tracking-tight min-h-[3.75rem] flex items-center">
+                <h2 className="text-2xl sm:text-3xl font-medium text-black tracking-tight min-h-[3.75rem] flex items-center">
                   <TypewriterText
                     text="What's your name?"
                     speed={22}
@@ -556,7 +546,7 @@ export function WelcomeOnboarding() {
                   />
                 </h2>
                 <p
-                  className={`text-xs sm:text-sm text-slate-500 font-normal mt-1 transition-all duration-400 transform ${
+                  className={`text-xs sm:text-sm text-black font-normal mt-1 transition-all duration-400 transform ${
                     isTypingDone
                       ? "opacity-100 translate-y-0"
                       : "opacity-0 translate-y-2 pointer-events-none"
@@ -582,7 +572,7 @@ export function WelcomeOnboarding() {
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && name.trim()) setStep(2);
                   }}
-                  className="w-full px-4 py-3.5 rounded-2xl bg-white border-2 border-slate-200 focus:border-indigo-600 outline-none text-base font-normal text-slate-800 placeholder-slate-400 shadow-xs transition-all"
+                  className="w-full px-4 py-3.5 rounded-2xl bg-white border-2 border-slate-200 focus:border-indigo-600 outline-none text-base font-normal text-black placeholder:text-slate-400 shadow-xs transition-all"
                 />
 
                 {/* Continue button directly below the input field */}
@@ -603,7 +593,7 @@ export function WelcomeOnboarding() {
           {step === 2 && (
             <div className="flex-1 flex flex-col justify-center py-4 animate-in fade-in slide-in-from-right-4 duration-200">
               <div className="mb-4">
-                <h2 className="text-2xl sm:text-3xl font-medium text-slate-800 tracking-tight min-h-[3.75rem] flex items-center">
+                <h2 className="text-2xl sm:text-3xl font-medium text-black tracking-tight min-h-[3.75rem] flex items-center">
                   <TypewriterText
                     text="What are you currently studying?"
                     speed={20}
@@ -611,7 +601,7 @@ export function WelcomeOnboarding() {
                   />
                 </h2>
                 <p
-                  className={`text-xs sm:text-sm text-slate-500 font-normal mt-1 transition-all duration-400 transform ${
+                  className={`text-xs sm:text-sm text-black font-normal mt-1 transition-all duration-400 transform ${
                     isTypingDone
                       ? "opacity-100 translate-y-0"
                       : "opacity-0 translate-y-2 pointer-events-none"
@@ -651,12 +641,12 @@ export function WelcomeOnboarding() {
                           className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
                             isSelected
                               ? "bg-indigo-600 text-white"
-                              : "bg-slate-100 text-slate-600"
+                              : "bg-slate-100 text-black"
                           }`}
                         >
                           <Icon size={20} />
                         </div>
-                        <span className="font-medium text-sm text-slate-800">
+                        <span className="font-medium text-sm text-black">
                           {opt.label}
                         </span>
                       </div>
@@ -700,7 +690,7 @@ export function WelcomeOnboarding() {
           {step === 3 && (
             <div className="flex-1 flex flex-col justify-center py-4 animate-in fade-in slide-in-from-right-4 duration-200">
               <div className="mb-5 text-center">
-                <h2 className="text-2xl sm:text-3xl font-medium text-slate-800 tracking-tight min-h-[3.75rem] flex items-center justify-center">
+                <h2 className="text-2xl sm:text-3xl font-medium text-black tracking-tight min-h-[3.75rem] flex items-center justify-center">
                   <TypewriterText
                     text={getClassConfig().title}
                     speed={20}
@@ -708,7 +698,7 @@ export function WelcomeOnboarding() {
                   />
                 </h2>
                 <p
-                  className={`text-xs sm:text-sm text-slate-500 font-normal mt-1 max-w-xs mx-auto transition-all duration-400 transform ${
+                  className={`text-xs sm:text-sm text-black font-normal mt-1 max-w-xs mx-auto transition-all duration-400 transform ${
                     isTypingDone
                       ? "opacity-100 translate-y-0"
                       : "opacity-0 translate-y-2 pointer-events-none"
@@ -737,7 +727,7 @@ export function WelcomeOnboarding() {
                       } ${
                         isSelected
                           ? "bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-200 scale-[1.04]"
-                          : "bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50 shadow-2xs"
+                          : "bg-white text-black border-slate-200 hover:border-slate-300 hover:bg-slate-50 shadow-2xs"
                       }`}
                     >
                       {isSelected && <Check size={14} className="stroke-[3]" />}
@@ -772,7 +762,7 @@ export function WelcomeOnboarding() {
           {step === 4 && (
             <div className="flex-1 flex flex-col justify-center py-4 animate-in fade-in slide-in-from-right-4 duration-200">
               <div className="mb-4">
-                <h2 className="text-2xl sm:text-3xl font-medium text-slate-800 tracking-tight min-h-[3.75rem] flex items-center">
+                <h2 className="text-2xl sm:text-3xl font-medium text-black tracking-tight min-h-[3.75rem] flex items-center">
                   <TypewriterText
                     text="What do you want to learn?"
                     speed={20}
@@ -780,7 +770,7 @@ export function WelcomeOnboarding() {
                   />
                 </h2>
                 <p
-                  className={`text-xs sm:text-sm text-slate-500 font-normal mt-1 transition-all duration-400 transform ${
+                  className={`text-xs sm:text-sm text-black font-normal mt-1 transition-all duration-400 transform ${
                     isTypingDone
                       ? "opacity-100 translate-y-0"
                       : "opacity-0 translate-y-2 pointer-events-none"
@@ -818,7 +808,7 @@ export function WelcomeOnboarding() {
                         >
                           <Icon size={16} />
                         </div>
-                        <p className="font-medium text-sm text-slate-800">
+                        <p className="font-medium text-sm text-black">
                           {opt.label}
                         </p>
                       </div>
@@ -862,7 +852,7 @@ export function WelcomeOnboarding() {
           {step === 5 && (
             <div className="flex-1 flex flex-col justify-center py-4 animate-in fade-in slide-in-from-right-4 duration-200">
               <div className="mb-5">
-                <h2 className="text-2xl sm:text-3xl font-medium text-slate-800 tracking-tight min-h-[3.75rem] flex items-center">
+                <h2 className="text-2xl sm:text-3xl font-medium text-black tracking-tight min-h-[3.75rem] flex items-center">
                   <TypewriterText
                     text="What's your mobile number?"
                     speed={20}
@@ -870,7 +860,7 @@ export function WelcomeOnboarding() {
                   />
                 </h2>
                 <p
-                  className={`text-xs sm:text-sm text-slate-500 font-normal mt-1 transition-all duration-400 transform ${
+                  className={`text-xs sm:text-sm text-black font-normal mt-1 transition-all duration-400 transform ${
                     isTypingDone
                       ? "opacity-100 translate-y-0"
                       : "opacity-0 translate-y-2 pointer-events-none"
@@ -888,10 +878,10 @@ export function WelcomeOnboarding() {
                 }`}
               >
                 <div className="relative flex items-center">
-                  <div className="absolute left-4 flex items-center gap-1.5 text-sm font-medium text-slate-500 pointer-events-none">
+                  <div className="absolute left-4 flex items-center gap-1.5 text-sm font-semibold text-black pointer-events-none">
                     <span>🇮🇳</span>
                     <span>+91</span>
-                    <span className="text-slate-300">|</span>
+                    <span className="text-slate-400">|</span>
                   </div>
                   <input
                     type="tel"
@@ -905,11 +895,11 @@ export function WelcomeOnboarding() {
                         handleSubmitRegistration();
                       }
                     }}
-                    className="w-full pl-20 pr-4 py-3.5 rounded-2xl bg-white border-2 border-slate-200 focus:border-indigo-600 outline-none text-base font-normal text-slate-800 placeholder-slate-400 shadow-xs transition-all tracking-wider"
+                    className="w-full pl-20 pr-4 py-3.5 rounded-2xl bg-white border-2 border-slate-200 focus:border-indigo-600 outline-none text-base font-normal text-black placeholder:text-slate-400 shadow-xs transition-all tracking-wider"
                   />
                 </div>
 
-                <div className="p-3 bg-indigo-50/60 rounded-xl border border-indigo-100 flex items-start gap-2 text-[11px] text-indigo-900 font-normal">
+                <div className="p-3 bg-indigo-50/60 rounded-xl border border-indigo-100 flex items-start gap-2 text-[11px] text-indigo-950 font-medium">
                   <Phone size={14} className="text-indigo-600 shrink-0 mt-0.5" />
                   <span>Your number is safely verified with Vision IT Institute. No spam calls.</span>
                 </div>
@@ -935,17 +925,17 @@ export function WelcomeOnboarding() {
                 <CheckCircle2 size={28} className="stroke-[2.5]" />
               </div>
 
-              <h2 className="text-2xl font-semibold text-slate-800 tracking-tight">
+              <h2 className="text-2xl font-semibold text-black tracking-tight">
                 {isExistingAccount ? "Welcome Back!" : "Account Created!"}
               </h2>
-              <p className="text-xs text-slate-500 font-normal max-w-xs mt-0.5 mb-4">
+              <p className="text-xs text-black font-normal max-w-xs mt-0.5 mb-4">
                 {isExistingAccount ? (
                   <>
-                    Aapka account pehle se registered hai, <span className="font-semibold text-slate-800">{name}</span>!
+                    Aapka account pehle se registered hai, <span className="font-semibold text-black">{name}</span>!
                   </>
                 ) : (
                   <>
-                    Welcome, <span className="font-semibold text-slate-800">{name}</span>! Here are your login credentials:
+                    Welcome, <span className="font-semibold text-black">{name}</span>! Here are your login credentials:
                   </>
                 )}
               </p>
@@ -955,7 +945,7 @@ export function WelcomeOnboarding() {
                 {/* Student ID */}
                 <div className="flex items-center justify-between pb-3">
                   <div>
-                    <span className="text-[10px] uppercase font-medium text-slate-400 tracking-wider block">
+                    <span className="text-xs uppercase font-semibold text-black tracking-wider block">
                       Student ID
                     </span>
                     <span className="font-mono text-lg font-bold text-indigo-600 tracking-wide">
@@ -965,7 +955,7 @@ export function WelcomeOnboarding() {
                   <button
                     type="button"
                     onClick={() => handleCopy(createdStudentId, "id")}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 active:scale-95 transition-all cursor-pointer"
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-50 border border-slate-200 text-black hover:bg-slate-100 active:scale-95 transition-all cursor-pointer"
                   >
                     {copiedField === "id" ? (
                       <>
@@ -974,7 +964,7 @@ export function WelcomeOnboarding() {
                       </>
                     ) : (
                       <>
-                        <Copy size={13} className="text-slate-500" />
+                        <Copy size={13} className="text-black" />
                         <span>Copy</span>
                       </>
                     )}
@@ -984,17 +974,17 @@ export function WelcomeOnboarding() {
                 {/* Password */}
                 <div className="flex items-center justify-between pt-3">
                   <div>
-                    <span className="text-[10px] uppercase font-medium text-slate-400 tracking-wider block">
+                    <span className="text-xs uppercase font-semibold text-black tracking-wider block">
                       Password (Mobile No.)
                     </span>
-                    <span className="font-mono text-base font-medium text-slate-800 tracking-wide">
+                    <span className="font-mono text-base font-semibold text-black tracking-wide">
                       {phone}
                     </span>
                   </div>
                   <button
                     type="button"
                     onClick={() => handleCopy(phone, "pass")}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 active:scale-95 transition-all cursor-pointer"
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-50 border border-slate-200 text-black hover:bg-slate-100 active:scale-95 transition-all cursor-pointer"
                   >
                     {copiedField === "pass" ? (
                       <>
@@ -1003,7 +993,7 @@ export function WelcomeOnboarding() {
                       </>
                     ) : (
                       <>
-                        <Copy size={13} className="text-slate-500" />
+                        <Copy size={13} className="text-black" />
                         <span>Copy</span>
                       </>
                     )}
@@ -1026,7 +1016,7 @@ export function WelcomeOnboarding() {
                   href={`https://wa.me/918103170595?text=Hello%20Vision%20IT%20Institute%2C%20my%20name%20is%20${encodeURIComponent(name)}.%20I%20have%20registered%20on%20Vision%20Learn%20app%20with%20Student%20ID%20${encodeURIComponent(createdStudentId)}%20for%20${encodeURIComponent(interests.join(", ") || "Course Admission")}.%20Please%20guide%20me.`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full min-h-[44px] bg-white hover:bg-slate-50 active:scale-[0.98] text-slate-700 border border-slate-200 font-medium text-xs sm:text-sm rounded-2xl transition-all flex items-center justify-center gap-2 touch-manipulation cursor-pointer shadow-2xs"
+                  className="w-full min-h-[44px] bg-white hover:bg-slate-50 active:scale-[0.98] text-black border border-slate-200 font-medium text-xs sm:text-sm rounded-2xl transition-all flex items-center justify-center gap-2 touch-manipulation cursor-pointer shadow-2xs"
                 >
                   <MessageCircle size={16} className="text-emerald-600" />
                   <span>WhatsApp Admission Helpdesk</span>

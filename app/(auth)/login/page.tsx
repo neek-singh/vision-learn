@@ -72,9 +72,9 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => router.push("/")}
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-indigo-600 -ml-1 py-1 px-2 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer touch-manipulation"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-black hover:text-indigo-600 -ml-1 py-1 px-2 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer touch-manipulation"
             >
-              <ArrowLeft size={16} />
+              <ArrowLeft size={16} className="text-black" />
               <span>Back</span>
             </button>
           </div>
@@ -88,10 +88,10 @@ export default function LoginPage() {
                 className="object-contain"
               />
             </div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight mb-1">
+            <h1 className="text-2xl font-semibold text-black tracking-tight mb-1">
               Vision Learn
             </h1>
-            <p className="text-xs text-slate-500 font-medium">Access Your Learning Dashboard</p>
+            <p className="text-xs text-black font-normal">Access Your Learning Dashboard</p>
           </div>
 
           {error && (
@@ -103,10 +103,10 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Student ID</label>
+              <label className="text-xs font-semibold uppercase tracking-wider text-black ml-1 block">Student ID</label>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <User className="h-4 w-4 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
+                  <User className="h-4 w-4 text-black group-focus-within:text-indigo-600 transition-colors" />
                 </div>
                 <input
                   type="text"
@@ -114,16 +114,16 @@ export default function LoginPage() {
                   placeholder="VIT001"
                   value={studentId}
                   onChange={(e) => setStudentId(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border-2 border-transparent focus:border-indigo-600 focus:bg-white outline-none transition-all font-bold text-sm text-slate-700"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border-2 border-slate-200 focus:border-indigo-600 focus:bg-white outline-none transition-all font-normal text-sm text-black placeholder:text-slate-400"
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Password</label>
+              <label className="text-xs font-semibold uppercase tracking-wider text-black ml-1 block">Password</label>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Lock className="h-4 w-4 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
+                  <Lock className="h-4 w-4 text-black group-focus-within:text-indigo-600 transition-colors" />
                 </div>
                 <input
                   type={showPassword ? "text" : "password"}
@@ -131,12 +131,12 @@ export default function LoginPage() {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-10 py-3 rounded-xl bg-slate-50 border-2 border-transparent focus:border-indigo-600 focus:bg-white outline-none transition-all font-bold text-sm text-slate-700"
+                  className="w-full pl-10 pr-10 py-3 rounded-xl bg-slate-50 border-2 border-slate-200 focus:border-indigo-600 focus:bg-white outline-none transition-all font-normal text-sm text-black placeholder:text-slate-400"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-indigo-600 transition-colors"
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-black hover:text-indigo-600 transition-colors"
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -146,7 +146,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3.5 mt-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-base transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed shadow-lg shadow-indigo-100 flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-3.5 mt-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium text-base transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed shadow-lg shadow-indigo-100 flex items-center justify-center gap-2 cursor-pointer"
             >
               {isLoading ? (
                 <>
@@ -161,11 +161,11 @@ export default function LoginPage() {
 
           {/* Sign Up Link */}
           <div className="mt-5 text-center">
-            <p className="text-xs text-slate-500 font-medium">
+            <p className="text-xs text-black font-normal">
               Don&apos;t have an account?{" "}
               <Link
                 href="/?signup=true"
-                className="font-bold text-indigo-600 hover:text-indigo-700 hover:underline"
+                className="font-semibold text-indigo-600 hover:text-indigo-700 hover:underline"
               >
                 Sign Up
               </Link>
@@ -173,7 +173,7 @@ export default function LoginPage() {
           </div>
 
           <div className="mt-8 text-center">
-            <p className="text-slate-400 text-[10px] font-bold tracking-tight">
+            <p className="text-black text-[11px] font-normal tracking-tight">
               Empowering Digital Skills
             </p>
           </div>

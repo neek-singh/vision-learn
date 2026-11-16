@@ -58,8 +58,8 @@ const NavLink = memo(({
 }: any) => (
   <div
     className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 group ${isActive
-        ? "bg-blue-50 text-blue-700 font-bold shadow-2xs"
-        : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+        ? "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-bold shadow-2xs"
+        : "text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-100"
       }`}
   >
     <Link
@@ -148,8 +148,8 @@ const MobileBottomLink = memo(({ href, icon: Icon, name, isActive }: any) => (
     prefetch={true}
     className={`flex flex-col items-center justify-center gap-1 py-1 px-1.5 min-w-[56px] rounded-xl transition-all active:scale-95 ${
       isActive 
-        ? 'text-blue-600 font-bold bg-blue-50/70' 
-        : 'text-slate-500 hover:text-slate-800'
+        ? 'text-blue-600 dark:text-blue-400 font-bold bg-blue-50/70 dark:bg-blue-900/30' 
+        : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
     }`}
   >
     <Icon size={18} className={isActive ? 'text-blue-600' : 'text-slate-400'} />
@@ -176,6 +176,32 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     student?.status === "pending" ||
     (student?.enrollments_count !== undefined && student?.enrollments_count === 0)
   );
+
+  // Sync and apply theme preference
+  useEffect(() => {
+    const applySavedTheme = () => {
+      if (typeof window === "undefined") return;
+      const savedTheme = localStorage.getItem("vision_pref_theme");
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      if (savedTheme === "Dark" || (savedTheme === "System" && prefersDark) || (!savedTheme && prefersDark)) {
+        document.documentElement.classList.add("dark");
+        document.documentElement.style.colorScheme = "dark";
+      } else {
+        document.documentElement.classList.remove("dark");
+        document.documentElement.style.colorScheme = "light";
+      }
+    };
+
+    applySavedTheme();
+
+    const handleThemeEvent = () => applySavedTheme();
+    window.addEventListener("vision_theme_change", handleThemeEvent);
+    window.addEventListener("storage", handleThemeEvent);
+    return () => {
+      window.removeEventListener("vision_theme_change", handleThemeEvent);
+      window.removeEventListener("storage", handleThemeEvent);
+    };
+  }, []);
 
   const displayedLinks = isUnadmitted
     ? [
@@ -434,9 +460,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [student?.id]);
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#090d16] text-slate-900 dark:text-slate-100 flex transition-colors duration-200">
       {/* Sidebar - Desktop */}
-      <aside className="hidden lg:flex w-64 bg-white border-r border-slate-100 flex-col sticky top-0 h-screen">
+      <aside className="hidden lg:flex w-64 bg-white dark:bg-[#0f172a] border-r border-slate-100 dark:border-slate-800 flex-col sticky top-0 h-screen transition-colors duration-200">
         <div className="p-6">
           <Link href="/dashboard" className="flex items-center gap-2">
             <div className="w-9 h-9 relative flex items-center justify-center">
@@ -501,7 +527,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       )}
 
       {/* Sidebar - Mobile */}
-      <aside className={`fixed inset-y-0 left-0 w-72 bg-white z-50 transform transition-transform duration-300 lg:hidden flex flex-col ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+      <aside className={`fixed inset-y-0 left-0 w-72 bg-white dark:bg-[#0f172a] border-r border-slate-100 dark:border-slate-800 z-50 transform transition-transform duration-300 lg:hidden flex flex-col ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         }`}>
         <div className="p-8 flex justify-between items-center shrink-0">
           <Link href="/dashboard" className="flex items-center gap-3">
@@ -569,7 +595,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Navbar - Compact height */}
-        <header className="h-13 bg-white border-b border-slate-100 flex items-center justify-between px-4 sm:px-6 lg:px-8 sticky top-0 z-30">
+        <header className="h-13 bg-white dark:bg-[#0f172a] border-b border-slate-100 dark:border-slate-800 flex items-center justify-between px-4 sm:px-6 lg:px-8 sticky top-0 z-30 transition-colors duration-200">
           <button
             onClick={() => setIsMobileMenuOpen(true)}
             aria-label="Open mobile menu"
@@ -625,7 +651,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* Mobile Bottom Navigation */}
         {!isMobileMenuOpen && (
-          <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200/80 px-2 py-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] z-50 flex items-center justify-around shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.06)] animate-in slide-in-from-bottom duration-300">
+          <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-[#0f172a]/95 backdrop-blur-md border-t border-slate-200/80 dark:border-slate-800 px-2 py-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] z-50 flex items-center justify-around shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.06)] animate-in slide-in-from-bottom duration-300">
             {isUnadmitted ? (
               <>
                 <MobileBottomLink href="/dashboard" icon={LayoutDashboard} name="Home" isActive={pathname === '/dashboard'} />

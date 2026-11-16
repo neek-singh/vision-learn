@@ -75,6 +75,15 @@ export default function RootLayout({
                 if (sessionStorage.getItem('vision_learn_splash_seen')) {
                   document.documentElement.classList.add('splash-already-seen');
                 }
+                const savedTheme = localStorage.getItem('vision_pref_theme');
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                if (savedTheme === 'Dark' || (savedTheme === 'System' && prefersDark) || (!savedTheme && prefersDark)) {
+                  document.documentElement.classList.add('dark');
+                  document.documentElement.style.colorScheme = 'dark';
+                } else {
+                  document.documentElement.classList.remove('dark');
+                  document.documentElement.style.colorScheme = 'light';
+                }
               } catch (e) {}
             `,
           }}

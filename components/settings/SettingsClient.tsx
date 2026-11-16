@@ -119,16 +119,21 @@ export default function SettingsClient({ student, enrollments = [], course }: Se
     if (typeof window === "undefined") return;
     if (t === "Dark") {
       document.documentElement.classList.add("dark");
+      document.documentElement.style.colorScheme = "dark";
     } else if (t === "Light") {
       document.documentElement.classList.remove("dark");
+      document.documentElement.style.colorScheme = "light";
     } else {
       const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
       if (prefersDark) {
         document.documentElement.classList.add("dark");
+        document.documentElement.style.colorScheme = "dark";
       } else {
         document.documentElement.classList.remove("dark");
+        document.documentElement.style.colorScheme = "light";
       }
     }
+    window.dispatchEvent(new CustomEvent("vision_theme_change", { detail: { theme: t } }));
   };
 
   // Load preferences from localStorage if available
