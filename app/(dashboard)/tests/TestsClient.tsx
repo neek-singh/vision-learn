@@ -113,11 +113,17 @@ function parseScheduleWindow(dateStr?: string, startTimeStr?: string, endTimeStr
   const isLive = now.getTime() >= startObj.getTime() && now.getTime() <= endObj.getTime();
   const isPast = now.getTime() > endObj.getTime();
 
+  const isToday = now.toDateString() === startObj.toDateString();
+  const tomorrow = new Date(now);
+  tomorrow.setDate(now.getDate() + 1);
+  const isTomorrow = tomorrow.toDateString() === startObj.toDateString();
+
   const monthShort = startObj.toLocaleDateString("en-US", { month: "short" });
   const dayNum = startObj.getDate();
-  const formattedChipDate = `${monthShort} ${dayNum}`; // e.g. "Oct 24"
+  const dayLabel = isToday ? "Today" : isTomorrow ? "Tomorrow" : `${monthShort} ${dayNum}`;
   const formattedStartTime = startObj.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
   const formattedEndTime = endObj.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+  const formattedDate = isToday ? "Today" : isTomorrow ? "Tomorrow" : startObj.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 
   return {
     startObj,
@@ -125,11 +131,13 @@ function parseScheduleWindow(dateStr?: string, startTimeStr?: string, endTimeStr
     isFuture,
     isLive,
     isPast,
-    formattedDate: startObj.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }),
-    formattedChipDate,
+    isToday,
+    isTomorrow,
+    formattedDate,
+    formattedChipDate: dayLabel,
     formattedStartTime,
     formattedEndTime,
-    chipText: `${formattedChipDate}, ${formattedStartTime}`
+    chipText: `${dayLabel}, ${formattedStartTime}`
   };
 }
 
@@ -194,6 +202,33 @@ function exportTestToIcs(test: TestItem, onSuccess?: (msg: string) => void) {
   if (onSuccess) {
     onSuccess(`Scheduled test saved to calendar (.ics downloaded)`);
   }
+}
+
+/**
+ * Cleans ugly curriculum hierarchy titles like "Office Automation > Microsoft Word: MS Word introduction"
+ */
+function formatCleanTitle(rawTitle: string): { cleanTitle: string; subtitleMod?: string } {
+  if (!rawTitle) return { cleanTitle: "Test" };
+  let title = rawTitle.replace(/^Test:\s*/i, "").trim();
+
+  if (title.includes(">")) {
+    const segments = title.split(">").map((s) => s.trim());
+    const lastSeg = segments[segments.length - 1];
+    if (lastSeg.includes(":")) {
+      const parts = lastSeg.split(":").map((p) => p.trim());
+      return { cleanTitle: parts[1] || parts[0], subtitleMod: parts[0] };
+    }
+    return { cleanTitle: lastSeg, subtitleMod: segments[segments.length - 2] };
+  }
+
+  if (title.includes(":")) {
+    const parts = title.split(":").map((p) => p.trim());
+    if (parts.length === 2) {
+      return { cleanTitle: parts[1], subtitleMod: parts[0] };
+    }
+  }
+
+  return { cleanTitle: title };
 }
 
 /**
@@ -367,7 +402,10 @@ export default function TestsClient({
 
     const testSchedules = (schedules || []).filter((s: any) => {
       const type = (s.type || "").toLowerCase();
-      return type === "test" || type === "quiz" || type === "exam";
+      const desc = (s.description || "").toLowerCase();
+      const title = (s.title || "").toLowerCase();
+      if (desc.includes("study material") || title.includes("study material") || desc.includes("lesson:")) return false;
+      return type === "test" || type === "exam";
     });
 
     const matchedScheduleIds = new Set<string>();
@@ -415,18 +453,18 @@ export default function TestsClient({
         category = "upcoming";
       }
 
-      const status: TestItem["status"] = isCompleted ? "Completed" : isLive ? "Live" : isScheduled ? "Scheduled" : "Pending";
+      const status: TestItem["status"] = isCompleted ? "Completed" : isLive ? "Live" : (isScheduled && isLocked) ? "Scheduled" : "Pending";
 
       let dueText = "";
       if (window) {
         if (window.isFuture) dueText = `Opens ${window.formattedDate} at ${window.formattedStartTime}`;
         else if (window.isLive) dueText = `Live Now • Closes at ${window.formattedEndTime}`;
-        else dueText = `Ended ${window.formattedDate}`;
+        else if (t.due_date) dueText = `Due: ${new Date(t.due_date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}`;
       } else if (t.due_date) {
         dueText = `Due: ${new Date(t.due_date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}`;
       }
 
-      const totalQ = res?.total_questions || t.test_questions?.length || 20;
+      const totalQ = res?.total_questions ?? (Array.isArray(t.test_questions) ? t.test_questions.length : (t.test_questions?.[0]?.count ?? (t.duration_minutes || 0)));
       const scoreVal = res?.score ?? null;
       const scorePct = isCompleted && totalQ > 0 ? Math.round(((scoreVal || 0) / totalQ) * 100) : 0;
 
@@ -440,7 +478,7 @@ export default function TestsClient({
         type: t.test_type || (isMock ? "Mock Test" : isScheduled ? "Scheduled Test" : "Timed Test"),
         category,
         questionsCount: totalQ,
-        durationMinutes: t.duration_minutes || 30,
+        durationMinutes: totalQ > 0 ? totalQ : 0,
         totalMarks: t.total_marks || totalQ,
         status,
         scoreText: isCompleted ? `Score: ${scoreVal}/${totalQ} (${scorePct}%)` : "",
@@ -460,7 +498,7 @@ export default function TestsClient({
         isLocked,
         lockReason: isLocked && window ? `This test is scheduled to open on ${window.formattedDate} at ${window.formattedStartTime}.` : undefined,
         scheduleId: matchedSchedule?.id,
-        scheduleChipText: window?.chipText || (isScheduled ? "Upcoming" : undefined)
+        scheduleChipText: (window && (window.isFuture || window.isLive)) ? window.chipText : undefined
       });
     });
 
@@ -471,6 +509,9 @@ export default function TestsClient({
       const window = parseScheduleWindow(s.date, s.start_time, s.end_time, 30);
       const isLive = !!window?.isLive;
       const isLocked = !!window?.isFuture;
+
+      // Skip past/ended standalone schedules that have no test attached
+      if (!isLive && !isLocked) return;
 
       let dueText = "";
       if (window) {
@@ -489,7 +530,7 @@ export default function TestsClient({
         type: "Scheduled Test",
         category: "upcoming",
         questionsCount: 0,
-        durationMinutes: 30,
+        durationMinutes: 0,
         totalMarks: 50,
         status: isLive ? "Live" : "Scheduled",
         scoreText: "",
@@ -550,7 +591,7 @@ export default function TestsClient({
         type: "MCQ Practice",
         category: isCompleted ? "completed" : "practice",
         questionsCount: qCount,
-        durationMinutes: Math.max(10, Math.round(qCount * 1.5)),
+        durationMinutes: qCount > 0 ? qCount : 10,
         totalMarks: qCount,
         status: isCompleted ? "Completed" : "Pending",
         scoreText: isCompleted ? `Score: ${scoreVal ?? 0}/${qCount} (${scorePct}%)` : "",
@@ -627,7 +668,7 @@ export default function TestsClient({
       // 1. Tab filter
       if (activeTab === "scheduled") {
         if (!test.isScheduled && test.status !== "Scheduled") return false;
-      } else if (activeTab === "upcoming") {
+      } else if (activeTab === "pending" || activeTab === "upcoming") {
         if (test.status === "Completed") return false;
       } else if (activeTab === "completed") {
         if (test.status !== "Completed") return false;
@@ -856,16 +897,18 @@ export default function TestsClient({
     }
   };
 
-  // Next scheduled test spotlight (prioritize live, then upcoming scheduled)
+  // Next scheduled test spotlight (prioritize live, then upcoming future scheduled)
   const nextScheduledTest = useMemo(() => {
     return combinedTests.find(t => t.status === "Live") ||
-      combinedTests.find(t => t.isScheduled && t.status !== "Completed") ||
+      combinedTests.find(t => t.isScheduled && t.isLocked && t.status !== "Completed") ||
       null;
   }, [combinedTests]);
 
   // Next upcoming pending test for the sidebar
   const upcomingTest = useMemo(() => {
-    return combinedTests.find(t => t.status === "Pending" && !t.isScheduled) ||
+    return combinedTests.find(t => t.status === "Pending" && !t.isScheduled && t.questionsCount > 0) ||
+      combinedTests.find(t => t.status === "Pending" && t.questionsCount > 0) ||
+      combinedTests.find(t => t.status === "Pending" && !t.isScheduled) ||
       combinedTests.find(t => t.status === "Pending") ||
       null;
   }, [combinedTests]);
@@ -1062,13 +1105,13 @@ export default function TestsClient({
         {/* Left Column (8 of 12 cols): Banner + Metrics + Tabs + Filters + Tests */}
         <div className="lg:col-span-8 space-y-3 sm:space-y-4">
           {/* 2. Hero Banner Card */}
-          <div className="bg-gradient-to-r from-purple-50/70 via-indigo-50/50 to-blue-50/40 rounded-2xl border border-purple-100/70 p-3.5 sm:p-5 flex items-center justify-between gap-4 relative overflow-hidden shadow-2xs">
-            <div className="flex items-center gap-3 sm:gap-3.5 z-10 min-w-0">
-              <div className="w-10 h-10 sm:w-13 sm:h-13 rounded-xl sm:rounded-2xl bg-purple-100/90 border border-purple-200/80 text-purple-600 flex items-center justify-center shrink-0 shadow-2xs">
-                <CheckSquare size={20} className="sm:size-[22px] stroke-[1.9]" />
+          <div className="bg-gradient-to-r from-purple-50/70 via-indigo-50/50 to-blue-50/40 rounded-xl sm:rounded-2xl border border-purple-100/70 p-2.5 sm:p-5 flex items-center justify-between gap-3 sm:gap-4 relative overflow-hidden shadow-2xs">
+            <div className="flex items-center gap-2.5 sm:gap-3.5 z-10 min-w-0">
+              <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-lg sm:rounded-2xl bg-purple-100/90 border border-purple-200/80 text-purple-600 flex items-center justify-center shrink-0 shadow-2xs">
+                <CheckSquare size={16} className="sm:size-[22px] stroke-[1.9]" />
               </div>
               <div className="min-w-0">
-                <h1 className="text-base sm:text-xl font-bold text-slate-900 leading-tight">
+                <h1 className="text-sm sm:text-xl font-bold text-slate-900 leading-tight">
                   Tests & Quizzes
                 </h1>
                 <p className="hidden sm:block text-xs text-slate-500 mt-0.5 font-normal truncate">
@@ -1161,57 +1204,57 @@ export default function TestsClient({
           {/* 3. Top 4 Metric Summary Cards (2x2 grid on mobile) */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
             {/* Card 1: Total Tests */}
-            <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200/80 p-2.5 sm:p-3.5 shadow-2xs flex items-center gap-2.5 sm:gap-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center shrink-0">
-                <FileText size={16} className="sm:size-[17px] stroke-[1.9]" />
+            <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200/80 p-2 sm:p-3.5 shadow-2xs flex items-center gap-2 sm:gap-3">
+              <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center shrink-0">
+                <FileText size={14} className="sm:size-[17px] stroke-[1.9]" />
               </div>
               <div className="min-w-0">
-                <div className="text-base sm:text-xl font-bold text-slate-900 leading-none">
+                <div className="text-sm sm:text-xl font-bold text-slate-900 leading-none">
                   {stats.total}
                 </div>
-                <div className="text-[11px] sm:text-xs font-semibold text-slate-700 mt-0.5 sm:mt-1 truncate">Total Tests</div>
+                <div className="text-[10px] sm:text-xs font-semibold text-slate-700 mt-0.5 sm:mt-1 truncate">Total Tests</div>
                 <div className="hidden sm:block text-[10px] text-slate-400 mt-0.5 truncate">All modules</div>
               </div>
             </div>
 
             {/* Card 2: Completed */}
-            <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200/80 p-2.5 sm:p-3.5 shadow-2xs flex items-center gap-2.5 sm:gap-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center shrink-0">
-                <CheckCircle2 size={16} className="sm:size-[17px] stroke-[1.9]" />
+            <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200/80 p-2 sm:p-3.5 shadow-2xs flex items-center gap-2 sm:gap-3">
+              <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center shrink-0">
+                <CheckCircle2 size={14} className="sm:size-[17px] stroke-[1.9]" />
               </div>
               <div className="min-w-0">
-                <div className="text-base sm:text-xl font-bold text-slate-900 leading-none">
+                <div className="text-sm sm:text-xl font-bold text-slate-900 leading-none">
                   {stats.completed}
                 </div>
-                <div className="text-[11px] sm:text-xs font-semibold text-slate-700 mt-0.5 sm:mt-1 truncate">Completed</div>
+                <div className="text-[10px] sm:text-xs font-semibold text-slate-700 mt-0.5 sm:mt-1 truncate">Completed</div>
                 <div className="hidden sm:block text-[10px] text-slate-400 mt-0.5 truncate">{stats.completionRate}% completion</div>
               </div>
             </div>
 
             {/* Card 3: Pending */}
-            <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200/80 p-2.5 sm:p-3.5 shadow-2xs flex items-center gap-2.5 sm:gap-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center shrink-0">
-                <Clock size={16} className="sm:size-[17px] stroke-[1.9]" />
+            <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200/80 p-2 sm:p-3.5 shadow-2xs flex items-center gap-2 sm:gap-3">
+              <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center shrink-0">
+                <Clock size={14} className="sm:size-[17px] stroke-[1.9]" />
               </div>
               <div className="min-w-0">
-                <div className="text-base sm:text-xl font-bold text-slate-900 leading-none">
+                <div className="text-sm sm:text-xl font-bold text-slate-900 leading-none">
                   {stats.pending}
                 </div>
-                <div className="text-[11px] sm:text-xs font-semibold text-slate-700 mt-0.5 sm:mt-1 truncate">Pending</div>
+                <div className="text-[10px] sm:text-xs font-semibold text-slate-700 mt-0.5 sm:mt-1 truncate">Pending</div>
                 <div className="hidden sm:block text-[10px] text-slate-400 mt-0.5 truncate">To be taken</div>
               </div>
             </div>
 
             {/* Card 4: Average Score */}
-            <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200/80 p-2.5 sm:p-3.5 shadow-2xs flex items-center gap-2.5 sm:gap-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-rose-50 text-rose-600 border border-rose-100 flex items-center justify-center shrink-0">
-                <BarChart3 size={16} className="sm:size-[17px] stroke-[1.9]" />
+            <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200/80 p-2 sm:p-3.5 shadow-2xs flex items-center gap-2 sm:gap-3">
+              <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-rose-50 text-rose-600 border border-rose-100 flex items-center justify-center shrink-0">
+                <BarChart3 size={14} className="sm:size-[17px] stroke-[1.9]" />
               </div>
               <div className="min-w-0">
-                <div className="text-base sm:text-xl font-bold text-slate-900 leading-none">
+                <div className="text-sm sm:text-xl font-bold text-slate-900 leading-none">
                   {stats.avgScore}%
                 </div>
-                <div className="text-[11px] sm:text-xs font-semibold text-slate-700 mt-0.5 sm:mt-1 truncate">
+                <div className="text-[10px] sm:text-xs font-semibold text-slate-700 mt-0.5 sm:mt-1 truncate">
                   <span className="sm:hidden">Avg Score</span>
                   <span className="hidden sm:inline">Average Score</span>
                 </div>
@@ -1250,14 +1293,15 @@ export default function TestsClient({
             </button>
             <button
               type="button"
-              onClick={() => setActiveTab("upcoming")}
+              onClick={() => setActiveTab("pending")}
               className={`pb-2 px-2.5 sm:px-3 whitespace-nowrap transition-all border-b-2 cursor-pointer min-h-[38px] flex items-center touch-manipulation ${
-                activeTab === "upcoming"
+                activeTab === "pending" || activeTab === "upcoming"
                   ? "border-blue-600 text-blue-600 font-bold"
                   : "border-transparent text-slate-500 hover:text-slate-800"
               }`}
             >
-              Upcoming ({stats.pending})
+              <span className="sm:hidden">Pending ({stats.pending})</span>
+              <span className="hidden sm:inline">Pending Tests ({stats.pending})</span>
             </button>
             <button
               type="button"
@@ -1442,40 +1486,42 @@ export default function TestsClient({
                 }
 
                 const isCompleted = test.status === "Completed";
+                const { cleanTitle, subtitleMod } = formatCleanTitle(test.title);
+                const displayModule = subtitleMod || test.module;
 
                 return (
                   <div
                     key={test.id}
-                    className="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-4 shadow-2xs hover:shadow-xs transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4"
+                    className="bg-white rounded-xl sm:rounded-2xl border border-slate-200/80 p-2.5 sm:p-4 shadow-2xs hover:shadow-xs transition-all space-y-2 sm:space-y-0 sm:flex sm:items-center sm:justify-between sm:gap-4"
                   >
-                    {/* Left: Icon + Title & Description */}
+                    {/* Top / Left: Icon + Title & Module */}
                     <div className="flex items-start gap-2.5 sm:gap-3 min-w-0 flex-1">
-                      <div className={`w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shrink-0 border ${iconBg}`}>
-                        <IconComp size={16} className="sm:size-[18px] stroke-[1.9]" />
+                      <div className={`w-8 h-8 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 border ${iconBg}`}>
+                        <IconComp size={15} className="sm:size-[18px] stroke-[1.9]" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-1.5 mb-0.5">
                           <h3 className="text-xs sm:text-sm font-bold text-slate-900 leading-snug">
-                            {test.title}
+                            {cleanTitle}
                           </h3>
                           {/* Clear Scheduled / Upcoming / Live Status Chip */}
                           {test.status === "Live" ? (
-                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 shadow-2xs">
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] sm:text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 shadow-2xs">
                               <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-ping shrink-0" />
                               <span>Live Now</span>
                             </span>
                           ) : test.scheduleChipText ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200/80 shadow-2xs">
-                              <Calendar size={10} className="text-amber-600 shrink-0" />
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] sm:text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200/80 shadow-2xs">
+                              <Calendar size={9} className="text-amber-600 shrink-0" />
                               <span>{test.scheduleChipText}</span>
                             </span>
-                          ) : test.isScheduled ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200/80 shadow-2xs">
-                              <Calendar size={10} className="text-amber-600 shrink-0" />
+                          ) : test.isScheduled && test.isLocked ? (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] sm:text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200/80 shadow-2xs">
+                              <Calendar size={9} className="text-amber-600 shrink-0" />
                               <span>Upcoming</span>
                             </span>
                           ) : (
-                            <span className={`px-1.5 sm:px-2 py-0.5 rounded-md text-[10px] font-semibold border ${
+                            <span className={`px-1.5 py-0.5 rounded-md text-[9px] sm:text-[10px] font-semibold border ${
                               test.type === "Mock Test" 
                                 ? "bg-purple-50 text-purple-700 border-purple-100"
                                 : test.type === "MCQ Practice"
@@ -1487,101 +1533,106 @@ export default function TestsClient({
                           )}
                         </div>
                         <p className="text-[11px] text-slate-500 font-medium truncate">
-                          <span className="text-slate-600 font-semibold">{test.module}</span>
+                          <span className="text-slate-600 font-semibold">{displayModule}</span>
                           <span className="hidden sm:inline text-slate-400"> • {test.description}</span>
                         </p>
-
-                        {/* Metadata row */}
-                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-1.5 sm:mt-2 text-[11px] text-slate-500">
-                          <span className="flex items-center gap-1 bg-slate-50 sm:bg-transparent px-1.5 py-0.5 sm:p-0 rounded-md">
-                            <FileText size={11} className="text-slate-400" />
-                            <span className="sm:hidden">{test.questionsCount} Qs</span>
-                            <span className="hidden sm:inline">{test.questionsCount} Questions</span>
-                          </span>
-                          <span className="flex items-center gap-1 bg-slate-50 sm:bg-transparent px-1.5 py-0.5 sm:p-0 rounded-md">
-                            <Clock size={11} className="text-slate-400" />
-                            {test.durationMinutes} min
-                          </span>
-                          {test.dueText && (
-                            <span className={`flex items-center gap-1 font-medium px-1.5 py-0.5 sm:p-0 rounded-md ${
-                              test.status === "Live"
-                                ? "text-rose-600 bg-rose-50 sm:bg-transparent font-bold animate-pulse"
-                                : test.isLocked
-                                ? "text-amber-800 bg-amber-50/80 sm:bg-transparent font-semibold"
-                                : test.isScheduled
-                                ? "text-amber-700 bg-amber-50/70 sm:bg-transparent font-semibold"
-                                : "text-amber-600 bg-amber-50/60 sm:bg-transparent"
-                            }`}>
-                              {test.status === "Live" ? (
-                                <Radio size={11} className="shrink-0" />
-                              ) : test.isLocked ? (
-                                <Lock size={11} className="shrink-0" />
-                              ) : (
-                                <Calendar size={11} className="shrink-0" />
-                              )}
-                              <span>{test.dueText}</span>
-                            </span>
-                          )}
-                          {isCompleted && test.scoreText && (
-                            <span className="font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
-                              {test.scoreText}
-                            </span>
-                          )}
-                        </div>
                       </div>
                     </div>
 
-                    {/* Right: Action Buttons (Mobile-first, touch-friendly min-h-[42px]) */}
-                    <div className="flex items-center gap-2 shrink-0 pt-2.5 sm:pt-0 border-t sm:border-t-0 border-slate-100 w-full sm:w-auto">
-                      {test.isScheduled && !isCompleted && test.scheduleDate && (
-                        <button
-                          type="button"
-                          onClick={() => exportTestToIcs(test, (msg) => triggerToast(msg))}
-                          className="min-h-[42px] sm:min-h-[38px] px-3 py-2 border border-amber-200/90 hover:border-amber-400 bg-amber-50/70 hover:bg-amber-100/70 active:scale-[0.98] text-amber-800 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs shrink-0 touch-manipulation"
-                          title="Add to Device Calendar (.ics)"
-                          aria-label="Add to Device Calendar"
-                        >
-                          <CalendarDays size={13} className="text-amber-600" />
-                          <span className="sm:hidden">Remind</span>
-                          <span className="hidden sm:inline">Add to Calendar</span>
-                        </button>
-                      )}
+                    {/* Bottom on mobile, Right on desktop: Metadata + Action */}
+                    <div className="flex items-center justify-between sm:justify-end gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100/90 w-full sm:w-auto">
+                      {/* Left side on mobile: Questions & Duration */}
+                      <div className="flex items-center gap-1.5 sm:gap-2.5 text-[10px] sm:text-[11px] text-slate-500 font-medium flex-wrap">
+                        <span className="flex items-center gap-1 bg-slate-50 sm:bg-transparent px-1.5 py-0.5 sm:p-0 rounded">
+                          <FileText size={11} className="text-slate-400" />
+                          <span>{test.questionsCount} Qs</span>
+                        </span>
+                        <span className="text-slate-300">•</span>
+                        <span className="flex items-center gap-1 bg-slate-50 sm:bg-transparent px-1.5 py-0.5 sm:p-0 rounded">
+                          <Clock size={11} className="text-slate-400" />
+                          <span>{test.durationMinutes} min</span>
+                        </span>
+                        {test.dueText && (
+                          <>
+                            <span className="text-slate-300">•</span>
+                            <span className={`flex items-center gap-1 ${
+                              test.status === "Live"
+                                ? "text-rose-600 font-bold"
+                                : "text-amber-700 font-semibold"
+                            }`}>
+                              {test.dueText}
+                            </span>
+                          </>
+                        )}
+                        {isCompleted && test.scoreText && (
+                          <span className="font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded text-[10px] border border-emerald-100">
+                            {test.scoreText}
+                          </span>
+                        )}
+                      </div>
 
-                      {isCompleted ? (
-                        <button
-                          type="button"
-                          onClick={() => setViewingResult(test)}
-                          className="flex-1 sm:flex-initial w-full sm:w-auto min-h-[42px] sm:min-h-[38px] px-4 py-2 border border-slate-200 hover:border-blue-400 bg-slate-50 hover:bg-blue-50 text-slate-700 hover:text-blue-700 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-[0.99] touch-manipulation"
-                        >
-                          <BarChart2 size={13} /> View Result
-                        </button>
-                      ) : test.isLocked ? (
-                        <button
-                          type="button"
-                          onClick={() => triggerToast(test.lockReason || `🔒 Opens on ${test.scheduleDate || "scheduled date"} at ${test.startTime || "scheduled time"}.`)}
-                          className="flex-1 sm:flex-initial w-full sm:w-auto min-h-[42px] sm:min-h-[38px] px-3.5 py-2 bg-slate-100 hover:bg-slate-200/80 text-slate-600 border border-slate-200/90 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-colors active:scale-[0.99] touch-manipulation"
-                          title={test.lockReason || "Locked until scheduled time"}
-                        >
-                          <Lock size={12} className="text-slate-500 shrink-0" />
-                          <span className="truncate">Opens at {test.startTime || "Time"}</span>
-                        </button>
-                      ) : test.isLive ? (
-                        <button
-                          type="button"
-                          onClick={() => handleStartTest(test)}
-                          className="flex-1 sm:flex-initial w-full sm:w-auto min-h-[42px] sm:min-h-[38px] px-5 py-2 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 active:scale-[0.98] text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm shadow-rose-200/70 cursor-pointer animate-pulse touch-manipulation"
-                        >
-                          <Radio size={13} className="text-white" /> Live Now • Start Test
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => handleStartTest(test)}
-                          className="flex-1 sm:flex-initial w-full sm:w-auto min-h-[42px] sm:min-h-[38px] px-5 py-2 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer touch-manipulation"
-                        >
-                          <Play size={13} className="fill-white" /> Start Test
-                        </button>
-                      )}
+                      {/* Right side: Action Button */}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {test.isScheduled && !isCompleted && test.scheduleDate && (test.isLocked || test.isLive) && (
+                          <button
+                            type="button"
+                            onClick={() => exportTestToIcs(test, (msg) => triggerToast(msg))}
+                            className="h-8 px-2 border border-amber-200 hover:border-amber-400 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 cursor-pointer shadow-2xs"
+                            title="Add to Calendar (.ics)"
+                            aria-label="Add to Calendar"
+                          >
+                            <CalendarDays size={12} className="text-amber-600" />
+                            <span className="hidden md:inline">Calendar</span>
+                          </button>
+                        )}
+
+                        {isCompleted ? (
+                          <button
+                            type="button"
+                            onClick={() => setViewingResult(test)}
+                            className="h-8 px-3 border border-slate-200 hover:border-blue-400 bg-slate-50 hover:bg-blue-50 text-slate-700 hover:text-blue-700 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-2xs transition-all"
+                          >
+                            <BarChart2 size={12} />
+                            <span>Result</span>
+                          </button>
+                        ) : test.isLocked ? (
+                          <button
+                            type="button"
+                            onClick={() => triggerToast(test.lockReason || `🔒 Opens on ${test.scheduleDate || "scheduled date"} at ${test.startTime || "scheduled time"}.`)}
+                            className="h-8 px-2.5 bg-slate-100 hover:bg-slate-200/80 text-slate-600 border border-slate-200/90 rounded-lg text-[11px] font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                            title={test.lockReason || "Locked until scheduled time"}
+                          >
+                            <Lock size={11} className="text-slate-500 shrink-0" />
+                            <span>Opens {test.startTime || "Soon"}</span>
+                          </button>
+                        ) : test.questionsCount === 0 ? (
+                          <div
+                            className="h-8 px-2.5 bg-slate-100 text-slate-400 border border-slate-200/80 rounded-lg text-[11px] font-semibold flex items-center gap-1 cursor-not-allowed select-none"
+                            title="Questions for this test have not been uploaded yet."
+                          >
+                            <HelpCircle size={12} />
+                            <span>Pending</span>
+                          </div>
+                        ) : test.isLive ? (
+                          <button
+                            type="button"
+                            onClick={() => handleStartTest(test)}
+                            className="h-8 px-3.5 bg-gradient-to-r from-rose-600 to-red-600 text-white rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm shadow-rose-200/70 animate-pulse cursor-pointer"
+                          >
+                            <Radio size={11} className="text-white" />
+                            <span>Start</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleStartTest(test)}
+                            className="h-8 px-3.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-2xs cursor-pointer transition-all"
+                          >
+                            <Play size={11} className="fill-white" />
+                            <span>Start Test</span>
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
@@ -1676,10 +1727,10 @@ export default function TestsClient({
                     </div>
                     <div className="min-w-0 flex-1">
                       <h4 className="text-xs font-bold text-slate-900 truncate">
-                        {upcomingTest.title}
+                        {formatCleanTitle(upcomingTest.title).cleanTitle}
                       </h4>
                       <p className="text-[11px] text-slate-400 mt-0.5 truncate">
-                        {upcomingTest.module}
+                        {formatCleanTitle(upcomingTest.title).subtitleMod || upcomingTest.module}
                       </p>
                     </div>
                   </div>
@@ -1696,13 +1747,23 @@ export default function TestsClient({
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => handleStartTest(upcomingTest)}
-                  className="w-full min-h-[42px] bg-blue-600 hover:bg-blue-700 active:scale-98 text-white rounded-xl font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  Start Test Now
-                </button>
+                {upcomingTest.questionsCount === 0 ? (
+                  <div
+                    className="w-full min-h-[42px] bg-slate-100 text-slate-400 border border-slate-200/80 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 cursor-not-allowed select-none"
+                    title="Questions for this test have not been uploaded yet."
+                  >
+                    <HelpCircle size={14} />
+                    <span>Questions Pending</span>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleStartTest(upcomingTest)}
+                    className="w-full min-h-[42px] bg-blue-600 hover:bg-blue-700 active:scale-98 text-white rounded-xl font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <Play size={14} fill="currentColor" /> Start Test Now
+                  </button>
+                )}
               </div>
             ) : (
               <div className="py-4 text-center text-xs text-slate-500 font-medium bg-slate-50/70 rounded-xl border border-slate-100">
