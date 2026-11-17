@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import bcrypt from "bcryptjs";
-import { createPublicSupabaseClient } from "./supabase-server";
+import { createPublicSupabaseClient, createAdminSupabaseClient } from "./supabase-server";
 
 export interface StudentRecord {
   id: string;
@@ -270,18 +270,38 @@ export async function updateStudentProfile(
   id: string,
   updates: Record<string, any>
 ): Promise<StudentRecord | null> {
-  const supabase = createPublicSupabaseClient();
+  const supabase = createAdminSupabaseClient();
   let updated: StudentRecord | null = null;
 
   try {
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from("students")
       .update(updates)
       .eq("id", id)
       .select()
       .maybeSingle();
+
+    // If Postgres complains about missing columns (e.g. bio, interests, qualification), strip them and retry
+    if (error && error.code === "42703") {
+      console.warn("Retrying student update without non-existent columns:", error.message);
+      const safeUpdates = { ...updates };
+      delete safeUpdates.bio;
+      delete safeUpdates.interests;
+      delete safeUpdates.qualification;
+      const retry = await supabase
+        .from("students")
+        .update(safeUpdates)
+        .eq("id", id)
+        .select()
+        .maybeSingle();
+      data = retry.data;
+      error = retry.error;
+    }
+
     if (!error && data) {
       updated = data as StudentRecord;
+    } else if (error) {
+      console.error("Supabase student update error:", error);
     }
   } catch (err) {
     console.warn("Supabase update error:", err);
@@ -325,12 +345,15 @@ export async function updateStudentPassword(
   const salt = await bcrypt.genSalt(10);
   const newHash = await bcrypt.hash(newPass, salt);
 
-  const supabase = createPublicSupabaseClient();
+  const supabase = createAdminSupabaseClient();
   try {
-    await supabase
+    const { error: passErr } = await supabase
       .from("students")
       .update({ password_hash: newHash })
       .eq("id", id);
+    if (passErr) {
+      console.error("Supabase password update error:", passErr);
+    }
   } catch (e) {
     console.warn("Could not update Supabase password:", e);
   }
