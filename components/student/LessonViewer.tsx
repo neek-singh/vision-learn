@@ -5,6 +5,7 @@ import { X, Video, ExternalLink, FileText, BookOpen, Clock, Tv, CheckCircle2, He
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { safeCopyToClipboard, safeClearClipboard } from "@/lib/utils";
+import { enhanceCodeBlocks } from "@/lib/codeHighlighter";
 
 interface MCQQuestion {
   id: string;
@@ -406,35 +407,10 @@ export default function LessonViewer({
 
   const questions = getQuestions();
 
-  // Add Copy buttons to code blocks and responsive wrappers to tables
+  // Syntax highlighting, macOS header, Copy buttons to code blocks, and responsive wrappers to tables
   useEffect(() => {
-    const timer = setTimeout(() => {
-      const preBlocks = document.querySelectorAll('.rich-content pre');
-      preBlocks.forEach((el) => {
-        const pre = el as HTMLElement;
-        if (pre.querySelector('.copy-button')) return;
-        
-        pre.style.position = 'relative';
-        const button = document.createElement('button');
-        button.innerHTML = 'Copy';
-        button.className = 'copy-button absolute top-3 right-3 px-3 py-1 bg-slate-800 text-slate-400 hover:text-white rounded text-[10px] font-black uppercase tracking-widest transition-all opacity-0 group-hover:opacity-100';
-        
-        pre.classList.add('group');
-        
-        button.onclick = () => {
-          const codeElement = pre.querySelector('code') as HTMLElement;
-          const code = codeElement?.innerText || pre.innerText;
-          safeCopyToClipboard(code).then((ok) => {
-            if (ok) {
-              button.innerHTML = 'Copied!';
-              setTimeout(() => button.innerHTML = 'Copy', 2000);
-            }
-          });
-        };
-        
-        pre.appendChild(button);
-      });
-
+    const t1 = setTimeout(() => {
+      enhanceCodeBlocks();
       // Wrap tables for responsive horizontal scrolling on small screens
       const tables = document.querySelectorAll('.rich-content table');
       tables.forEach((tbl) => {
@@ -444,9 +420,17 @@ export default function LessonViewer({
         tbl.parentNode?.insertBefore(wrapper, tbl);
         wrapper.appendChild(tbl);
       });
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [lesson.notes_content]);
+    }, 50);
+
+    const t2 = setTimeout(() => {
+      enhanceCodeBlocks();
+    }, 300);
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [lesson.id, lesson.notes_content]);
 
   return (
     <div className={`fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[100] flex items-center justify-center animate-in fade-in duration-300 ${isFullScreen ? 'p-0' : 'p-0 sm:p-4'}`} role="dialog" aria-modal="true">

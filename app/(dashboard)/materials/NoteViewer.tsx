@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
 import { ArrowLeft, X } from "lucide-react";
+import { enhanceCodeBlocks } from "@/lib/codeHighlighter";
 
 interface NoteViewerProps {
   item: any;
@@ -8,6 +10,17 @@ interface NoteViewerProps {
 }
 
 export default function NoteViewer({ item, onClose }: NoteViewerProps) {
+  useEffect(() => {
+    if (item?.code_content) {
+      const t1 = setTimeout(() => enhanceCodeBlocks(), 50);
+      const t2 = setTimeout(() => enhanceCodeBlocks(), 300);
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+      };
+    }
+  }, [item?.code_content]);
+
   if (!item) return null;
 
   return (
