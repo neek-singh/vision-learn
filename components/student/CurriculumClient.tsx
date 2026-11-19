@@ -2859,21 +2859,10 @@ function LessonItem({
           {durationText}
         </span>
 
-        {/* Circular Action Button */}
-        {!isLocked ? (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              openLesson(lesson);
-            }}
-            className="w-6 h-6 sm:w-5 sm:h-5 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-2xs transition-transform active:scale-90 cursor-pointer shrink-0"
-            title="Start / View Lesson"
-          >
-            <Play size={10} className="fill-current translate-x-[0.5px]" />
-          </button>
-        ) : (
-          <div className="w-6 h-6 sm:w-5 sm:h-5 rounded-full border border-slate-200 text-slate-300 flex items-center justify-center shrink-0">
-            <Lock size={10} />
+        {/* Lock indicator if lesson is scheduled/locked */}
+        {isLocked && (
+          <div className="w-5 h-5 flex items-center justify-center text-slate-400 shrink-0" title="Lesson Locked">
+            <Lock size={12} />
           </div>
         )}
       </div>
