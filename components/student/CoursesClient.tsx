@@ -19,7 +19,10 @@ import {
   FileSpreadsheet,
   Cpu,
   ShieldCheck,
-  ShoppingBag
+  ShoppingBag,
+  Phone,
+  MessageCircle,
+  X
 } from "lucide-react";
 
 interface CoursesClientProps {
@@ -40,6 +43,7 @@ export function CoursesClient({
   const [activeTab, setActiveTab] = useState<"all" | "enrolled" | "available">("all");
   const [exploreFilter, setExploreFilter] = useState<"all" | "free" | "paid" | "popular">("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [inquiryCourse, setInquiryCourse] = useState<any | null>(null);
 
   // Safe offline hydration inside useEffect to prevent React 19 hydration mismatch
   const [cachedData, setCachedData] = useState<any>(null);
@@ -116,6 +120,7 @@ export function CoursesClient({
         lessonsCount,
         icon,
         iconBg,
+        nextLessonId: enrollment.next_lesson_id || null,
       };
     });
   }, [initialEnrollments, modulesCountMap, lessonsCountMap]);
@@ -247,7 +252,7 @@ export function CoursesClient({
       </div>
 
       {/* 2. Horizontal Navigation Tabs */}
-      <div className="border-b border-slate-200 flex items-center gap-4 sm:gap-7 overflow-x-auto text-xs sm:text-sm font-semibold text-slate-500 pb-2">
+      <div className="border-b border-slate-200 flex items-center gap-4 sm:gap-7 overflow-x-auto scrollbar-hide text-xs sm:text-sm font-semibold text-slate-500 pb-2">
         <button
           onClick={() => setActiveTab("all")}
           className={`pb-2 -mb-[10px] transition-all cursor-pointer whitespace-nowrap min-h-[36px] flex items-center ${
@@ -295,14 +300,24 @@ export function CoursesClient({
                 Courses you have purchased or joined. Continue learning from where you left.
               </p>
             </div>
-            <Link
-              href="/curriculum"
-              className="text-[11px] font-bold text-blue-600 hover:text-blue-700 border border-blue-200 hover:border-blue-300 rounded-lg px-2.5 py-1.5 sm:py-1 transition-all flex items-center gap-1 shadow-2xs whitespace-nowrap shrink-0 min-h-[32px] sm:min-h-0"
-            >
-              <span className="sm:hidden">View All</span>
-              <span className="hidden sm:inline">View All My Courses</span>
-              <ArrowRight size={12} />
-            </Link>
+            {activeTab === "enrolled" ? (
+              <button
+                onClick={() => setActiveTab("all")}
+                className="text-[11px] font-bold text-slate-600 hover:text-slate-800 border border-slate-200 hover:border-slate-300 rounded-lg px-2.5 py-1.5 sm:py-1 transition-all flex items-center gap-1 shadow-2xs whitespace-nowrap shrink-0 min-h-[32px] sm:min-h-0 cursor-pointer"
+              >
+                <span>Show All Courses</span>
+                <ArrowRight size={12} />
+              </button>
+            ) : (
+              <button
+                onClick={() => setActiveTab("enrolled")}
+                className="text-[11px] font-bold text-blue-600 hover:text-blue-700 border border-blue-200 hover:border-blue-300 rounded-lg px-2.5 py-1.5 sm:py-1 transition-all flex items-center gap-1 shadow-2xs whitespace-nowrap shrink-0 min-h-[32px] sm:min-h-0 cursor-pointer"
+              >
+                <span className="sm:hidden">View All</span>
+                <span className="hidden sm:inline">View Enrolled ({enrolledCourses.length})</span>
+                <ArrowRight size={12} />
+              </button>
+            )}
           </div>
 
           {/* Enrolled Courses Cards Grid or Empty State */}
@@ -329,44 +344,52 @@ export function CoursesClient({
                   key={course.id}
                   className="bg-white rounded-xl border border-slate-200/80 hover:border-slate-300 p-3 sm:p-3.5 space-y-2.5 sm:space-y-3 shadow-2xs transition-all hover:shadow-xs flex flex-col justify-between"
                 >
-                  {/* Header: Icon + Title + Status Badge */}
-                  <div className="space-y-2 sm:space-y-2.5">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-                        <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 shadow-xs font-bold text-xs ${course.iconBg}`}>
-                          {course.icon}
-                        </div>
-                        <div className="min-w-0">
-                          <h3 className="text-xs sm:text-sm font-bold text-slate-900 truncate leading-snug">
-                            {course.title}
-                          </h3>
-                          <p className="hidden sm:block text-[10px] text-slate-400 font-medium truncate mt-0.5">
-                            {course.subtitle}
-                          </p>
-                        </div>
+                  {/* Header: Icon + Badges on Top Row, Title Full-Width below */}
+                  <div className="space-y-2">
+                    {/* Top Row: Icon on left, Batch & Status badges on right */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 shadow-xs font-bold text-xs ${course.iconBg}`}>
+                        {course.icon}
                       </div>
 
-                      <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+                      <div className="flex items-center gap-1.5 flex-wrap justify-end">
                         {course.batch && (
                           <span 
-                            className="text-[9px] font-bold text-blue-700 bg-blue-50 border border-blue-200/80 px-1.5 py-0.5 rounded-md truncate max-w-[90px] sm:max-w-[120px]"
+                            className="text-[9px] sm:text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200/80 px-2 py-0.5 rounded-md inline-flex items-center gap-1 max-w-[140px] sm:max-w-[180px] truncate"
                             title={`Batch: ${course.batch}`}
                           >
-                            {course.batch}
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+                            <span className="truncate">{course.batch}</span>
                           </span>
                         )}
                         {course.isCompleted ? (
-                          <span className="text-[9px] sm:text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-1.5 sm:px-2 py-0.5 rounded-md">
+                          <span className="text-[9px] sm:text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-md inline-flex items-center gap-1 shrink-0">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
                             Completed
                           </span>
                         ) : (
-                          <span className="text-[9px] sm:text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-100 px-1.5 sm:px-2 py-0.5 rounded-md">
+                          <span className="text-[9px] sm:text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200/80 px-2 py-0.5 rounded-md inline-flex items-center gap-1 shrink-0">
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
                             In Progress
                           </span>
                         )}
                       </div>
                     </div>
 
+                    {/* Title & Subtitle - Full Width, line-clamp-2 */}
+                    <div className="pt-0.5">
+                      <h3 className="text-xs sm:text-sm font-bold text-slate-900 leading-snug line-clamp-2">
+                        {course.title}
+                      </h3>
+                      {course.subtitle && (
+                        <p className="hidden sm:block text-[10px] text-slate-400 font-medium truncate mt-0.5">
+                          {course.subtitle}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 sm:space-y-2.5">
                     {/* Progress Bar & Percentage */}
                     <div className="space-y-1">
                       <div className="flex items-center justify-between text-[11px] font-bold">
@@ -402,7 +425,7 @@ export function CoursesClient({
                   {/* Action Buttons: Continue Learning & View Syllabus */}
                   <div className="grid grid-cols-2 gap-2 pt-2">
                     <Link
-                      href={`/curriculum?course=${course.courseId}`}
+                      href={course.nextLessonId ? `/curriculum?course=${course.courseId}&lessonId=${course.nextLessonId}` : `/curriculum?course=${course.courseId}`}
                       className="w-full bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold py-2 sm:py-1.5 px-2 rounded-lg text-xs transition-all flex items-center justify-center gap-1 shadow-2xs min-h-[36px] sm:min-h-0"
                     >
                       {course.isCompleted ? (
@@ -436,7 +459,7 @@ export function CoursesClient({
       )}
 
       {/* 4. Section: Available Courses */}
-      {(activeTab === "available" || activeTab === "all" || activeTab === "enrolled") && (
+      {(activeTab === "available" || activeTab === "all") && (
         <section className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-5 shadow-xs space-y-3 sm:space-y-3.5">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2.5">
             <div>
@@ -588,9 +611,7 @@ export function CoursesClient({
                   {/* Bottom Action Buttons: Buy Now & View Details */}
                   <div className="grid grid-cols-2 gap-1.5 pt-2 border-t border-slate-100/80">
                     <button 
-                      onClick={() => {
-                        alert(`Enrollment / Payment inquiry for ${course.title} submitted. Institute admin will verify.`);
-                      }}
+                      onClick={() => setInquiryCourse(course)}
                       className="w-full bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold py-2 sm:py-1.5 px-2 rounded-lg text-xs transition-all flex items-center justify-center gap-1 shadow-2xs cursor-pointer min-h-[36px] sm:min-h-0"
                     >
                       <ShoppingBag size={11} />
@@ -620,6 +641,104 @@ export function CoursesClient({
             </div>
           )}
         </section>
+      )}
+
+      {/* 5. Course Admission & Inquiry Modal */}
+      {inquiryCourse && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200"
+          onClick={() => setInquiryCourse(null)}
+        >
+          <div 
+            className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-4 sm:p-6 space-y-4 border border-slate-100 relative animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => setInquiryCourse(null)}
+              className="absolute top-3.5 right-3.5 p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+              aria-label="Close"
+            >
+              <X size={18} />
+            </button>
+
+            {/* Modal Header */}
+            <div className="flex items-start gap-3 pr-6">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shrink-0 font-bold">
+                <GraduationCap size={22} />
+              </div>
+              <div className="min-w-0">
+                <div className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full mb-1">
+                  <ShieldCheck size={11} />
+                  <span>Verified Institute Admission</span>
+                </div>
+                <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-snug">
+                  {inquiryCourse.title}
+                </h3>
+              </div>
+            </div>
+
+            {/* Quick Specs Badges */}
+            <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 grid grid-cols-3 gap-2 text-center">
+              <div>
+                <span className="block text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Duration</span>
+                <span className="text-xs font-bold text-slate-800">{inquiryCourse.duration}</span>
+              </div>
+              <div>
+                <span className="block text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Curriculum</span>
+                <span className="text-xs font-bold text-slate-800">{inquiryCourse.modules} Modules</span>
+              </div>
+              <div>
+                <span className="block text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Fee</span>
+                <span className="text-xs font-black text-blue-600">{inquiryCourse.price}</span>
+              </div>
+            </div>
+
+            {/* Admission Guidance Notice */}
+            <div className="text-xs text-slate-600 bg-amber-50/70 border border-amber-200/60 rounded-xl p-3 space-y-1">
+              <p className="font-bold text-amber-900 flex items-center gap-1.5 text-xs">
+                <span>Direct Institute Admission Notice</span>
+              </p>
+              <p className="text-[11px] text-amber-800/90 leading-relaxed">
+                Offline aur online dono admission options available hain. Faculty se direct batch timing, installment payment aur admission procedure confirm karne ke liye WhatsApp ya call karein.
+              </p>
+            </div>
+
+            {/* Contact Action Buttons */}
+            <div className="space-y-2 pt-1">
+              <a
+                href={`https://wa.me/918103170595?text=${encodeURIComponent(
+                  `Hello Vision Computer Institute,\n\nI want to enroll in the "${inquiryCourse.title}" course.\nPlease share admission process, upcoming batch timings and payment details.`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs sm:text-sm transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+              >
+                <MessageCircle size={16} />
+                <span>Chat on WhatsApp (+91 81031 70595)</span>
+              </a>
+
+              <div className="grid grid-cols-2 gap-2">
+                <a
+                  href="tel:+918103170595"
+                  className="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-2 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Phone size={13} className="text-slate-600" />
+                  <span>Direct Call</span>
+                </a>
+
+                <Link
+                  href={`/curriculum?course=${inquiryCourse.id}&tab=syllabus`}
+                  onClick={() => setInquiryCourse(null)}
+                  className="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-2 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <BookOpen size={13} className="text-blue-600" />
+                  <span>View Syllabus</span>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -49,25 +49,50 @@ export default async function CoursesPage() {
   // 3. Fetch module and lesson counts for courses
   const { data: modules } = await supabase
     .from("lms_modules")
-    .select("id, course_id, lessons(id)");
+    .select("id, course_id, order_index, lessons(id, title, order_index)")
+    .order("order_index", { ascending: true });
 
   const modulesCountMap: Record<string, number> = {};
   const lessonsCountMap: Record<string, number> = {};
   const courseLessonsMap: Record<string, string[]> = {};
+  const nextLessonMap: Record<string, string> = {};
 
+  // Group modules by course_id to preserve curriculum hierarchy
+  const courseModulesMap: Record<string, any[]> = {};
   (modules || []).forEach((m: any) => {
     if (m.course_id) {
-      modulesCountMap[m.course_id] = (modulesCountMap[m.course_id] || 0) + 1;
-      const lessonList = m.lessons || [];
-      lessonsCountMap[m.course_id] = (lessonsCountMap[m.course_id] || 0) + lessonList.length;
-      if (!courseLessonsMap[m.course_id]) {
-        courseLessonsMap[m.course_id] = [];
+      if (!courseModulesMap[m.course_id]) {
+        courseModulesMap[m.course_id] = [];
       }
-      lessonList.forEach((l: any) => courseLessonsMap[m.course_id].push(l.id));
+      courseModulesMap[m.course_id].push(m);
     }
   });
 
-  // Calculate accurate progress for each enrollment
+  Object.entries(courseModulesMap).forEach(([cId, mods]) => {
+    mods.sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+    modulesCountMap[cId] = mods.length;
+
+    const allOrderedLessons: any[] = [];
+    mods.forEach(mod => {
+      const sortedLessons = [...(mod.lessons || [])].sort(
+        (a, b) => (a.order_index ?? 0) - (b.order_index ?? 0)
+      );
+      allOrderedLessons.push(...sortedLessons);
+    });
+
+    lessonsCountMap[cId] = allOrderedLessons.length;
+    courseLessonsMap[cId] = allOrderedLessons.map(l => l.id);
+
+    // Identify the student's next unfinished lesson
+    const nextUnfinished = allOrderedLessons.find(l => !completedLessonIds.has(l.id));
+    if (nextUnfinished) {
+      nextLessonMap[cId] = nextUnfinished.id;
+    } else if (allOrderedLessons.length > 0) {
+      nextLessonMap[cId] = allOrderedLessons[0].id;
+    }
+  });
+
+  // Calculate accurate progress & next lesson for each enrollment
   const enrichedEnrollments = (enrollments || []).map((e: any) => {
     const courseId = e.course_id;
     const lessonIds = courseLessonsMap[courseId] || [];
@@ -78,7 +103,8 @@ export default async function CoursesPage() {
     }
     return {
       ...e,
-      progress_percentage: progress
+      progress_percentage: progress,
+      next_lesson_id: nextLessonMap[courseId] || null
     };
   });
 
