@@ -1898,6 +1898,7 @@ export function CurriculumClient({
                 openLesson={openLesson}
                 nextLockedLessonId={nextLockedLessonId}
                 displayModules={displayModules}
+                activeNextLessonId={nextUpLesson?.id}
               />
             )}
           </div>
@@ -2163,9 +2164,10 @@ function SeriesView({
   toggleLessonCompletion,
   openLesson,
   nextLockedLessonId,
-  displayModules
+  displayModules,
+  activeNextLessonId
 }: any) {
-  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('oldest');
 
   const enrichedLessons = useMemo(() => {
     return allLessons.map((lesson: any) => {
@@ -2273,7 +2275,8 @@ function SeriesView({
             const { lesson, schedule, schedDate, isLocked, isCompleted, moduleName } = entry;
             const lessonType = (lesson.lesson_type || lesson.type || 'video').toLowerCase();
             const isNextLocked = lesson.id === nextLockedLessonId;
-            const isInProgress = !isCompleted && !isLocked;
+            const isCurrentNext = !isCompleted && !isLocked && (lesson.id === activeNextLessonId);
+            const isInProgress = isCurrentNext;
             const isToday = schedDate ? schedDate.toDateString() === now.toDateString() : false;
             const isFuture = schedDate ? schedDate > now : false;
 
@@ -2299,8 +2302,10 @@ function SeriesView({
 
             let dotBg = `bg-gradient-to-br ${gradientClass}`;
             if (isCompleted) dotBg = 'bg-emerald-500 text-white';
-            if (isLocked && !isNextLocked) dotBg = 'bg-slate-100 border border-slate-250 text-slate-400';
-            if (isNextLocked) dotBg = 'bg-indigo-50 border border-indigo-200 text-indigo-600';
+            else if (isCurrentNext) dotBg = 'bg-blue-600 text-white ring-2 ring-blue-200';
+            else if (isLocked && !isNextLocked) dotBg = 'bg-slate-100 border border-slate-200 text-slate-400';
+            else if (isNextLocked) dotBg = 'bg-indigo-50 border border-indigo-200 text-indigo-600';
+            else dotBg = 'bg-slate-100 border border-slate-200 text-slate-400';
 
             // Date separator (compact inline pill)
             const dateStr = schedDate?.toDateString() || '';
@@ -2342,24 +2347,28 @@ function SeriesView({
                       <Lock size={9} className="text-slate-400" />
                     ) : isNextLocked ? (
                       <Lock size={9} className="text-indigo-600" />
+                    ) : isCurrentNext ? (
+                      <Play size={9} className="fill-current text-white translate-x-[0.5px]" />
                     ) : (
-                      <TypeIcon size={10} className="text-white" />
+                      <TypeIcon size={10} className="text-slate-400" />
                     )}
                   </div>
 
                   {/* Card with strictly bounded width and min-w-0 */}
                   <div
                     onClick={() => !isLocked && openLesson(lesson)}
-                    className={`flex-1 min-w-0 w-full flex items-center justify-between px-3 py-2 rounded-xl border transition-all duration-200 ${!isLocked ? 'cursor-pointer hover:border-indigo-200' : 'cursor-default'
-                      } ${isToday && isInProgress
-                        ? 'border-indigo-200 bg-indigo-50/20 shadow-2xs'
-                        : isNextLocked
-                          ? 'border-slate-200 bg-slate-50/50'
-                          : isLocked
-                            ? 'border-slate-100 bg-slate-50/40 opacity-75'
-                            : isCompleted
-                              ? 'border-emerald-100 bg-emerald-50/20 hover:border-emerald-200'
-                              : 'bg-white border-slate-200/70 hover:border-slate-300 shadow-2xs'
+                    className={`flex-1 min-w-0 w-full flex items-center justify-between px-3 py-2 sm:py-2.5 rounded-xl border transition-all duration-200 ${!isLocked ? 'cursor-pointer hover:border-blue-200' : 'cursor-default'
+                      } ${isCurrentNext
+                        ? 'border-blue-300 bg-blue-50/40 shadow-xs ring-1 ring-blue-200/50'
+                        : isToday && isInProgress
+                          ? 'border-indigo-200 bg-indigo-50/20 shadow-2xs'
+                          : isNextLocked
+                            ? 'border-slate-200 bg-slate-50/50'
+                            : isLocked
+                              ? 'border-slate-100 bg-slate-50/40 opacity-75'
+                              : isCompleted
+                                ? 'border-emerald-100 bg-emerald-50/20 hover:border-emerald-200'
+                                : 'bg-white border-slate-200/70 hover:border-slate-300 shadow-2xs'
                       }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
@@ -2371,10 +2380,12 @@ function SeriesView({
                       {/* Info */}
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5 min-w-0">
-                          <h5 className={`font-semibold text-xs sm:text-sm leading-snug truncate min-w-0 flex-1 ${isCompleted ? 'text-slate-600' : isLocked && !isNextLocked ? 'text-slate-400' : 'text-slate-900'
-                            }`}>
+                          <h5 className={`font-semibold text-xs sm:text-sm leading-snug line-clamp-2 break-words min-w-0 flex-1 ${
+                            isCompleted ? 'text-slate-600' : isCurrentNext ? 'text-blue-900 font-bold' : isLocked && !isNextLocked ? 'text-slate-400' : 'text-slate-900'
+                          }`}>
                             {lesson.title}
                           </h5>
+                          {isCurrentNext && <span className="text-[9px] font-bold text-blue-700 bg-blue-100/80 px-1.5 py-0.5 rounded border border-blue-200 shrink-0">Up Next</span>}
                           {isNextLocked && <span className="text-[9px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100 shrink-0">Next</span>}
                           {isToday && isInProgress && <span className="text-[9px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 shrink-0 animate-pulse">● Today</span>}
                         </div>
@@ -2409,10 +2420,13 @@ function SeriesView({
                             e.stopPropagation();
                             openLesson(lesson);
                           }}
-                          className={`w-full py-1 text-center rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 cursor-pointer ${isCompleted ? 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200/60' :
-                              isInProgress ? `bg-indigo-600 text-white shadow-2xs hover:bg-indigo-700` :
-                                'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                            }`}
+                          className={`w-full py-1 text-center rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 cursor-pointer ${
+                            isCompleted
+                              ? 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200/60'
+                              : isCurrentNext
+                                ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-2xs'
+                                : 'bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 border border-slate-200/60'
+                          }`}
                         >
                           {isCompleted ? 'Review' : 'Start'}
                         </button>
