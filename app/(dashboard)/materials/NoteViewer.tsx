@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { ArrowLeft, X } from "lucide-react";
-import { enhanceCodeBlocks } from "@/lib/codeHighlighter";
+import { enhanceCodeBlocks, renderHighlightedHtml } from "@/lib/codeHighlighter";
 
 interface NoteViewerProps {
   item: any;
@@ -10,6 +10,11 @@ interface NoteViewerProps {
 }
 
 export default function NoteViewer({ item, onClose }: NoteViewerProps) {
+  const highlightedContent = useMemo(() => {
+    if (!item?.code_content) return '';
+    return renderHighlightedHtml(item.code_content);
+  }, [item?.code_content]);
+
   useEffect(() => {
     if (item?.code_content) {
       const t1 = setTimeout(() => enhanceCodeBlocks(), 50);
@@ -64,7 +69,7 @@ export default function NoteViewer({ item, onClose }: NoteViewerProps) {
               prose-strong:text-slate-900 prose-strong:font-black
               prose-img:rounded-[2rem] prose-img:shadow-xl
               prose-li:font-medium prose-li:text-slate-600"
-            dangerouslySetInnerHTML={{ __html: item.code_content }}
+            dangerouslySetInnerHTML={{ __html: highlightedContent }}
           />
         </article>
       </div>

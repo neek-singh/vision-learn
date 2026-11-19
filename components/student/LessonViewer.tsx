@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { X, Video, ExternalLink, FileText, BookOpen, Clock, Tv, CheckCircle2, HelpCircle, XCircle, Award, RotateCcw, Upload, Loader2, FileUp, Check, ChevronLeft, ChevronRight, ShieldAlert, ZoomIn, ZoomOut } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { safeCopyToClipboard, safeClearClipboard } from "@/lib/utils";
-import { enhanceCodeBlocks } from "@/lib/codeHighlighter";
+import { enhanceCodeBlocks, renderHighlightedHtml } from "@/lib/codeHighlighter";
 import { calculateReadingStats } from "@/lib/readingTime";
 
 interface MCQQuestion {
@@ -94,6 +94,12 @@ export default function LessonViewer({
   const [theaterMode, setTheaterMode] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [zoomLevel, setZoomLevel] = useState(16); // Default 16px (100%)
+
+  // Pre-render syntax highlighting, macOS header, and copy button directly into HTML
+  const highlightedContent = useMemo(() => {
+    if (!lesson?.notes_content) return '';
+    return renderHighlightedHtml(lesson.notes_content);
+  }, [lesson?.notes_content]);
 
   const handleZoomIn = () => setZoomLevel(prev => Math.min(prev + 2, 28));
   const handleZoomOut = () => setZoomLevel(prev => Math.max(prev - 2, 12));
@@ -940,9 +946,9 @@ export default function LessonViewer({
                     className="prose prose-slate max-w-none text-slate-600 leading-relaxed text-base"
                     style={{ '--notes-font-size': `${zoomLevel}px` } as React.CSSProperties}
                   >
-                     {lesson.notes_content ? (
+                     {highlightedContent ? (
                        <div 
-                         dangerouslySetInnerHTML={{ __html: lesson.notes_content }} 
+                         dangerouslySetInnerHTML={{ __html: highlightedContent }} 
                          className="rich-content"
                        />
                      ) : (lesson.lesson_type || lesson.type)?.toLowerCase().includes('offline') ? (
