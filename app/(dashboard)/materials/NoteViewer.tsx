@@ -58,7 +58,7 @@ export default function NoteViewer({ item, onClose }: NoteViewerProps) {
       <div className="flex-1 overflow-y-auto bg-white scrollbar-hide py-12 px-6">
         <article className="max-w-3xl mx-auto">
           <div 
-            className="prose prose-slate prose-lg max-w-none 
+            className="rich-content prose prose-slate prose-lg max-w-none 
               prose-headings:font-black prose-headings:text-slate-900 prose-headings:tracking-tight
               prose-p:text-slate-600 prose-p:leading-relaxed prose-p:font-medium
               prose-strong:text-slate-900 prose-strong:font-black
