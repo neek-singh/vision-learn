@@ -51,6 +51,7 @@ import {
   X
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { calculateReadingStats } from "@/lib/readingTime";
 import dynamic from "next/dynamic";
 import { CacheManager } from "@/lib/cache-manager";
 import { useCachedCurriculum } from "@/hooks/use-cached-curriculum";
@@ -2721,15 +2722,24 @@ function LessonItem({
   }
 
   // Calculate lesson duration display (e.g. "10 min", "15 min", "12 min")
-  const durationText = lesson.duration
-    ? `${lesson.duration} min`
-    : lessonType === 'video'
+  const durationText = (() => {
+    if (lesson.duration && lesson.duration !== '0') {
+      return `${lesson.duration} min`;
+    }
+    if (lesson.duration_mins && lesson.duration_mins > 0) {
+      return `${lesson.duration_mins} min`;
+    }
+    if (lesson.notes_content) {
+      return `${calculateReadingStats(lesson.notes_content, { lessonType }).readingTime} min`;
+    }
+    return lessonType === 'video'
       ? '15 min'
       : lessonType === 'mcq'
         ? '10 min'
         : lessonType === 'assignment' || lessonType === 'project'
           ? '20 min'
-          : '10 min';
+          : '8 min';
+  })();
 
   return (
     <div

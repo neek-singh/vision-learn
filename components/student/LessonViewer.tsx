@@ -6,6 +6,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { safeCopyToClipboard, safeClearClipboard } from "@/lib/utils";
 import { enhanceCodeBlocks } from "@/lib/codeHighlighter";
+import { calculateReadingStats } from "@/lib/readingTime";
 
 interface MCQQuestion {
   id: string;
@@ -481,9 +482,30 @@ export default function LessonViewer({
         <div className={`px-3.5 py-2.5 sm:px-6 sm:py-3.5 flex items-center justify-between bg-white border-b border-slate-100 shrink-0 ${isFullScreen ? 'rounded-none' : 'rounded-none sm:rounded-t-2xl sm:rounded-t-[2.5rem]'}`}>
           <div className="flex flex-col min-w-0 pr-2">
             <h3 className="text-sm sm:text-lg font-black text-slate-900 tracking-tight truncate">{lesson.title}</h3>
-            <p className="text-[10px] sm:text-xs font-bold text-slate-400 mt-0.5 uppercase tracking-wider">
-              {lessonType === 'mcq' ? 'Interactive Quiz' : (lesson.lesson_type || lesson.type)} • {lesson.duration || '0'} Mins
-            </p>
+            {(() => {
+              const displayDuration = (() => {
+                if (lesson.duration && lesson.duration !== '0') return `${lesson.duration} Mins`;
+                if (lesson.duration_mins && lesson.duration_mins > 0) return `${lesson.duration_mins} Mins`;
+                if (lesson.notes_content) {
+                  const stats = calculateReadingStats(lesson.notes_content, {
+                    lessonType,
+                    questionCount: questions?.length || 0
+                  });
+                  return `${stats.readingTime} Mins`;
+                }
+                return lessonType === 'mcq' ? `${Math.max(5, questions?.length || 5)} Mins` : '5 Mins';
+              })();
+
+              return (
+                <p className="text-[10px] sm:text-xs font-bold text-slate-400 mt-0.5 uppercase tracking-wider flex items-center gap-1.5">
+                  <span>{lessonType === 'mcq' ? 'Interactive Quiz' : (lesson.lesson_type || lesson.type)}</span>
+                  <span>•</span>
+                  <span className="flex items-center gap-1 text-slate-500 font-semibold normal-case">
+                    <Clock size={11} className="text-blue-500 stroke-[2.2]" /> {displayDuration}
+                  </span>
+                </p>
+              );
+            })()}
           </div>
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <button 
