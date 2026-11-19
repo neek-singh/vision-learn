@@ -1881,6 +1881,7 @@ export function CurriculumClient({
                     availableBatches={availableBatches}
                     chapters={chapters}
                     nextLockedLessonId={nextLockedLessonId}
+                    activeNextLessonId={nextUpLesson?.id}
                   />
                 ))}
               </div>
@@ -2453,7 +2454,8 @@ function ModuleItem({
   openLesson,
   availableBatches,
   chapters,
-  nextLockedLessonId
+  nextLockedLessonId,
+  activeNextLessonId
 }: any) {
   const lessons = useMemo(() =>
     (module.lessons || []).sort((a: any, b: any) => a.order_index - b.order_index),
@@ -2462,10 +2464,12 @@ function ModuleItem({
 
   const moduleChapters = useMemo(() => {
     const relevantChapters = [...(module.lms_chapters || [])].sort((a: any, b: any) => a.order_index - b.order_index);
-    return relevantChapters.map((chapter: any) => ({
-      ...chapter,
-      lessons: lessons.filter((l: any) => l.chapter_id === chapter.id)
-    }));
+    return relevantChapters
+      .map((chapter: any) => ({
+        ...chapter,
+        lessons: lessons.filter((l: any) => l.chapter_id === chapter.id)
+      }))
+      .filter((chapter: any) => chapter.lessons.length > 0);
   }, [module.lms_chapters, lessons]);
 
   const uncategorizedLessons = useMemo(() =>
@@ -2580,6 +2584,7 @@ function ModuleItem({
                       <LessonItem
                         key={lesson.id}
                         lIdx={lIdx}
+                        mIdx={mIdx}
                         lesson={lesson}
                         moduleTitle={module.title}
                         userProgress={userProgress}
@@ -2591,6 +2596,7 @@ function ModuleItem({
                         openLesson={openLesson}
                         availableBatches={availableBatches}
                         isNextLocked={lesson.id === nextLockedLessonId}
+                        activeNextLessonId={activeNextLessonId}
                       />
                     ));
                   })()}
@@ -2623,6 +2629,7 @@ function ModuleItem({
                     <LessonItem
                       key={lesson.id}
                       lIdx={lIdx}
+                      mIdx={mIdx}
                       lesson={lesson}
                       moduleTitle={module.title}
                       userProgress={userProgress}
@@ -2634,6 +2641,7 @@ function ModuleItem({
                       openLesson={openLesson}
                       availableBatches={availableBatches}
                       isNextLocked={lesson.id === nextLockedLessonId}
+                      activeNextLessonId={activeNextLessonId}
                     />
                   ));
                 })()}
@@ -2657,8 +2665,10 @@ function LessonItem({
   toggleLessonCompletion,
   openLesson,
   lIdx,
+  mIdx,
   availableBatches,
-  isNextLocked = false
+  isNextLocked = false,
+  activeNextLessonId
 }: any) {
   const isCompleted = userProgress.includes(lesson.id);
   const schedule = getLatestScheduleForLesson(currentSchedules, lesson);
@@ -2676,7 +2686,12 @@ function LessonItem({
   }
 
   const isLocked = !isScheduled || !isTimeReached;
-  const isInProgress = !isCompleted && !isLocked;
+  const isCurrentNext = !isCompleted && !isLocked && (lesson.id === activeNextLessonId);
+  const isInProgress = isCurrentNext;
+
+  const modNum = typeof mIdx === 'number' ? mIdx + 1 : 1;
+  const lessonNum = lesson.classIndex ? lesson.classIndex : lIdx + 1;
+  const indexLabel = `${modNum}.${lessonNum}`;
 
   const lessonType = (lesson.lesson_type || lesson.type || 'video').toLowerCase();
 
@@ -2744,16 +2759,18 @@ function LessonItem({
   return (
     <div
       onClick={() => !isLocked && openLesson(lesson)}
-      className={`flex items-center justify-between px-2.5 py-2 sm:px-3.5 sm:py-2.5 rounded-xl transition-all duration-150 group border ${!isLocked ? 'cursor-pointer hover:bg-slate-50/80 border-slate-100 hover:border-slate-200' : 'cursor-default opacity-85 border-slate-100/70 bg-slate-50/30'
-        } ${isInProgress ? 'bg-sky-50/30 border-sky-100' : isCompleted ? 'bg-white' : 'bg-white'
-        }`}
+      className={`flex items-center justify-between px-2.5 py-2.5 sm:px-3.5 sm:py-2.5 rounded-xl transition-all duration-150 group border ${
+        !isLocked ? 'cursor-pointer hover:bg-slate-50/80 border-slate-100 hover:border-slate-200' : 'cursor-default opacity-85 border-slate-100/70 bg-slate-50/30'
+      } ${
+        isCurrentNext ? 'bg-sky-50/50 border-sky-200/80 shadow-2xs' : isCompleted ? 'bg-white' : 'bg-white'
+      }`}
     >
       {/* Left side: Status Icon, File Icon, Index, Title */}
       <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
         {/* Status circle */}
         {isCompleted ? (
           <CheckCircle2 size={16} className="text-emerald-500 fill-emerald-50 shrink-0" />
-        ) : isInProgress ? (
+        ) : isCurrentNext ? (
           <PlayCircle size={16} className="text-blue-600 fill-blue-50 shrink-0" />
         ) : isLocked && !isNextLocked ? (
           <Circle size={16} className="text-slate-300 shrink-0" />
@@ -2766,60 +2783,65 @@ function LessonItem({
         {/* Small document icon */}
         <FileText size={13} className="text-slate-400 shrink-0 hidden sm:block" />
 
-        {/* Index e.g. 1.1 */}
-        <span className="text-[11px] font-medium text-slate-400 shrink-0 w-6">
-          {lesson.classIndex ? `1.${lesson.classIndex}` : `1.${lIdx + 1}`}
+        {/* Index e.g. 1.1, 2.1 */}
+        <span className="text-[11px] font-medium text-slate-400 shrink-0 min-w-[20px] text-left">
+          {indexLabel}
         </span>
 
-        {/* Title */}
-        <span className={`text-xs font-medium truncate min-w-0 ${isCompleted ? 'text-slate-700' : isLocked ? 'text-slate-500' : 'text-slate-900'
-          }`}>
+        {/* Title: full width, clean line-clamp-2 on mobile */}
+        <span className={`text-xs sm:text-[13px] font-medium min-w-0 line-clamp-2 leading-snug break-words ${
+          isCompleted ? 'text-slate-700' : isCurrentNext ? 'text-blue-900 font-semibold' : isLocked ? 'text-slate-500' : 'text-slate-900'
+        }`}>
           {lesson.title}
         </span>
       </div>
 
       {/* Right side: Status Pill, Type Pill, Duration, Action Button */}
       <div className="flex items-center gap-1.5 sm:gap-3 shrink-0 ml-2 sm:ml-3">
-        {/* Status Pill */}
+        {/* Status Pill - visible on desktop, hidden on mobile so title has full breathing room */}
         {isCompleted ? (
-          <span className="bg-emerald-50 text-emerald-600 border border-emerald-100/80 text-[10px] font-semibold px-2 py-0.5 rounded-md">
+          <span className="hidden sm:inline-block bg-emerald-50 text-emerald-600 border border-emerald-100/80 text-[10px] font-semibold px-2 py-0.5 rounded-md shrink-0">
             Completed
           </span>
-        ) : isInProgress ? (
-          <span className="bg-sky-50 text-sky-600 border border-sky-100/80 text-[10px] font-semibold px-2 py-0.5 rounded-md">
-            In Progress
+        ) : isCurrentNext ? (
+          <span className="hidden sm:inline-block bg-blue-50 text-blue-600 border border-blue-200 text-[10px] font-bold px-2 py-0.5 rounded-md shrink-0">
+            Up Next
           </span>
         ) : isNextLocked ? (
-          <span className="bg-blue-50 text-blue-600 border border-blue-100/80 text-[10px] font-semibold px-2 py-0.5 rounded-md">
+          <span className="hidden sm:inline-block bg-blue-50 text-blue-600 border border-blue-100/80 text-[10px] font-semibold px-2 py-0.5 rounded-md shrink-0">
             Next
           </span>
+        ) : isLocked ? (
+          <span className="hidden sm:inline-block bg-slate-100 text-slate-400 border border-slate-200/60 text-[10px] font-semibold px-2 py-0.5 rounded-md shrink-0">
+            Locked
+          </span>
         ) : (
-          <span className="bg-slate-50 text-slate-500 border border-slate-200/60 text-[10px] font-semibold px-2 py-0.5 rounded-md hidden sm:inline-block">
-            Not Started
+          <span className="hidden sm:inline-block bg-slate-50 text-slate-400 border border-slate-200/60 text-[10px] font-medium px-2 py-0.5 rounded-md shrink-0">
+            Upcoming
           </span>
         )}
 
         {/* Type Pill - hidden on mobile to give space for title */}
         {lessonType === 'video' ? (
-          <span className="hidden sm:inline-flex bg-sky-50 text-sky-600 border border-sky-100/70 text-[10px] font-semibold px-2 py-0.5 rounded-md items-center gap-1">
+          <span className="hidden sm:inline-flex bg-sky-50 text-sky-600 border border-sky-100/70 text-[10px] font-semibold px-2 py-0.5 rounded-md items-center gap-1 shrink-0">
             <Play size={9} className="fill-current" /> Video
           </span>
         ) : lessonType === 'mcq' ? (
-          <span className="hidden sm:inline-flex bg-purple-50 text-purple-600 border border-purple-100/70 text-[10px] font-semibold px-2 py-0.5 rounded-md items-center gap-1">
+          <span className="hidden sm:inline-flex bg-purple-50 text-purple-600 border border-purple-100/70 text-[10px] font-semibold px-2 py-0.5 rounded-md items-center gap-1 shrink-0">
             <HelpCircle size={10} /> MCQ Test
           </span>
         ) : lessonType === 'assignment' || lessonType === 'project' ? (
-          <span className="hidden sm:inline-flex bg-amber-50 text-amber-600 border border-amber-100/70 text-[10px] font-semibold px-2 py-0.5 rounded-md items-center gap-1">
+          <span className="hidden sm:inline-flex bg-amber-50 text-amber-600 border border-amber-100/70 text-[10px] font-semibold px-2 py-0.5 rounded-md items-center gap-1 shrink-0">
             <PenTool size={9} /> Practical
           </span>
         ) : (
-          <span className="hidden sm:inline-flex bg-sky-50 text-sky-600 border border-sky-100/70 text-[10px] font-semibold px-2 py-0.5 rounded-md items-center gap-1">
+          <span className="hidden sm:inline-flex bg-sky-50 text-sky-600 border border-sky-100/70 text-[10px] font-semibold px-2 py-0.5 rounded-md items-center gap-1 shrink-0">
             <BookOpen size={9} /> Theory
           </span>
         )}
 
         {/* Duration */}
-        <span className="text-[11px] font-medium text-slate-400 w-11 text-right hidden sm:inline-block">
+        <span className="text-[11px] font-medium text-slate-400 w-11 text-right hidden sm:inline-block shrink-0">
           {durationText}
         </span>
 

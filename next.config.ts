@@ -127,6 +127,7 @@ const withPWA = require('next-pwa')({
 
 
 const nextConfig: NextConfig = {
+  devIndicators: false,
   images: {
     formats: ['image/avif', 'image/webp'],
     remotePatterns: [
