@@ -527,9 +527,9 @@ export default function LessonViewer({
         <div 
           ref={scrollRef}
           onScroll={handleScroll}
-          className={`flex-1 overflow-y-auto bg-white scrollbar-hide relative min-h-0 ${isFullScreen ? 'p-3 sm:p-5' : 'p-3 sm:p-5'}`}
+          className={`flex-1 overflow-y-auto overflow-x-hidden w-full max-w-full min-w-0 bg-white scrollbar-hide relative min-h-0 ${isFullScreen ? 'p-3 sm:p-5' : 'p-3 sm:p-5'}`}
         >
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-4xl mx-auto w-full min-w-0 overflow-x-hidden">
              {lessonType === 'video' ? (
                <div className="space-y-4 mb-10">
                  <div className="hidden md:flex justify-end">
@@ -943,13 +943,13 @@ export default function LessonViewer({
                   </div>
                   <article 
                     ref={articleRef}
-                    className="prose prose-slate max-w-none text-slate-600 leading-relaxed text-base"
+                    className="prose prose-slate max-w-none w-full min-w-0 overflow-x-hidden text-slate-600 leading-relaxed text-base"
                     style={{ '--notes-font-size': `${zoomLevel}px` } as React.CSSProperties}
                   >
                      {highlightedContent ? (
                        <div 
                          dangerouslySetInnerHTML={{ __html: highlightedContent }} 
-                         className="rich-content"
+                         className="rich-content w-full min-w-0 overflow-x-hidden"
                        />
                      ) : (lesson.lesson_type || lesson.type)?.toLowerCase().includes('offline') ? (
                        <div>
