@@ -74,21 +74,38 @@ export default async function DashboardPage() {
 
   const completedLessonIds = new Set(progressRecords.map((p: any) => p.lesson_id));
 
-  // Map module lessons per course
-  const courseLessonsMap: Record<string, any[]> = {};
-  const courseLessonIdsMap: Record<string, string[]> = {};
+  // Map module lessons per course preserving chronological order
+  const courseModulesMap: Record<string, any[]> = {};
   allFetchedModules.forEach((m: any) => {
     if (m.course_id) {
-      if (!courseLessonsMap[m.course_id]) courseLessonsMap[m.course_id] = [];
-      if (!courseLessonIdsMap[m.course_id]) courseLessonIdsMap[m.course_id] = [];
-      (m.lessons || []).forEach((l: any) => {
-        courseLessonsMap[m.course_id].push(l);
-        courseLessonIdsMap[m.course_id].push(l.id);
-      });
+      if (!courseModulesMap[m.course_id]) courseModulesMap[m.course_id] = [];
+      courseModulesMap[m.course_id].push(m);
     }
   });
 
-  // Real enrolled courses list with live calculated progress
+  const courseLessonsMap: Record<string, any[]> = {};
+  const courseLessonIdsMap: Record<string, string[]> = {};
+  const nextLessonIdMap: Record<string, string> = {};
+
+  Object.entries(courseModulesMap).forEach(([cId, mods]) => {
+    mods.sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+    const allOrderedLessons: any[] = [];
+    mods.forEach(mod => {
+      const sorted = [...(mod.lessons || [])].sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+      allOrderedLessons.push(...sorted);
+    });
+    courseLessonsMap[cId] = allOrderedLessons;
+    courseLessonIdsMap[cId] = allOrderedLessons.map(l => l.id);
+
+    const nextUnfinished = allOrderedLessons.find(l => !completedLessonIds.has(l.id));
+    if (nextUnfinished) {
+      nextLessonIdMap[cId] = nextUnfinished.id;
+    } else if (allOrderedLessons.length > 0) {
+      nextLessonIdMap[cId] = allOrderedLessons[0].id;
+    }
+  });
+
+  // Real enrolled courses list with live calculated progress, batch info & next lesson id
   const enrolledCourses = enrollments.map((e: any) => {
     const lessonIds = courseLessonIdsMap[e.course_id] || [];
     const total = lessonIds.length;
@@ -98,6 +115,8 @@ export default async function DashboardPage() {
       id: e.courses?.id || e.course_id,
       title: e.courses?.title || "Enrolled Course",
       code: e.courses?.course_code || "",
+      batch: e.batch || student?.batch || null,
+      nextLessonId: nextLessonIdMap[e.course_id] || null,
       totalLessons: total,
       completedLessons: completed,
       progress: Math.min(100, Math.max(0, progress))

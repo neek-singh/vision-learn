@@ -23,14 +23,25 @@ import {
   Sparkles,
   Quote,
   Box,
-  Monitor
+  Monitor,
+  Play,
+  ArrowRight
 } from "lucide-react";
 
 interface DashboardClientProps {
   student: any;
   mainCourse: any;
   otherCourses: any[];
-  enrolledCourses?: { id: string; title: string; code?: string; progress: number; totalLessons?: number; completedLessons?: number }[];
+  enrolledCourses?: { 
+    id: string; 
+    title: string; 
+    code?: string; 
+    batch?: string | null;
+    nextLessonId?: string | null;
+    progress: number; 
+    totalLessons?: number; 
+    completedLessons?: number 
+  }[];
   recentAssignments?: { id: string; title: string; module?: string; status: string; dueDate?: string }[];
   attendanceStats?: { total: number; present: number; percentage: number };
   certificatesCount?: number;
@@ -377,8 +388,16 @@ export default function DashboardClient({
                         <h4 className="text-xs font-bold text-slate-900 truncate">
                           {c.title}
                         </h4>
-                        <p className="text-[11px] text-slate-400 truncate">
-                          {c.code || "Course Curriculum"}
+                        <p className="text-[11px] text-slate-500 font-medium truncate flex items-center gap-1.5 mt-0.5">
+                          {c.batch ? (
+                            <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200/80 px-1.5 py-0.2 rounded truncate max-w-[190px]">
+                              {c.batch}
+                            </span>
+                          ) : (
+                            <span className="text-slate-400">
+                              {c.code && !c.code.includes("-") ? c.code : "Course Curriculum"}
+                            </span>
+                          )}
                         </p>
                         {/* Progress Bar */}
                         <div className="flex items-center gap-2 mt-1.5">
@@ -393,17 +412,18 @@ export default function DashboardClient({
                     </div>
 
                     <Link
-                      href="/curriculum"
-                      className="min-h-[34px] px-2.5 sm:px-3 py-1 rounded-lg border border-blue-500 text-blue-600 hover:bg-blue-50 text-xs font-medium transition-all shadow-2xs active:scale-95 shrink-0 flex items-center justify-center touch-manipulation"
+                      href={c.nextLessonId ? `/curriculum?course=${c.id}&lessonId=${c.nextLessonId}` : `/curriculum?course=${c.id}`}
+                      className="min-h-[34px] px-3 py-1 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-lg text-xs font-bold transition-all shadow-2xs flex items-center gap-1 shrink-0 touch-manipulation cursor-pointer"
                     >
-                      Continue
+                      <Play size={10} className="fill-current" />
+                      <span>Continue</span>
                     </Link>
                   </div>
                 ))
               ) : (
-                <div className="py-6 text-center space-y-1">
+                <div className="py-4 px-3 text-center space-y-1.5 bg-slate-50/60 rounded-xl border border-dashed border-slate-200/80">
                   <p className="text-xs font-semibold text-slate-700">No active course enrollments</p>
-                  <p className="hidden sm:block text-[11px] text-slate-400">Enroll in a course to start your learning journey.</p>
+                  <p className="text-[11px] text-slate-400">Enroll in a course to start your learning journey.</p>
                 </div>
               )}
             </div>
@@ -455,9 +475,19 @@ export default function DashboardClient({
                   </div>
                 ))
               ) : (
-                <div className="py-6 text-center space-y-1">
-                  <p className="text-xs font-semibold text-slate-700">No active assignments</p>
-                  <p className="hidden sm:block text-[11px] text-slate-400">Assignments given by teachers will appear here.</p>
+                <div className="py-4 px-3 text-center space-y-1.5 bg-slate-50/60 rounded-xl border border-dashed border-slate-200/80">
+                  <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-slate-700">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                    <span>All caught up! No pending assignments</span>
+                  </div>
+                  <p className="text-[11px] text-slate-400">Assignments given by faculty will appear here.</p>
+                  <Link
+                    href="/assignments"
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:text-blue-700 pt-0.5"
+                  >
+                    <span>View Assignments Hub</span>
+                    <ArrowRight size={11} />
+                  </Link>
                 </div>
               )}
             </div>
@@ -526,9 +556,25 @@ export default function DashboardClient({
                   );
                 })
               ) : (
-                <div className="py-6 text-center space-y-1">
-                  <p className="text-xs font-semibold text-slate-700">No upcoming classes scheduled</p>
-                  <p className="hidden sm:block text-[11px] text-slate-400">Check the calendar for future classes.</p>
+                <div className="py-4 px-3 text-center space-y-1.5 bg-slate-50/60 rounded-xl border border-dashed border-slate-200/80">
+                  <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-slate-700">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+                    <span>No live class scheduled right now</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    {student?.batchTiming ? (
+                      <span>Regular Batch: <strong className="text-slate-700">{student.batchTiming}</strong></span>
+                    ) : (
+                      <span>Check calendar for upcoming batch lectures.</span>
+                    )}
+                  </p>
+                  <Link
+                    href="/calendar"
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:text-blue-700 pt-0.5"
+                  >
+                    <span>Check Full Timetable</span>
+                    <ArrowRight size={11} />
+                  </Link>
                 </div>
               )}
             </div>
@@ -573,9 +619,19 @@ export default function DashboardClient({
                   </Link>
                 ))
               ) : (
-                <div className="py-6 text-center space-y-1">
-                  <p className="text-xs font-semibold text-slate-700">No upcoming tests</p>
-                  <p className="hidden sm:block text-[11px] text-slate-400">All tests and quizzes are up to date.</p>
+                <div className="py-4 px-3 text-center space-y-1.5 bg-slate-50/60 rounded-xl border border-dashed border-slate-200/80">
+                  <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-slate-700">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                    <span>All assessments & quizzes up to date</span>
+                  </div>
+                  <p className="text-[11px] text-slate-400">New mock tests and quizzes will appear here.</p>
+                  <Link
+                    href="/tests"
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:text-blue-700 pt-0.5"
+                  >
+                    <span>View Tests & Results</span>
+                    <ArrowRight size={11} />
+                  </Link>
                 </div>
               )}
             </div>
