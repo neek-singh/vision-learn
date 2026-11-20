@@ -31,15 +31,17 @@ export default async function TestsPage() {
     ? supabase.from("schedules").select("*, courses(title)").or(`course_id.in.(${courseIds.join(",")}),course_id.is.null`).order("date", { ascending: true })
     : supabase.from("schedules").select("*, courses(title)").is("course_id", null).order("date", { ascending: true });
 
-  const [schedulesRes, batchesRes, modulesRes] = await Promise.all([
+  const [schedulesRes, batchesRes, modulesRes, chaptersRes] = await Promise.all([
     schedulesQuery,
     courseIds.length > 0 ? supabase.from("batches").select("id, title").in("course_id", courseIds) : { data: [] },
-    courseIds.length > 0 ? supabase.from("lms_modules").select("id, title, course_id").in("course_id", courseIds) : { data: [] }
+    courseIds.length > 0 ? supabase.from("lms_modules").select("id, title, course_id").in("course_id", courseIds) : { data: [] },
+    courseIds.length > 0 ? supabase.from("lms_chapters").select("id, title, module_id, course_id").in("course_id", courseIds) : { data: [] }
   ]);
 
   const rawSchedules = schedulesRes.data || [];
   const batches = batchesRes.data || [];
   const modules = modulesRes.data || [];
+  const chapters = chaptersRes.data || [];
 
   const activeBatchLower = activeBatch.toLowerCase();
   const activeBatchMatch = batches.find((b: any) => {
@@ -133,6 +135,7 @@ export default async function TestsPage() {
     <TestsClient 
       initialTests={tests || []} 
       modules={modules}
+      chapters={chapters}
       schedules={schedules || []}
       activeBatch={activeBatch}
       activeBatchId={activeBatchId}

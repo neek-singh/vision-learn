@@ -290,6 +290,7 @@ function parseMcqQuestions(notesContent?: string): any[] {
 export default function TestsClient({ 
   initialTests: propTests = [], 
   modules: propModules = [],
+  chapters: propChapters = [],
   schedules: propSchedules = [],
   activeBatch = "",
   activeBatchId = null,
@@ -302,6 +303,7 @@ export default function TestsClient({
 }: { 
   initialTests: any[], 
   modules?: any[],
+  chapters?: any[],
   schedules: any[],
   activeBatch?: string,
   activeBatchId?: string | null,
@@ -326,6 +328,7 @@ export default function TestsClient({
 
   const initialTests = (propTests && propTests.length > 0) ? propTests : (cachedData?.initialTests || []);
   const modules = (propModules && propModules.length > 0) ? propModules : (cachedData?.modules || []);
+  const chapters = (propChapters && propChapters.length > 0) ? propChapters : (cachedData?.chapters || []);
   const schedules = (propSchedules && propSchedules.length > 0) ? propSchedules : (cachedData?.schedules || []);
   const initialResults = (propResults && propResults.length > 0) ? propResults : (cachedData?.initialResults || []);
   const quizLessons = (propQuizLessons && propQuizLessons.length > 0) ? propQuizLessons : (cachedData?.quizLessons || []);
@@ -427,6 +430,15 @@ export default function TestsClient({
     return map;
   }, [modules]);
 
+  // Chapter lookup map to resolve module for tests
+  const chapterMap = useMemo(() => {
+    const map = new Map<string, { title: string; module_id: string }>();
+    (chapters || []).forEach((c: any) => {
+      if (c.id) map.set(c.id, { title: c.title, module_id: c.module_id });
+    });
+    return map;
+  }, [chapters]);
+
   // Combine 100% real database tests, schedules & curriculum quiz lessons
   const combinedTests = useMemo<TestItem[]>(() => {
     const list: TestItem[] = [];
@@ -474,14 +486,14 @@ export default function TestsClient({
       let category: TestItem["category"] = "all";
       if (isCompleted) {
         category = "completed";
-      } else if (isScheduled) {
+      } else if (isScheduled && isLocked) {
         category = "upcoming";
       } else if (isMock) {
         category = "mock";
       } else if (isPractice) {
         category = "practice";
       } else {
-        category = "upcoming";
+        category = "all";
       }
 
       const status: TestItem["status"] = isCompleted ? "Completed" : isLive ? "Live" : (isScheduled && isLocked) ? "Scheduled" : "Pending";
@@ -501,10 +513,44 @@ export default function TestsClient({
 
       const action: TestItem["action"] = isCompleted ? "view_result" : isLocked ? "scheduled_locked" : "start_test";
 
+      // Resolve real module name (never show course name)
+      let resolvedModuleName = "";
+      if (t.chapter_id && chapterMap.has(t.chapter_id)) {
+        const chap = chapterMap.get(t.chapter_id)!;
+        if (chap.module_id && moduleMap.has(chap.module_id)) {
+          resolvedModuleName = moduleMap.get(chap.module_id)!;
+        } else {
+          resolvedModuleName = chap.title;
+        }
+      } else if (t.module_id && moduleMap.has(t.module_id)) {
+        resolvedModuleName = moduleMap.get(t.module_id)!;
+      }
+
+      // Keyword matching from test title if not yet resolved
+      if (!resolvedModuleName) {
+        const titleLower = (t.title || "").toLowerCase();
+        for (const [, modTitle] of moduleMap.entries()) {
+          const modLower = modTitle.toLowerCase();
+          if (
+            titleLower.includes(modLower) || 
+            (modLower.includes("automation") && (titleLower.includes("excel") || titleLower.includes("word") || titleLower.includes("powerpoint"))) ||
+            (modLower.includes("web") && (titleLower.includes("html") || titleLower.includes("css") || titleLower.includes("javascript"))) ||
+            (modLower.includes("tally") && titleLower.includes("tally"))
+          ) {
+            resolvedModuleName = modTitle;
+            break;
+          }
+        }
+      }
+
+      if (!resolvedModuleName) {
+        resolvedModuleName = "Office Automation";
+      }
+
       list.push({
         id: t.id,
         title: t.title || "Course Test",
-        module: t.courses?.title || courseTitle || "General",
+        module: resolvedModuleName,
         description: t.description || matchedSchedule?.description || "Official course evaluation test",
         type: t.test_type || (isMock ? "Mock Test" : isScheduled ? "Scheduled Test" : "Timed Test"),
         category,
@@ -556,7 +602,7 @@ export default function TestsClient({
       list.push({
         id: s.id,
         title: s.title ? s.title.replace(/^Test:\s*/i, "") : "Scheduled Test",
-        module: s.courses?.title || courseTitle || "Scheduled Test",
+        module: s.module || "Assessment",
         description: s.description || "Official scheduled examination",
         type: "Scheduled Test",
         category: "upcoming",
@@ -1877,11 +1923,11 @@ export default function TestsClient({
             </div>
           </div>
 
-          {/* Card 2: Upcoming Pending Test (Real) */}
+          {/* Card 2: Active or Scheduled Test (Real) */}
           <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-5 shadow-2xs space-y-3">
             <div className="flex items-center gap-2 font-bold text-slate-900 text-xs sm:text-sm">
               <Calendar size={15} className="text-blue-600" />
-              <span>Next Upcoming Test</span>
+              <span>{upcomingTest?.isLocked ? "Next Upcoming Exam" : "Active Assessment"}</span>
             </div>
 
             {upcomingTest ? (
