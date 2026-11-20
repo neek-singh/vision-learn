@@ -1104,21 +1104,21 @@ export default function TestsClient({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 items-start">
         {/* Left Column (8 of 12 cols): Banner + Metrics + Tabs + Filters + Tests */}
         <div className="lg:col-span-8 space-y-3 sm:space-y-4">
-          {/* 2. Hero Banner Card */}
-          <div className="bg-gradient-to-r from-purple-50/70 via-indigo-50/50 to-blue-50/40 rounded-xl sm:rounded-2xl border border-purple-100/70 p-2.5 sm:p-5 flex items-center justify-between gap-3 sm:gap-4 relative overflow-hidden shadow-2xs">
-            <div className="flex items-center gap-2.5 sm:gap-3.5 z-10 min-w-0">
-              <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-lg sm:rounded-2xl bg-purple-100/90 border border-purple-200/80 text-purple-600 flex items-center justify-center shrink-0 shadow-2xs">
-                <CheckSquare size={16} className="sm:size-[22px] stroke-[1.9]" />
+          {/* 2. Hero Banner Card (Desktop only, hidden on mobile to avoid redundant header) */}
+          <div className="hidden sm:flex bg-gradient-to-r from-purple-50/70 via-indigo-50/50 to-blue-50/40 rounded-2xl border border-purple-100/70 p-4 sm:p-5 items-center justify-between gap-4 relative overflow-hidden shadow-2xs">
+            <div className="flex items-center gap-3.5 z-10 min-w-0">
+              <div className="w-12 h-12 rounded-2xl bg-purple-100/90 border border-purple-200/80 text-purple-600 flex items-center justify-center shrink-0 shadow-2xs">
+                <CheckSquare size={22} className="stroke-[1.9]" />
               </div>
               <div className="min-w-0">
-                <h1 className="text-sm sm:text-xl font-bold text-slate-900 leading-tight">
+                <h1 className="text-xl font-bold text-slate-900 leading-tight">
                   Tests & Quizzes
                 </h1>
-                <p className="hidden sm:block text-xs text-slate-500 mt-0.5 font-normal truncate">
+                <p className="text-xs text-slate-500 mt-0.5 font-normal truncate">
                   Real assessments, chapter quizzes & live score tracking
                 </p>
-                {/* Auto Evaluation badge visible on tablet/desktop, omitted on mobile */}
-                <div className="hidden sm:flex flex-wrap items-center gap-2 mt-2 text-[11px] text-slate-600 font-medium">
+                {/* Auto Evaluation badge */}
+                <div className="flex flex-wrap items-center gap-2 mt-2 text-[11px] text-slate-600 font-medium">
                   <span className="inline-flex items-center gap-1 bg-white/70 px-2 py-0.5 rounded-md border border-purple-100">
                     <CheckSquare size={11} className="text-purple-600" />
                     Auto Evaluation
@@ -1128,7 +1128,7 @@ export default function TestsClient({
             </div>
 
             {/* Right Graphic: illustrated badge */}
-            <div className="hidden sm:flex items-center pr-2 shrink-0 opacity-90">
+            <div className="flex items-center pr-2 shrink-0 opacity-90">
               <div className="w-12 h-12 rounded-2xl bg-white/80 border border-purple-100 flex items-center justify-center text-purple-600 shadow-2xs">
                 <Award size={26} />
               </div>
@@ -1201,60 +1201,72 @@ export default function TestsClient({
             </div>
           )}
 
-          {/* 3. Top 4 Metric Summary Cards (2x2 grid on mobile) */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+          {/* 3. Top 4 Metric Summary Cards (Compact 4-column row on mobile) */}
+          <div className="grid grid-cols-4 gap-1.5 sm:gap-3">
             {/* Card 1: Total Tests */}
-            <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200/80 p-2 sm:p-3.5 shadow-2xs flex items-center gap-2 sm:gap-3">
+            <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200/80 p-2 sm:p-3.5 shadow-2xs flex flex-col sm:flex-row items-center sm:items-center text-center sm:text-left gap-1 sm:gap-3">
               <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center shrink-0">
                 <FileText size={14} className="sm:size-[17px] stroke-[1.9]" />
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 w-full sm:w-auto">
                 <div className="text-sm sm:text-xl font-bold text-slate-900 leading-none">
                   {stats.total}
                 </div>
-                <div className="text-[10px] sm:text-xs font-semibold text-slate-700 mt-0.5 sm:mt-1 truncate">Total Tests</div>
+                <div className="text-[10px] sm:text-xs font-semibold text-slate-700 mt-1 truncate">
+                  <span className="sm:hidden">Total</span>
+                  <span className="hidden sm:inline">Total Tests</span>
+                </div>
                 <div className="hidden sm:block text-[10px] text-slate-400 mt-0.5 truncate">All modules</div>
               </div>
             </div>
 
             {/* Card 2: Completed */}
-            <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200/80 p-2 sm:p-3.5 shadow-2xs flex items-center gap-2 sm:gap-3">
+            <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200/80 p-2 sm:p-3.5 shadow-2xs flex flex-col sm:flex-row items-center sm:items-center text-center sm:text-left gap-1 sm:gap-3">
               <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center shrink-0">
                 <CheckCircle2 size={14} className="sm:size-[17px] stroke-[1.9]" />
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 w-full sm:w-auto">
                 <div className="text-sm sm:text-xl font-bold text-slate-900 leading-none">
                   {stats.completed}
                 </div>
-                <div className="text-[10px] sm:text-xs font-semibold text-slate-700 mt-0.5 sm:mt-1 truncate">Completed</div>
+                <div className="text-[10px] sm:text-xs font-semibold text-slate-700 mt-1 truncate">
+                  <span className="sm:hidden">Done</span>
+                  <span className="hidden sm:inline">Completed</span>
+                </div>
                 <div className="hidden sm:block text-[10px] text-slate-400 mt-0.5 truncate">{stats.completionRate}% completion</div>
               </div>
             </div>
 
             {/* Card 3: Pending */}
-            <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200/80 p-2 sm:p-3.5 shadow-2xs flex items-center gap-2 sm:gap-3">
+            <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200/80 p-2 sm:p-3.5 shadow-2xs flex flex-col sm:flex-row items-center sm:items-center text-center sm:text-left gap-1 sm:gap-3">
               <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center shrink-0">
                 <Clock size={14} className="sm:size-[17px] stroke-[1.9]" />
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 w-full sm:w-auto">
                 <div className="text-sm sm:text-xl font-bold text-slate-900 leading-none">
                   {stats.pending}
                 </div>
-                <div className="text-[10px] sm:text-xs font-semibold text-slate-700 mt-0.5 sm:mt-1 truncate">Pending</div>
+                <div className="text-[10px] sm:text-xs font-semibold text-slate-700 mt-1 truncate">Pending</div>
                 <div className="hidden sm:block text-[10px] text-slate-400 mt-0.5 truncate">To be taken</div>
               </div>
             </div>
 
             {/* Card 4: Average Score */}
-            <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200/80 p-2 sm:p-3.5 shadow-2xs flex items-center gap-2 sm:gap-3">
-              <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-rose-50 text-rose-600 border border-rose-100 flex items-center justify-center shrink-0">
+            <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200/80 p-2 sm:p-3.5 shadow-2xs flex flex-col sm:flex-row items-center sm:items-center text-center sm:text-left gap-1 sm:gap-3">
+              <div className={`w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 border ${
+                stats.completed === 0
+                  ? "bg-slate-50 text-slate-500 border-slate-200"
+                  : stats.avgScore >= 60
+                  ? "bg-emerald-50 text-emerald-600 border-emerald-100"
+                  : "bg-rose-50 text-rose-600 border-rose-100"
+              }`}>
                 <BarChart3 size={14} className="sm:size-[17px] stroke-[1.9]" />
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 w-full sm:w-auto">
                 <div className="text-sm sm:text-xl font-bold text-slate-900 leading-none">
-                  {stats.avgScore}%
+                  {stats.completed === 0 ? "—" : `${stats.avgScore}%`}
                 </div>
-                <div className="text-[10px] sm:text-xs font-semibold text-slate-700 mt-0.5 sm:mt-1 truncate">
+                <div className="text-[10px] sm:text-xs font-semibold text-slate-700 mt-1 truncate">
                   <span className="sm:hidden">Avg Score</span>
                   <span className="hidden sm:inline">Average Score</span>
                 </div>
@@ -1282,14 +1294,13 @@ export default function TestsClient({
             <button
               type="button"
               onClick={() => setActiveTab("scheduled")}
-              className={`pb-2 px-2.5 sm:px-3 whitespace-nowrap transition-all border-b-2 cursor-pointer min-h-[38px] flex items-center gap-1.5 touch-manipulation ${
+              className={`pb-2 px-2.5 sm:px-3 whitespace-nowrap transition-all border-b-2 cursor-pointer min-h-[38px] flex items-center touch-manipulation ${
                 activeTab === "scheduled"
                   ? "border-amber-600 text-amber-700 font-bold"
                   : "border-transparent text-slate-500 hover:text-slate-800"
               }`}
             >
-              <Calendar size={13} className={activeTab === "scheduled" ? "text-amber-600" : "text-slate-400"} />
-              <span>Scheduled ({stats.scheduledCount})</span>
+              Scheduled ({stats.scheduledCount})
             </button>
             <button
               type="button"
@@ -1366,14 +1377,14 @@ export default function TestsClient({
             </div>
 
             {/* Filter Dropdowns Row */}
-            <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-0.5 sm:pb-0 scrollbar-none">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               {/* Dynamic Module Filter */}
               {availableModules.length > 0 && (
                 <div className="relative flex-1 sm:flex-initial">
                   <select
                     value={selectedModule}
                     onChange={(e) => setSelectedModule(e.target.value)}
-                    className="w-full sm:w-auto appearance-none bg-white text-xs font-medium text-slate-700 py-2 min-h-[38px] pl-2.5 sm:pl-3 pr-7 rounded-xl border border-slate-200/80 focus:outline-none focus:border-blue-500 shadow-2xs cursor-pointer max-w-[120px] sm:max-w-[140px] truncate"
+                    className="w-full sm:w-auto appearance-none bg-white text-xs font-medium text-slate-700 py-2 min-h-[38px] pl-2.5 sm:pl-3 pr-7 rounded-xl border border-slate-200/80 focus:outline-none focus:border-blue-500 shadow-2xs cursor-pointer max-w-full sm:max-w-[140px] truncate"
                   >
                     <option value="all">All Modules</option>
                     {availableModules.map((m, idx) => (
@@ -1383,20 +1394,6 @@ export default function TestsClient({
                   <ChevronDown size={13} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                 </div>
               )}
-
-              {/* Filter: All Status */}
-              <div className="relative flex-1 sm:flex-initial">
-                <select
-                  value={selectedStatus}
-                  onChange={(e) => setSelectedStatus(e.target.value)}
-                  className="w-full sm:w-auto appearance-none bg-white text-xs font-medium text-slate-700 py-2 min-h-[38px] pl-2.5 sm:pl-3 pr-6 sm:pr-7 rounded-xl border border-slate-200/80 focus:outline-none focus:border-blue-500 shadow-2xs cursor-pointer truncate"
-                >
-                  <option value="all">All Status</option>
-                  <option value="Completed">Completed</option>
-                  <option value="Pending">Pending</option>
-                </select>
-                <ChevronDown size={13} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-              </div>
 
               {/* Filter: Sort */}
               <div className="relative flex-1 sm:flex-initial">
