@@ -808,31 +808,39 @@ export default function StudentAttendanceClient({
             {filteredAttendanceRows.length > 0 ? (
               <>
                 {/* Mobile Card List (screen width < 640px) */}
-                <div className="block sm:hidden space-y-2 pt-1">
+                <div className="block sm:hidden space-y-1.5 pt-1">
                   {filteredAttendanceRows.map((row: any, idx: number) => {
                     const isSelected = row.dateStr === selectedDate;
                     return (
                       <div
                         key={idx}
                         onClick={() => setSelectedDate(row.dateStr)}
-                        className={`p-2.5 rounded-xl border transition-all cursor-pointer ${
+                        className={`px-3 py-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2 ${
                           isSelected
                             ? "bg-blue-50/70 border-blue-300 shadow-2xs"
                             : "bg-slate-50/50 hover:bg-slate-100/70 border-slate-200/60"
                         }`}
                       >
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-900">
-                            <span>{row.dateFormatted}</span>
-                            <span className="text-slate-400 font-normal text-[11px]">({row.dayOfWeek})</span>
-                          </div>
-                          {renderStatusBadge(row.statusType)}
+                        {/* Left: Date + Day + Topic in one line */}
+                        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                          <span className="text-xs font-bold text-slate-900 shrink-0">
+                            {row.dateFormatted}
+                          </span>
+                          <span className="text-slate-400 font-normal text-[11px] shrink-0">
+                            ({row.dayOfWeek})
+                          </span>
+                          <span className="text-slate-300 shrink-0">•</span>
+                          <span className="text-xs text-slate-600 font-medium truncate min-w-0">
+                            {row.topic}
+                          </span>
                         </div>
-                        <div className="flex items-center justify-between gap-2 mt-1.5 pt-1.5 border-t border-slate-100/80">
-                          <p className="text-xs text-slate-700 font-medium truncate flex-1">{row.topic}</p>
+
+                        {/* Right: Mode & Status Badge in one line */}
+                        <div className="flex items-center gap-1.5 shrink-0">
                           <span className="text-[10px] font-medium text-slate-500 bg-white px-1.5 py-0.5 rounded border border-slate-200/70 shrink-0">
                             {row.mode}
                           </span>
+                          {renderStatusBadge(row.statusType)}
                         </div>
                       </div>
                     );
