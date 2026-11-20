@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { CheckCircle2, Circle, Loader2 } from "lucide-react";
 
 type Lesson = string | { id: string; title: string };
@@ -19,6 +20,7 @@ export default function CurriculumTracker({
   curriculum: any;
   initialCompleted: string[];
 }) {
+  const router = useRouter();
   const [completedLessons, setCompletedLessons] = useState<string[]>(initialCompleted);
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
@@ -57,8 +59,8 @@ export default function CurriculumTracker({
         setCompletedLessons(completedLessons);
         alert("Failed to update progress. Please try again.");
       } else {
-        // Optionally reload to update the server-side progress percentage
-        window.location.reload();
+        // Soft refresh without full page reload on slow 3G
+        router.refresh();
       }
     } catch (error) {
       setCompletedLessons(completedLessons);

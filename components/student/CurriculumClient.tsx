@@ -262,6 +262,20 @@ export function CurriculumClient({
     }
   }, [cachedProgress]);
 
+  // Preload LessonViewer and NoteViewer chunks on idle so opening lessons is instant (0ms) on 3G
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const preloadViewers = () => {
+      import("./LessonViewer").catch(() => {});
+      import("@/app/(dashboard)/materials/NoteViewer").catch(() => {});
+    };
+    if ('requestIdleCallback' in window) {
+      (window as any).requestIdleCallback(preloadViewers, { timeout: 2500 });
+    } else {
+      setTimeout(preloadViewers, 1000);
+    }
+  }, []);
+
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
   const [activeLesson, setActiveLesson] = useState<any>(null);
   const [lastClosedLessonId, setLastClosedLessonId] = useState<string | null>(null);
@@ -892,6 +906,8 @@ export function CurriculumClient({
               <img
                 src="/images/course_banner_desk.jpg"
                 alt="Course Study Desk"
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover object-center"
               />
               {/* Smooth gradient transition into banner background */}

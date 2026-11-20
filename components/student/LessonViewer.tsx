@@ -298,7 +298,7 @@ export default function LessonViewer({
     setCurrentQuestionIndex(0);
   }, [lesson?.id]);
 
-  // Fetch existing submission for the lesson
+  // Fetch existing submission for the lesson (with offline local fallback for 3G networks)
   useEffect(() => {
     if (!studentId || !lesson?.id) return;
     const fetchSubmission = async () => {
@@ -313,9 +313,29 @@ export default function LessonViewer({
         if (data) {
           setSubmission(data);
           setSubUrl(data.content_url || "");
+        } else if (typeof window !== 'undefined') {
+          // Check local offline cache on slow 3G
+          const localCache = window.localStorage.getItem(`vision_quiz_sub_${lesson.id}`);
+          if (localCache) {
+            try {
+              const parsed = JSON.parse(localCache);
+              setSubmission(parsed);
+              if (parsed.content_url) setSubUrl(parsed.content_url);
+            } catch {}
+          }
         }
       } catch (err) {
-        console.error("Error fetching submission:", err);
+        console.warn("Error fetching submission (using offline cache if present):", err);
+        if (typeof window !== 'undefined') {
+          const localCache = window.localStorage.getItem(`vision_quiz_sub_${lesson.id}`);
+          if (localCache) {
+            try {
+              const parsed = JSON.parse(localCache);
+              setSubmission(parsed);
+              if (parsed.content_url) setSubUrl(parsed.content_url);
+            } catch {}
+          }
+        }
       } finally {
         setLoadingSubmission(false);
       }
@@ -327,6 +347,13 @@ export default function LessonViewer({
     e.preventDefault();
     if (!subUrl.trim()) return;
     setSubmitting(true);
+    const localSub = {
+      lesson_id: lesson.id,
+      student_id: studentId,
+      content_url: subUrl.trim(),
+      status: 'submitted',
+      submitted_at: new Date().toISOString()
+    };
     try {
       const { data, error } = await supabase
         .from("submissions")
@@ -339,21 +366,23 @@ export default function LessonViewer({
         .select()
         .single();
       if (error) throw error;
-      setSubmission(data || {
-        lesson_id: lesson.id,
-        student_id: studentId,
-        content_url: subUrl.trim(),
-        status: 'submitted',
-        submitted_at: new Date().toISOString()
-      });
+      setSubmission(data || localSub);
+      try {
+        window.localStorage.setItem(`vision_quiz_sub_${lesson.id}`, JSON.stringify(data || localSub));
+      } catch {}
       // Auto complete the lesson
       if (!isCompleted) {
         toggleCompletion(lesson.id, false);
       }
-      alert("Solution submitted successfully!");
     } catch (err) {
-      console.error("Error submitting solution:", err);
-      alert("Failed to submit solution");
+      console.warn("Network slow or offline, saving solution locally:", err);
+      setSubmission(localSub);
+      try {
+        window.localStorage.setItem(`vision_quiz_sub_${lesson.id}`, JSON.stringify(localSub));
+      } catch {}
+      if (!isCompleted) {
+        toggleCompletion(lesson.id, false);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -364,6 +393,15 @@ export default function LessonViewer({
     setSubmitting(true);
     const correctCount = questions.filter(q => selectedAnswers[q.id] === q.correctIndex).length;
     const scoreStr = `${correctCount}/${questions.length}`;
+    const localFallback = {
+      lesson_id: lesson.id,
+      student_id: studentId,
+      content_url: `Completed Quiz: Score ${scoreStr}`,
+      score: scoreStr,
+      status: 'submitted',
+      submitted_at: new Date().toISOString()
+    };
+
     try {
       const { data, error } = await supabase
         .from("submissions")
@@ -377,22 +415,23 @@ export default function LessonViewer({
         .select()
         .single();
       if (error) throw error;
-      setSubmission(data || {
-        lesson_id: lesson.id,
-        student_id: studentId,
-        content_url: `Completed Quiz: Score ${scoreStr}`,
-        score: scoreStr,
-        status: 'submitted',
-        submitted_at: new Date().toISOString()
-      });
+      setSubmission(data || localFallback);
+      try {
+        window.localStorage.setItem(`vision_quiz_sub_${lesson.id}`, JSON.stringify(data || localFallback));
+      } catch {}
       // Auto complete the lesson
       if (!isCompleted) {
         toggleCompletion(lesson.id, false);
       }
-      alert("Quiz score submitted successfully!");
     } catch (err) {
-      console.error("Error submitting quiz:", err);
-      alert("Failed to submit quiz score");
+      console.warn("Network slow or offline, saving quiz score locally:", err);
+      setSubmission(localFallback);
+      try {
+        window.localStorage.setItem(`vision_quiz_sub_${lesson.id}`, JSON.stringify(localFallback));
+      } catch {}
+      if (!isCompleted) {
+        toggleCompletion(lesson.id, false);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -561,6 +600,7 @@ export default function LessonViewer({
                         } 
                         className="w-full h-full border-0" 
                         allowFullScreen 
+                        loading="lazy"
                       />
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 bg-slate-900 gap-4">

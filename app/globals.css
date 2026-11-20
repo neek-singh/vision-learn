@@ -528,14 +528,18 @@ article pre code {
   line-height: inherit !important;
 }
 
-/* Images */
+/* Images - 3G network optimized with placeholder background and lazy-render */
 .rich-content img {
   border-radius: 0.75rem !important;
-  max-height: 380px !important;
+  max-height: 420px !important;
+  max-width: 100% !important;
+  height: auto !important;
   object-fit: cover !important;
   border: 1px solid #e2e8f0 !important;
   margin: 1.25rem auto !important;
   display: block !important;
+  background-color: #f1f5f9 !important;
+  content-visibility: auto;
 }
 
 /* Horizontal Rule */
