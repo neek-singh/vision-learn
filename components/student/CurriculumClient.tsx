@@ -911,20 +911,12 @@ export function CurriculumClient({
                 </p>
                 <div className="flex items-center gap-2.5 sm:gap-3.5 mt-1.5 sm:mt-2 flex-wrap text-[10px] sm:text-[11px] font-semibold text-slate-700">
                   <span className="flex items-center gap-1">
-                    <Clock size={11} className="text-emerald-600" />
-                    <span>{courseDuration}</span>
-                  </span>
-                  <span className="flex items-center gap-1">
                     <Layers size={11} className="text-sky-600" />
-                    <span>{batchModules.length} Modules</span>
+                    <span>{batchModules.length || displayModules.length} Modules</span>
                   </span>
                   <span className="flex items-center gap-1">
                     <BookOpen size={11} className="text-sky-600" />
-                    <span>{totalLessonsCount}+ Lessons</span>
-                  </span>
-                  <span className="hidden sm:flex items-center gap-1">
-                    <Award size={11} className="text-emerald-600" />
-                    <span>{certificateBadgeText}</span>
+                    <span>{totalLessonsCount} Lessons</span>
                   </span>
                 </div>
               </div>
@@ -932,7 +924,7 @@ export function CurriculumClient({
           </div>
 
           {/* 3. Horizontal Navigation Tabs */}
-          <div className="border-b border-slate-200 flex items-center gap-4 sm:gap-7 overflow-x-auto scrollbar-none text-xs sm:text-sm font-medium text-slate-500 pb-2 -mx-1 px-1 sm:mx-0 sm:px-0">
+          <div className="border-b border-slate-200 flex items-center gap-4 sm:gap-7 overflow-x-auto scrollbar-hide text-xs sm:text-sm font-medium text-slate-500 pb-2 -mx-1 px-1 pr-6 sm:mx-0 sm:px-0 sm:pr-0">
             <button
               onClick={() => {
                 setActiveTab('syllabus');
