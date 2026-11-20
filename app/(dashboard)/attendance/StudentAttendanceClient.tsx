@@ -34,6 +34,45 @@ export interface AttendanceRecord {
   classroom?: string;
   teacher?: string;
   time?: string;
+  rawCheckInTime?: string;
+}
+
+function formatPunchInTime(timeStr?: string): string {
+  if (!timeStr) return "";
+  const trimmed = String(timeStr).trim();
+  if (!trimmed) return "";
+
+  // If already formatted like "10:00 AM" or "10:00 AM - 11:00 AM"
+  if (trimmed.includes("AM") || trimmed.includes("PM")) {
+    return trimmed;
+  }
+
+  // Handle ISO string / timestamptz like "2026-11-18T08:39:03.858655+00:00" or "2026-11-18 08:39:03.858655+00"
+  try {
+    const d = new Date(trimmed);
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleTimeString("en-IN", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+        timeZone: "Asia/Kolkata"
+      }).toUpperCase();
+    }
+  } catch (err) {
+    // ignore
+  }
+
+  // Handle standard HH:mm or HH:mm:ss
+  const match = trimmed.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (match) {
+    let hours = parseInt(match[1], 10);
+    const minutes = match[2];
+    const ampm = hours >= 12 ? "PM" : "AM";
+    hours = hours % 12 || 12;
+    return `${String(hours).padStart(2, "0")}:${minutes} ${ampm}`;
+  }
+
+  return trimmed;
 }
 
 export default function StudentAttendanceClient({
@@ -105,6 +144,9 @@ export default function StudentAttendanceClient({
         else if (rawStatus === "late") status = "late";
         else if (rawStatus === "not_held") status = "not_held";
 
+        const isAbsentOrLeave = status === "absent" || status === "leave" || status === "not_held";
+        const formattedPunchIn = (!isAbsentOrLeave && r.check_in_time) ? formatPunchInTime(r.check_in_time) : undefined;
+
         map[d] = {
           id: r.id,
           date: d,
@@ -114,7 +156,8 @@ export default function StudentAttendanceClient({
           mode: r.mode || "Offline",
           classroom: r.classroom || "Lab 1",
           teacher: r.teacher || facultyName,
-          time: r.check_in_time || batchTiming
+          time: isAbsentOrLeave ? batchTiming : (formattedPunchIn || batchTiming),
+          rawCheckInTime: formattedPunchIn
         };
       }
     });
@@ -620,11 +663,15 @@ export default function StudentAttendanceClient({
                   <>
                     {/* Class Timing & Punch-in indicator */}
                     <div className="pt-2.5 sm:pt-3">
-                      <div className="flex items-center gap-1.5 text-[11px] text-blue-600 font-semibold">
-                        <Clock size={12} className="shrink-0" />
-                        <span>{selectedRecord.time || batchTiming}</span>
-                        <span className="text-[10px] text-blue-500/80 font-normal">
-                          ({selectedRecord.time ? "Punch-in" : "Session"})
+                      <div className="flex items-center gap-1.5 text-[11px] font-semibold">
+                        <Clock size={12} className={selectedRecord.status === "absent" ? "text-slate-400 shrink-0" : "text-blue-600 shrink-0"} />
+                        <span className={selectedRecord.status === "absent" ? "text-slate-700" : "text-blue-600"}>
+                          {selectedRecord.status === "absent" ? (batchTiming || "Class Scheduled") : (selectedRecord.time || batchTiming)}
+                        </span>
+                        <span className={`text-[10px] font-normal ${selectedRecord.status === "absent" ? "text-slate-400" : "text-blue-500/80"}`}>
+                          {selectedRecord.status === "absent" 
+                            ? "(Session Timing)" 
+                            : (selectedRecord.rawCheckInTime ? "(Punch-in)" : "(Session Timing)")}
                         </span>
                       </div>
                       <h4 className="text-xs sm:text-sm font-bold text-slate-900 mt-1 leading-snug">
