@@ -356,9 +356,9 @@ export async function GET(request: Request) {
     }
 
     .course-meta-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-      gap: 10px 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
       padding-top: 14px;
       border-top: 1px solid #dbeafe;
       font-size: 11.5px;
@@ -367,9 +367,12 @@ export async function GET(request: Request) {
 
     .meta-box {
       background: rgba(255, 255, 255, 0.7);
-      padding: 6px 10px;
+      padding: 8px 14px;
       border-radius: 8px;
       border: 1px solid rgba(191, 219, 254, 0.6);
+      min-width: 140px;
+      flex: 1;
+      max-width: 220px;
     }
 
     .meta-box-label {
@@ -630,8 +633,14 @@ export async function GET(request: Request) {
       }
 
       .course-meta-grid {
+        display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 8px;
+      }
+
+      .meta-box {
+        max-width: 100%;
+        padding: 6px 10px;
       }
 
       .lesson-grid {
@@ -807,24 +816,12 @@ export async function GET(request: Request) {
       
       <div class="course-meta-grid">
         <div class="meta-box">
-          <span class="meta-box-label">Category</span>
-          <div class="meta-box-val">${course.category || "Information Technology"}</div>
-        </div>
-        <div class="meta-box">
           <span class="meta-box-label">Total Modules</span>
           <div class="meta-box-val">${structuredModules.length} Modules</div>
         </div>
         <div class="meta-box">
           <span class="meta-box-label">Total Lessons</span>
-          <div class="meta-box-val">${totalLessonsCount} Topics</div>
-        </div>
-        <div class="meta-box">
-          <span class="meta-box-label">Training Mode</span>
-          <div class="meta-box-val">Classroom & Hybrid Lab</div>
-        </div>
-        <div class="meta-box">
-          <span class="meta-box-label">Certification</span>
-          <div class="meta-box-val">Certified On Completion</div>
+          <div class="meta-box-val">${totalLessonsCount} Lessons</div>
         </div>
       </div>
     </div>
@@ -889,7 +886,7 @@ export async function GET(request: Request) {
     <div class="footer">
       <div class="footer-left">
         <div>Official Academic Curriculum Document</div>
-        <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">Vision IT & Computer Institute</div>
+        <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">Vision IT &amp; Computer Institute</div>
       </div>
 
       <div class="signatory">
