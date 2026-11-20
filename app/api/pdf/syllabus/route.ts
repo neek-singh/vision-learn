@@ -550,17 +550,24 @@ export async function GET(request: Request) {
       margin-left: auto;
     }
 
-    .sign-designation {
-      font-size: 12.5px;
+    .sign-name {
+      font-size: 13.5px;
       font-weight: 800;
       color: var(--slate-900);
-      letter-spacing: 0.2px;
+      letter-spacing: 0.3px;
+    }
+
+    .sign-designation {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--primary);
+      margin-top: 1px;
     }
 
     .sign-authority {
-      font-size: 10px;
+      font-size: 9.5px;
       font-weight: 700;
-      color: var(--primary);
+      color: var(--slate-600);
       text-transform: uppercase;
       letter-spacing: 0.5px;
       margin-top: 1px;
@@ -867,6 +874,7 @@ export async function GET(request: Request) {
         <!-- Academic Director Signature -->
         <div class="signatory">
           <div class="sign-line"></div>
+          <div class="sign-name">Ishwar Singh</div>
           <div class="sign-designation">Academic Director</div>
           <div class="sign-authority">Authorized Signatory</div>
           <div class="sign-dept">Vision Academic Directorate</div>
