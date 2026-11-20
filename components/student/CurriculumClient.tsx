@@ -48,6 +48,8 @@ import {
   Link2,
   FileSpreadsheet,
   Presentation,
+  MessageCircle,
+  Phone,
   X
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -295,6 +297,12 @@ export function CurriculumClient({
   const [resourceSearch, setResourceSearch] = useState<string>("");
   const [resourceSort, setResourceSort] = useState<string>("newest");
   const [viewingNote, setViewingNote] = useState<any>(null);
+
+  // Quick Links Modal states
+  const [showDoubtModal, setShowDoubtModal] = useState(false);
+  const [doubtTopic, setDoubtTopic] = useState("General Course Doubt");
+  const [doubtQuestion, setDoubtQuestion] = useState("");
+  const [showDiscussionModal, setShowDiscussionModal] = useState(false);
 
   // Materials for Resources Tab
   const effectiveMaterials = useMemo(() => {
@@ -2052,44 +2060,55 @@ export function CurriculumClient({
             <h3 className="text-xs font-semibold text-slate-800 tracking-tight mb-1.5">Quick Links</h3>
 
             <div className="space-y-0.5 text-xs">
-              <div
+              {/* 1. Download Syllabus */}
+              <button
+                type="button"
                 onClick={() => {
-                  window.open(`/api/pdf/syllabus?courseId=${courseId || ''}`, '_blank');
+                  window.open(`/api/pdf/syllabus?courseId=${courseId || courseInfo?.id || ''}`, '_blank');
                 }}
-                className="flex items-center justify-between py-1 px-1.5 rounded-lg hover:bg-slate-50 transition-colors group cursor-pointer"
+                className="w-full flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-slate-50 transition-colors text-slate-700 font-medium text-xs hover:text-blue-600 group cursor-pointer text-left"
+                title="View & Download official course syllabus PDF"
               >
-                <div className="flex items-center gap-2 text-slate-600 font-normal text-xs group-hover:text-blue-600 transition-colors">
-                  <Download size={13} className="text-slate-400 group-hover:text-blue-600 shrink-0" />
+                <div className="flex items-center gap-2">
+                  <Download size={14} className="text-slate-400 group-hover:text-blue-600 shrink-0" />
                   <span>Download Syllabus (PDF)</span>
                 </div>
-                <ChevronRight size={12} className="text-slate-300 group-hover:text-blue-600" />
-              </div>
+                <ChevronRight size={13} className="text-slate-300 group-hover:text-blue-600" />
+              </button>
 
-              <Link
-                href="/notifications"
-                className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-slate-50 transition-colors text-slate-700 font-medium text-xs hover:text-blue-600 group"
+              {/* 2. Ask a Doubt */}
+              <button
+                type="button"
+                onClick={() => setShowDoubtModal(true)}
+                className="w-full flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-slate-50 transition-colors text-slate-700 font-medium text-xs hover:text-blue-600 group cursor-pointer text-left"
+                title="Ask a doubt to your faculty on WhatsApp"
               >
                 <div className="flex items-center gap-2">
                   <HelpCircle size={14} className="text-slate-400 group-hover:text-blue-600 shrink-0" />
                   <span>Ask a Doubt</span>
                 </div>
                 <ChevronRight size={13} className="text-slate-300 group-hover:text-blue-600" />
-              </Link>
+              </button>
 
-              <Link
-                href="/dashboard"
-                className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-slate-50 transition-colors text-slate-700 font-medium text-xs hover:text-blue-600 group"
+              {/* 3. Join Discussion */}
+              <button
+                type="button"
+                onClick={() => setShowDiscussionModal(true)}
+                className="w-full flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-slate-50 transition-colors text-slate-700 font-medium text-xs hover:text-blue-600 group cursor-pointer text-left"
+                title="Join official batch discussion group"
               >
                 <div className="flex items-center gap-2">
                   <Users size={14} className="text-slate-400 group-hover:text-blue-600 shrink-0" />
                   <span>Join Discussion</span>
                 </div>
                 <ChevronRight size={13} className="text-slate-300 group-hover:text-blue-600" />
-              </Link>
+              </button>
 
+              {/* 4. View Announcements */}
               <Link
                 href="/notifications"
                 className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-slate-50 transition-colors text-slate-700 font-medium text-xs hover:text-blue-600 group"
+                title="View official institute notices & announcements"
               >
                 <div className="flex items-center gap-2">
                   <Bell size={14} className="text-slate-400 group-hover:text-blue-600 shrink-0" />
@@ -2121,6 +2140,206 @@ export function CurriculumClient({
           item={viewingNote}
           onClose={() => setViewingNote(null)}
         />
+      )}
+
+      {/* Ask a Doubt Modal */}
+      {showDoubtModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[100] flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-150">
+            {/* Header */}
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center">
+                  <HelpCircle size={17} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Ask a Doubt</h3>
+                  <p className="text-[11px] text-slate-500">Connect with your mentor / faculty</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDoubtModal(false)}
+                className="w-8 h-8 rounded-lg hover:bg-slate-200/70 text-slate-400 hover:text-slate-700 flex items-center justify-center transition-colors cursor-pointer"
+                aria-label="Close"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-5 space-y-4">
+              {/* Course & Batch Badge */}
+              <div className="p-2.5 rounded-xl bg-blue-50/60 border border-blue-100 flex items-center justify-between text-xs">
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-blue-600 block leading-tight">Enrolled Course</span>
+                  <span className="font-semibold text-slate-800">{courseInfo?.title || "My Course"}</span>
+                </div>
+                {activeBatch && (
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-white text-blue-700 border border-blue-200">
+                    {activeBatch}
+                  </span>
+                )}
+              </div>
+
+              {/* Topic Select */}
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-700">Select Topic / Lesson</label>
+                <select
+                  value={doubtTopic}
+                  onChange={(e) => setDoubtTopic(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:border-blue-500 cursor-pointer"
+                >
+                  <option value="General Course Doubt">General Course Doubt</option>
+                  {(displayModules || []).map((m: any, mIdx: number) => (
+                    <optgroup key={m.id || mIdx} label={`Module: ${m.title}`}>
+                      <option value={`Module: ${m.title}`}>Module: {m.title}</option>
+                      {(m.lessons || []).map((l: any) => (
+                        <option key={l.id} value={`Lesson: ${l.title}`}>
+                          &nbsp;&nbsp;↳ {l.title}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+              </div>
+
+              {/* Question Text */}
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-700">Your Question or Doubt</label>
+                <textarea
+                  rows={3}
+                  value={doubtQuestion}
+                  onChange={(e) => setDoubtQuestion(e.target.value)}
+                  placeholder="Apna doubt yahan type karein (e.g. Which concept, code error, or specific confusion)..."
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:border-blue-500 resize-none placeholder:text-slate-400"
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="space-y-2 pt-1">
+                <a
+                  href={`https://wa.me/918103170595?text=${encodeURIComponent(
+                    `Hello Sir,\nI am a student of Vision Computer Institute.\n\n*Course:* ${courseInfo?.title || "My Course"}\n*Batch:* ${activeBatch || "Batch"}\n*Topic:* ${doubtTopic || "General Doubt"}\n*My Question:* ${doubtQuestion.trim() || "I have a question regarding this topic."}\n\nPlease help me when free. Thank you!`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-98 transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+                >
+                  <MessageCircle size={15} />
+                  <span>Ask Faculty on WhatsApp (+91 81031 70595)</span>
+                </a>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <a
+                    href="tel:+918103170595"
+                    className="py-2 px-3 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Phone size={13} className="text-slate-500" />
+                    <span>Call Helpline</span>
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => setShowDoubtModal(false)}
+                    className="py-2 px-3 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-all cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Join Discussion Modal */}
+      {showDiscussionModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[100] flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-150">
+            {/* Header */}
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center">
+                  <Users size={17} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Batch Discussion Community</h3>
+                  <p className="text-[11px] text-slate-500">Connect with your batchmates & mentor</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDiscussionModal(false)}
+                className="w-8 h-8 rounded-lg hover:bg-slate-200/70 text-slate-400 hover:text-slate-700 flex items-center justify-center transition-colors cursor-pointer"
+                aria-label="Close"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-5 space-y-4">
+              {/* Batch Card */}
+              <div className="p-3 rounded-xl bg-purple-50/60 border border-purple-100 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] uppercase font-bold text-purple-600 tracking-wider">Your Active Batch</span>
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-white text-purple-700 border border-purple-200">
+                    Official Group
+                  </span>
+                </div>
+                <h4 className="font-bold text-slate-800 text-sm">
+                  {activeBatch || "Vision DCA Prime - 2026-27"}
+                </h4>
+                {batchTiming && (
+                  <p className="text-[11px] text-slate-500 flex items-center gap-1">
+                    <Clock size={11} className="text-slate-400" />
+                    <span>Class Timing: {batchTiming}</span>
+                  </p>
+                )}
+              </div>
+
+              {/* Highlights */}
+              <div className="space-y-2 text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                <p className="font-semibold text-slate-800 text-[11px] uppercase tracking-wider">Group Benefits:</p>
+                <div className="flex items-start gap-2">
+                  <span className="text-purple-600 font-bold">•</span>
+                  <span>Share homework solutions and practical code snippets.</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-purple-600 font-bold">•</span>
+                  <span>Get real-time announcements directly from your batch teacher.</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-purple-600 font-bold">•</span>
+                  <span>Discuss test questions and project assignments with peers.</span>
+                </div>
+              </div>
+
+              {/* Action Button */}
+              <div className="space-y-2 pt-1">
+                <a
+                  href={`https://wa.me/918103170595?text=${encodeURIComponent(
+                    `Hello Vision Computer Institute,\n\nPlease add me to the official WhatsApp Discussion Group for my batch:\n*Batch:* ${activeBatch || "My Batch"}\n*Course:* ${courseInfo?.title || "My Course"}\n*Student ID:* ${studentId || ""}\n\nThank you!`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-98 transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+                >
+                  <MessageCircle size={15} />
+                  <span>Join Batch WhatsApp Group</span>
+                </a>
+
+                <button
+                  type="button"
+                  onClick={() => setShowDiscussionModal(false)}
+                  className="w-full py-2 px-3 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-all cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Lesson Viewer Modal */}
