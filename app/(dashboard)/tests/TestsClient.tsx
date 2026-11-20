@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { getOfflineData, saveOfflineData, OFFLINE_KEYS } from "@/lib/offline-store";
 import { supabase } from "@/lib/supabase";
@@ -366,9 +366,40 @@ export default function TestsClient({
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [score, setScore] = useState(0);
+  const [timeLeft, setTimeLeft] = useState<number>(0);
+  const [totalTime, setTotalTime] = useState<number>(0);
+  const [isAutoSubmitted, setIsAutoSubmitted] = useState<boolean>(false);
   const [results, setResults] = useState<any[]>(initialResults);
   const [submissions, setSubmissions] = useState<any[]>(quizSubmissions);
   const [completedLessonIds, setCompletedLessonIds] = useState<string[]>(initialCompletedLessons);
+
+  // Synchronization refs for timer auto-submit to prevent stale closures
+  const answersRef = useRef(answers);
+  useEffect(() => {
+    answersRef.current = answers;
+  }, [answers]);
+
+  const questionsRef = useRef(questions);
+  useEffect(() => {
+    questionsRef.current = questions;
+  }, [questions]);
+
+  const activeTestRef = useRef(activeTest);
+  useEffect(() => {
+    activeTestRef.current = activeTest;
+  }, [activeTest]);
+
+  // Format seconds to MM:SS or HH:MM:SS
+  const formatTime = (seconds: number) => {
+    const s = Math.max(0, Math.floor(seconds));
+    const hrs = Math.floor(s / 3600);
+    const mins = Math.floor((s % 3600) / 60);
+    const secs = s % 60;
+    if (hrs > 0) {
+      return `${hrs}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+    }
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  };
 
   // Result View Modal State
   const [viewingResult, setViewingResult] = useState<TestItem | null>(null);
@@ -746,10 +777,17 @@ export default function TestsClient({
 
     setActiveTest(test);
     setTestCompleted(false);
+    setIsAutoSubmitted(false);
     setCurrentQuestion(0);
     setAnswers({});
     setIsLoading(true);
     setLoadError(null);
+
+    // Initial default duration (refines after questions load)
+    const initialMinutes = test.durationMinutes > 0 ? test.durationMinutes : 15;
+    const initialSecs = initialMinutes * 60;
+    setTimeLeft(initialSecs);
+    setTotalTime(initialSecs);
 
     try {
       if (test.isScheduleOnly) {
@@ -764,6 +802,10 @@ export default function TestsClient({
         const parsed = parseMcqQuestions(test.notes_content);
         if (parsed.length > 0) {
           setQuestions(parsed);
+          const duration = test.durationMinutes > 0 ? test.durationMinutes : Math.max(parsed.length, 10);
+          const totalSecs = duration * 60;
+          setTimeLeft(totalSecs);
+          setTotalTime(totalSecs);
         } else {
           setLoadError("Questions for this quiz are currently being prepared by the teacher.");
           setQuestions([]);
@@ -781,6 +823,10 @@ export default function TestsClient({
           setQuestions([]);
         } else if (data && data.length > 0) {
           setQuestions(data);
+          const duration = test.durationMinutes > 0 ? test.durationMinutes : Math.max(data.length, 10);
+          const totalSecs = duration * 60;
+          setTimeLeft(totalSecs);
+          setTotalTime(totalSecs);
         } else {
           setLoadError("No questions have been published for this test yet. Please check back later.");
           setQuestions([]);
@@ -806,12 +852,20 @@ export default function TestsClient({
     }
   };
 
-  const handleCompleteTest = async () => {
-    if (!activeTest) return;
+  const handleCompleteTest = async (auto = false) => {
+    const currentActiveTest = activeTestRef.current;
+    const currentQuestions = questionsRef.current;
+    const currentAnswers = answersRef.current;
+
+    if (!currentActiveTest) return;
+
+    if (auto) {
+      setIsAutoSubmitted(true);
+    }
 
     let correctCount = 0;
-    questions.forEach((q, idx) => {
-      if (answers[idx] === q.correct_option_index) {
+    currentQuestions.forEach((q, idx) => {
+      if (currentAnswers[idx] === q.correct_option_index) {
         correctCount++;
       }
     });
@@ -822,49 +876,49 @@ export default function TestsClient({
     const nowIso = new Date().toISOString();
 
     // 1. If it's a quiz lesson, update submissions + user_progress + test_results
-    if (activeTest.isQuizLesson) {
+    if (currentActiveTest.isQuizLesson) {
       try {
         await supabase.from("submissions").upsert({
           student_id: studentId,
-          lesson_id: activeTest.id,
+          lesson_id: currentActiveTest.id,
           status: "submitted",
           score: correctCount,
-          content_url: JSON.stringify(answers),
+          content_url: JSON.stringify(currentAnswers),
           submitted_at: nowIso
         }, { onConflict: "student_id,lesson_id" });
 
         await supabase.from("user_progress").upsert({
           user_id: studentId,
-          lesson_id: activeTest.id,
+          lesson_id: currentActiveTest.id,
           completed: true,
           last_watched_at: nowIso
         }, { onConflict: "user_id,lesson_id" });
 
         // Also record in test_results for instant synchronization
         await supabase.from("test_results").upsert({
-          test_id: activeTest.id,
+          test_id: currentActiveTest.id,
           student_id: studentId,
           score: correctCount,
-          total_questions: questions.length,
+          total_questions: currentQuestions.length,
           completed_at: nowIso
         }, { onConflict: "test_id,student_id" });
 
         // Update local state so UI flips to Completed immediately
-        setCompletedLessonIds(prev => Array.from(new Set([...prev, activeTest.id])));
+        setCompletedLessonIds(prev => Array.from(new Set([...prev, currentActiveTest.id])));
         setSubmissions(prev => [
-          ...prev.filter(s => s.lesson_id !== activeTest.id),
-          { lesson_id: activeTest.id, status: "submitted", score: `${correctCount}/${questions.length}`, submitted_at: nowIso }
+          ...prev.filter(s => s.lesson_id !== currentActiveTest.id),
+          { lesson_id: currentActiveTest.id, status: "submitted", score: `${correctCount}/${currentQuestions.length}`, submitted_at: nowIso }
         ]);
         setResults(prev => [
-          ...prev.filter(r => r.test_id !== activeTest.id),
-          { test_id: activeTest.id, score: correctCount, total_questions: questions.length, completed_at: nowIso }
+          ...prev.filter(r => r.test_id !== currentActiveTest.id),
+          { test_id: currentActiveTest.id, score: correctCount, total_questions: currentQuestions.length, completed_at: nowIso }
         ]);
 
         notifyAdminOnTestComplete({
           studentId,
-          testTitle: activeTest.title || "Quiz",
+          testTitle: currentActiveTest.title || "Quiz",
           score: correctCount,
-          totalQuestions: questions.length
+          totalQuestions: currentQuestions.length
         }).catch(() => {});
       } catch (err) {
         console.error("Error saving quiz submission:", err);
@@ -873,29 +927,50 @@ export default function TestsClient({
       // 2. Official DB test
       try {
         await supabase.from("test_results").upsert({
-          test_id: activeTest.id,
+          test_id: currentActiveTest.id,
           student_id: studentId,
           score: correctCount,
-          total_questions: questions.length,
+          total_questions: currentQuestions.length,
           completed_at: nowIso
         }, { onConflict: "test_id,student_id" });
 
         setResults(prev => [
-          ...prev.filter(r => r.test_id !== activeTest.id),
-          { test_id: activeTest.id, score: correctCount, total_questions: questions.length, completed_at: nowIso }
+          ...prev.filter(r => r.test_id !== currentActiveTest.id),
+          { test_id: currentActiveTest.id, score: correctCount, total_questions: currentQuestions.length, completed_at: nowIso }
         ]);
 
         notifyAdminOnTestComplete({
           studentId,
-          testTitle: activeTest.title || "Test",
+          testTitle: currentActiveTest.title || "Test",
           score: correctCount,
-          totalQuestions: questions.length
+          totalQuestions: currentQuestions.length
         }).catch(() => {});
       } catch (err) {
         console.error("Error saving test result:", err);
       }
     }
   };
+
+  // Countdown Timer & Auto Submit when time runs out
+  useEffect(() => {
+    if (!activeTest || testCompleted || isLoading || loadError || questions.length === 0) {
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          triggerToast("⏱️ Time is up! Your test has been submitted automatically.");
+          handleCompleteTest(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [activeTest, testCompleted, isLoading, loadError, questions.length]);
 
   // Next scheduled test spotlight (prioritize live, then upcoming future scheduled)
   const nextScheduledTest = useMemo(() => {
@@ -961,6 +1036,13 @@ export default function TestsClient({
       return (
         <div className="max-w-lg mx-auto py-6 sm:py-10 px-3 sm:px-4 animate-in zoom-in-95 duration-300">
           <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-sm text-center">
+            {isAutoSubmitted && (
+              <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl p-3 mb-4 text-xs font-semibold flex items-center justify-center gap-2 animate-in fade-in duration-300 shadow-2xs">
+                <Clock size={16} className="text-amber-600 shrink-0 animate-pulse" />
+                <span>Time Expired — Your answers were submitted automatically.</span>
+              </div>
+            )}
+
             <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-blue-100 shadow-2xs">
               <Trophy size={32} className="stroke-[2]" />
             </div>
@@ -984,6 +1066,7 @@ export default function TestsClient({
                 onClick={() => {
                   setActiveTest(null);
                   setTestCompleted(false);
+                  setIsAutoSubmitted(false);
                 }}
                 className="w-full py-3 bg-blue-600 hover:bg-blue-700 active:scale-98 text-white rounded-xl font-bold text-xs transition-all shadow-sm cursor-pointer"
               >
@@ -1001,29 +1084,79 @@ export default function TestsClient({
       );
     }
 
+    // Calculate progress percentage
+    const progressPercent = questions.length > 0 ? Math.round(((currentQuestion + 1) / questions.length) * 100) : 0;
+    const answeredCount = Object.keys(answers).length;
+
     return (
       <div className="max-w-2xl mx-auto space-y-3 sm:space-y-4 px-2 sm:px-0 animate-in slide-in-from-right-3 duration-300 pb-16">
-        {/* Sticky Mobile Header bar */}
-        <div className="sticky top-2 z-20 flex items-center justify-between bg-white px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-2xl border border-slate-200/80 shadow-xs">
-          <div className="min-w-0 flex-1 pr-2">
-            <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full uppercase tracking-wider">
-              Question {currentQuestion + 1} of {questions.length}
-            </span>
-            <h3 className="text-xs sm:text-sm font-bold text-slate-900 mt-1 truncate">{activeTest.title}</h3>
+        {/* Sticky Mobile Header bar with Timer & Progress */}
+        <div className="sticky top-2 z-20 bg-white/95 backdrop-blur-md px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-2xl border border-slate-200/80 shadow-xs space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                  Question {currentQuestion + 1} of {questions.length}
+                </span>
+                <span className="text-[10px] text-slate-400 font-medium hidden sm:inline">
+                  • {answeredCount}/{questions.length} Answered
+                </span>
+              </div>
+              <h3 className="text-xs sm:text-sm font-bold text-slate-900 mt-1 truncate">{activeTest.title}</h3>
+            </div>
+
+            {/* Timer and Exit Controls */}
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+              {/* Dynamic Live Countdown Timer */}
+              <div 
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl font-mono text-xs font-bold transition-all ${
+                  timeLeft <= 60
+                    ? "bg-rose-50 text-rose-600 border border-rose-200 shadow-2xs animate-pulse ring-2 ring-rose-500/20"
+                    : timeLeft <= 120
+                    ? "bg-amber-50 text-amber-700 border border-amber-200 shadow-2xs"
+                    : "bg-slate-50 text-slate-700 border border-slate-200/90 shadow-2xs"
+                }`}
+                title="Time Remaining"
+              >
+                <Clock 
+                  size={13} 
+                  className={timeLeft <= 60 ? "text-rose-600 animate-spin" : timeLeft <= 120 ? "text-amber-600" : "text-slate-500"} 
+                />
+                <span>{formatTime(timeLeft)}</span>
+              </div>
+
+              <button 
+                type="button"
+                onClick={() => {
+                  if (answeredCount > 0 && !confirm("Are you sure you want to exit? Your answers for this test attempt will not be submitted.")) {
+                    return;
+                  }
+                  setActiveTest(null);
+                }}
+                className="p-1.5 min-h-[34px] min-w-[34px] flex items-center justify-center hover:bg-slate-100 text-slate-400 hover:text-slate-700 rounded-xl transition-colors cursor-pointer shrink-0"
+                title="Exit Test"
+                aria-label="Exit Test"
+              >
+                <X size={18} />
+              </button>
+            </div>
           </div>
-          <button 
-            onClick={() => setActiveTest(null)}
-            className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center hover:bg-slate-100 text-slate-400 hover:text-slate-700 rounded-xl transition-colors cursor-pointer shrink-0"
-            title="Exit Test"
-            aria-label="Exit Test"
-          >
-            <X size={18} />
-          </button>
+
+          {/* Animated Gradient Progress Bar */}
+          <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+            <div 
+              className="bg-gradient-to-r from-blue-500 via-indigo-500 to-blue-600 h-full rounded-full transition-all duration-300 ease-out"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
         </div>
 
-        {/* Question card */}
+        {/* Question card with smooth entrance animation */}
         {questions.length > 0 && (
-          <div className="bg-white p-3.5 sm:p-6 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3.5 sm:space-y-5">
+          <div 
+            key={currentQuestion}
+            className="bg-white p-3.5 sm:p-6 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3.5 sm:space-y-5 animate-in fade-in slide-in-from-right-2 duration-200"
+          >
             <div className="flex items-start gap-2.5">
               <span className="w-6 h-6 rounded-lg bg-blue-50 text-blue-600 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
                 {currentQuestion + 1}
@@ -1033,7 +1166,7 @@ export default function TestsClient({
               </h2>
             </div>
 
-            {/* Options list with touch-friendly targets */}
+            {/* Options list with interactive UX animations */}
             <div className="space-y-2 sm:space-y-2.5">
               {(questions[currentQuestion].options || []).map((opt: string, idx: number) => {
                 const isSelected = answers[currentQuestion] === idx;
@@ -1042,16 +1175,22 @@ export default function TestsClient({
                     key={idx}
                     type="button"
                     onClick={() => handleSelectOption(idx)}
-                    className={`w-full min-h-[48px] flex items-center gap-2.5 sm:gap-3 p-3 sm:p-3.5 rounded-xl border text-left text-xs transition-all cursor-pointer active:scale-[0.99] ${
+                    className={`group w-full min-h-[48px] flex items-center gap-2.5 sm:gap-3 p-3 sm:p-3.5 rounded-xl border text-left text-xs transition-all duration-150 cursor-pointer active:scale-[0.98] touch-manipulation ${
                       isSelected 
-                        ? "border-blue-600 bg-blue-50/70 text-blue-900 font-semibold shadow-2xs" 
-                        : "border-slate-200/80 hover:border-slate-300 bg-white text-slate-700 hover:bg-slate-50/50"
+                        ? "border-blue-600 bg-blue-50/80 text-blue-950 font-semibold shadow-xs ring-2 ring-blue-500/20 translate-x-0.5 sm:translate-x-1" 
+                        : "border-slate-200/90 hover:border-blue-200 bg-white text-slate-700 hover:bg-slate-50/70"
                     }`}
                   >
-                    <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-bold shrink-0 ${
-                      isSelected ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-500"
+                    <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center text-[11px] font-bold shrink-0 transition-all duration-200 ${
+                      isSelected 
+                        ? "bg-blue-600 text-white shadow-2xs scale-105" 
+                        : "bg-slate-100 text-slate-600 group-hover:bg-blue-50 group-hover:text-blue-600"
                     }`}>
-                      {String.fromCharCode(65 + idx)}
+                      {isSelected ? (
+                        <Check size={13} className="stroke-[2.5] animate-in zoom-in-75 duration-150" />
+                      ) : (
+                        String.fromCharCode(65 + idx)
+                      )}
                     </div>
                     <span className="flex-1 leading-relaxed">{opt}</span>
                   </button>
@@ -1065,17 +1204,47 @@ export default function TestsClient({
                 type="button"
                 disabled={currentQuestion === 0}
                 onClick={() => setCurrentQuestion(prev => prev - 1)}
-                className="min-h-[44px] px-3.5 py-2 flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-800 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer rounded-xl bg-slate-50 hover:bg-slate-100"
+                className="min-h-[44px] px-3.5 sm:px-4 py-2 flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-800 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer rounded-xl bg-slate-50 hover:bg-slate-100 active:scale-95 touch-manipulation"
               >
                 <ArrowLeft size={14} /> Previous
               </button>
+
+              {/* Quick Dots Navigator (Visible on sm+ screens) */}
+              <div className="hidden sm:flex items-center gap-1 max-w-[220px] overflow-x-auto py-1 scrollbar-none">
+                {questions.map((_, qIdx) => (
+                  <button
+                    key={qIdx}
+                    type="button"
+                    onClick={() => setCurrentQuestion(qIdx)}
+                    className={`w-6 h-6 rounded-md text-[10px] font-bold flex items-center justify-center transition-all cursor-pointer ${
+                      qIdx === currentQuestion
+                        ? "bg-blue-600 text-white shadow-2xs scale-105"
+                        : answers[qIdx] !== undefined
+                        ? "bg-blue-100 text-blue-700"
+                        : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                    }`}
+                    title={`Question ${qIdx + 1}`}
+                  >
+                    {qIdx + 1}
+                  </button>
+                ))}
+              </div>
+
               <button 
                 type="button"
                 onClick={handleNextQuestion}
-                className="min-h-[44px] px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-98 text-white rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                className={`min-h-[44px] px-5 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer active:scale-95 touch-manipulation ${
+                  currentQuestion === questions.length - 1
+                    ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-200"
+                    : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-200"
+                }`}
               >
                 <span>{currentQuestion === questions.length - 1 ? "Submit Test" : "Next Question"}</span>
-                <ArrowRight size={14} />
+                {currentQuestion === questions.length - 1 ? (
+                  <CheckCircle2 size={14} />
+                ) : (
+                  <ArrowRight size={14} />
+                )}
               </button>
             </div>
           </div>
