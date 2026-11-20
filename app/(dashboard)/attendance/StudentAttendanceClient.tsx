@@ -146,12 +146,14 @@ export default function StudentAttendanceClient({
 
         const isAbsentOrLeave = status === "absent" || status === "leave" || status === "not_held";
         const formattedPunchIn = (!isAbsentOrLeave && r.check_in_time) ? formatPunchInTime(r.check_in_time) : undefined;
+        const rawTopic = (r.topic || r.remarks || "").trim();
+        const topic = (rawTopic && rawTopic.toLowerCase() !== "class lecture") ? rawTopic : "";
 
         map[d] = {
           id: r.id,
           date: d,
           status,
-          topic: r.topic || r.remarks || "Class Lecture",
+          topic: topic,
           module: r.courses?.title || courseTitle || "Module",
           mode: r.mode || "Offline",
           classroom: r.classroom || "Lab 1",
@@ -314,13 +316,15 @@ export default function StudentAttendanceClient({
         const dateFormatted = d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
         const dayOfWeek = d.toLocaleDateString("en-IN", { weekday: "short" });
         const rawStatus = (r.status || "present").toLowerCase();
+        const rawTopic = (r.topic || r.remarks || "").trim();
+        const topic = (rawTopic && rawTopic.toLowerCase() !== "class lecture") ? rawTopic : "";
 
         return {
           id: r.id || dStr,
           dateFormatted,
           dateStr: dStr,
           dayOfWeek,
-          topic: r.topic || r.remarks || "Class Lecture",
+          topic,
           status: rawStatus === "late" ? "Late" : rawStatus === "absent" ? "Absent" : rawStatus === "leave" ? "Leave" : "Present",
           statusType: rawStatus,
           mode: r.mode || "Offline"
@@ -590,51 +594,59 @@ export default function StudentAttendanceClient({
                 </div>
 
                 {/* Weekday headers */}
-                <div className="grid grid-cols-7 text-center text-[10px] sm:text-[11px] font-semibold text-slate-400 py-1 sm:py-1.5 border-b border-slate-100">
-                  {dayNames.map(d => (
-                    <div key={d}>{d}</div>
+                <div className="grid grid-cols-7 text-center text-[10px] sm:text-[11px] font-semibold py-1 sm:py-1.5 border-b border-slate-100">
+                  {dayNames.map((d, index) => (
+                    <div key={d} className={index === 0 ? "text-rose-500 font-bold" : "text-slate-400"}>
+                      {d}
+                    </div>
                   ))}
                 </div>
 
-                {/* Calendar Days Matrix (Compact on mobile) */}
-                <div className="grid grid-cols-7 text-center pt-1 gap-y-0.5">
+                {/* Calendar Days Matrix (Round circles / Gol bubble) */}
+                <div className="grid grid-cols-7 text-center pt-1.5 gap-y-1">
                   {calendarDays.map((cell, idx) => {
+                    const isSunday = idx % 7 === 0;
                     const isSelected = cell.dateStr === selectedDate;
 
                     return (
-                      <div
-                        key={idx}
-                        onClick={() => {
-                          if (cell.isCurrentMonth && cell.dateStr) {
-                            setSelectedDate(cell.dateStr);
-                          }
-                        }}
-                        className={`h-8 sm:h-10 flex flex-col items-center justify-center rounded-xl transition-all cursor-pointer m-0.5 ${
-                          cell.isCurrentMonth
-                            ? isSelected
-                              ? "bg-blue-50 border border-blue-300 text-blue-700 font-bold shadow-2xs"
-                              : "hover:bg-slate-50 text-slate-700"
-                            : "text-slate-300 pointer-events-none"
-                        }`}
-                      >
-                        <span className="text-[11px] sm:text-xs leading-none">{cell.dayNumber}</span>
-                        {/* Dot Indicator */}
-                        {cell.isCurrentMonth && (
-                          <div className="h-2 flex items-center justify-center mt-0.5">
-                            {cell.status === "present" && (
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                            )}
-                            {cell.status === "late" && (
-                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                            )}
-                            {cell.status === "absent" && (
-                              <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                            )}
-                            {cell.status === "leave" && (
-                              <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                            )}
-                          </div>
-                        )}
+                      <div key={idx} className="flex items-center justify-center p-0.5">
+                        <button
+                          type="button"
+                          disabled={!cell.isCurrentMonth}
+                          onClick={() => {
+                            if (cell.isCurrentMonth && cell.dateStr) {
+                              setSelectedDate(cell.dateStr);
+                            }
+                          }}
+                          className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex flex-col items-center justify-center transition-all cursor-pointer relative ${
+                            cell.isCurrentMonth
+                              ? isSelected
+                                ? "bg-blue-50 border-2 border-blue-500 font-bold shadow-2xs " + (isSunday ? "text-rose-600" : "text-blue-700")
+                                : isSunday
+                                  ? "hover:bg-rose-50/70 text-rose-500 font-bold"
+                                  : "hover:bg-slate-50 text-slate-700 font-medium"
+                              : "text-slate-300 pointer-events-none cursor-default"
+                          }`}
+                        >
+                          <span className="text-[11px] sm:text-xs leading-none">{cell.dayNumber}</span>
+                          {/* Dot Indicator */}
+                          {cell.isCurrentMonth && (
+                            <div className="h-1.5 flex items-center justify-center mt-0.5">
+                              {cell.status === "present" && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                              )}
+                              {cell.status === "late" && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                              )}
+                              {cell.status === "absent" && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                              )}
+                              {cell.status === "leave" && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                              )}
+                            </div>
+                          )}
+                        </button>
                       </div>
                     );
                   })}
@@ -674,12 +686,20 @@ export default function StudentAttendanceClient({
                             : (selectedRecord.rawCheckInTime ? "(Punch-in)" : "(Session Timing)")}
                         </span>
                       </div>
-                      <h4 className="text-xs sm:text-sm font-bold text-slate-900 mt-1 leading-snug">
-                        {selectedRecord.topic}
-                      </h4>
-                      <p className="text-[11px] text-slate-400 mt-0.5 truncate">
-                        {selectedRecord.module}
-                      </p>
+                      {selectedRecord.topic ? (
+                        <>
+                          <h4 className="text-xs sm:text-sm font-bold text-slate-900 mt-1 leading-snug">
+                            {selectedRecord.topic}
+                          </h4>
+                          <p className="text-[11px] text-slate-400 mt-0.5 truncate">
+                            {selectedRecord.module || courseTitle}
+                          </p>
+                        </>
+                      ) : (
+                        <h4 className="text-xs sm:text-sm font-bold text-slate-900 mt-1 leading-snug">
+                          {selectedRecord.module || courseTitle}
+                        </h4>
+                      )}
                     </div>
 
                     {/* Class Details List */}
@@ -829,10 +849,14 @@ export default function StudentAttendanceClient({
                           <span className="text-slate-400 font-normal text-[11px] shrink-0">
                             ({row.dayOfWeek})
                           </span>
-                          <span className="text-slate-300 shrink-0">•</span>
-                          <span className="text-xs text-slate-600 font-medium truncate min-w-0">
-                            {row.topic}
-                          </span>
+                          {row.topic ? (
+                            <>
+                              <span className="text-slate-300 shrink-0">•</span>
+                              <span className="text-xs text-slate-600 font-medium truncate min-w-0">
+                                {row.topic}
+                              </span>
+                            </>
+                          ) : null}
                         </div>
 
                         {/* Right: Mode & Status Badge in one line */}
@@ -875,7 +899,7 @@ export default function StudentAttendanceClient({
                             {row.dayOfWeek}
                           </td>
                           <td className="py-2.5 font-medium text-slate-800 truncate max-w-[280px]">
-                            {row.topic}
+                            {row.topic || "—"}
                           </td>
                           <td className="py-2.5">
                             {renderStatusBadge(row.statusType)}
