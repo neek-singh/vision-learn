@@ -242,27 +242,12 @@ export async function GET(request: Request) {
     }
 
     .brand-subtitle {
-      font-size: 11px;
-      color: var(--slate-600);
+      font-size: 13px;
+      color: #2563eb;
       font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
+      letter-spacing: 0.5px;
       margin-top: 4px;
       line-height: 1.3;
-    }
-
-    .brand-cert-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      margin-top: 8px;
-      font-size: 10px;
-      font-weight: 800;
-      background: #dbeafe;
-      color: #1e40af;
-      padding: 3px 8px;
-      border-radius: 5px;
-      letter-spacing: 0.3px;
     }
 
     .header-contact {
@@ -460,11 +445,11 @@ export async function GET(request: Request) {
       shrink: 0;
     }
 
-    /* Footer: Official Seal & Academic Director Signature */
+    /* Footer: Academic Director Signature */
     .footer {
       margin-top: 36px;
-      padding-top: 22px;
-      border-top: 2px solid var(--slate-200);
+      padding-top: 24px;
+      border-top: 1px solid var(--slate-200);
       display: flex;
       justify-content: space-between;
       align-items: flex-end;
@@ -473,69 +458,9 @@ export async function GET(request: Request) {
     }
 
     .footer-left {
-      max-width: 440px;
       font-size: 11px;
-      color: var(--slate-500);
-      line-height: 1.6;
-    }
-
-    .footer-inst-name {
-      font-size: 13px;
-      font-weight: 800;
-      color: var(--slate-800);
-      text-transform: uppercase;
-      letter-spacing: 0.3px;
-    }
-
-    .footer-notice {
-      font-size: 10px;
       color: var(--slate-400);
-      margin-top: 4px;
-    }
-
-    /* Academic Director Verification & Seal Box */
-    .authority-box {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      flex-shrink: 0;
-    }
-
-    .official-seal {
-      width: 72px;
-      height: 72px;
-      border: 2px dashed #2563eb;
-      border-radius: 50%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 4px;
-      background: #eff6ff;
-      color: #1e40af;
-      box-shadow: inset 0 0 0 1px #bfdbfe;
-    }
-
-    .seal-text-top {
-      font-size: 7px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .seal-star {
-      font-size: 10px;
-      line-height: 1;
-      margin: 2px 0;
-      color: #2563eb;
-    }
-
-    .seal-text-bot {
-      font-size: 6.5px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.4px;
+      line-height: 1.5;
     }
 
     .signatory {
@@ -551,7 +476,7 @@ export async function GET(request: Request) {
     }
 
     .sign-name {
-      font-size: 13.5px;
+      font-size: 14px;
       font-weight: 800;
       color: var(--slate-900);
       letter-spacing: 0.3px;
@@ -561,21 +486,7 @@ export async function GET(request: Request) {
       font-size: 11.5px;
       font-weight: 700;
       color: var(--primary);
-      margin-top: 1px;
-    }
-
-    .sign-authority {
-      font-size: 9.5px;
-      font-weight: 700;
-      color: var(--slate-600);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-top: 1px;
-    }
-
-    .sign-dept {
-      font-size: 9.5px;
-      color: var(--slate-500);
+      margin-top: 2px;
     }
 
     /* ═════════════════════════════════════════════════
@@ -661,27 +572,16 @@ export async function GET(request: Request) {
       }
 
       .footer {
-        flex-direction: column-reverse;
-        align-items: stretch;
-        gap: 18px;
-        margin-top: 26px;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: 16px;
+        margin-top: 24px;
         padding-top: 18px;
       }
 
-      .authority-box {
-        justify-content: space-between;
-        width: 100%;
-        background: var(--slate-50);
-        padding: 12px;
-        border-radius: 10px;
-        border: 1px solid var(--slate-200);
-      }
-      .sign-line {
-        margin-left: 0;
-        width: 100%;
-      }
       .signatory {
-        text-align: left;
+        text-align: right;
       }
     }
 
@@ -721,11 +621,6 @@ export async function GET(request: Request) {
         flex-direction: row !important;
         justify-content: space-between !important;
       }
-      .authority-box {
-        background: transparent !important;
-        border: none !important;
-        padding: 0 !important;
-      }
     }
   </style>
 </head>
@@ -752,10 +647,7 @@ export async function GET(request: Request) {
     <div class="header">
       <div class="brand-section">
         <h1 class="brand-title">Vision IT & Computer Institute</h1>
-        <div class="brand-subtitle">Skill Development & Certified Computer Education</div>
-        <div class="brand-cert-badge">
-          <span>★</span> ISO 9001:2015 Certified Institution
-        </div>
+        <div class="brand-subtitle">Learn. Practice. Succeed.</div>
       </div>
       <div class="header-contact">
         <strong>Head Campus & Academic Office</strong><br>
@@ -852,33 +744,17 @@ export async function GET(request: Request) {
       </div>
     `).join("")}
 
-    <!-- Official Seal & Academic Director Signature Footer -->
+    <!-- Academic Director Signature Footer -->
     <div class="footer">
       <div class="footer-left">
-        <div class="footer-inst-name">Vision IT & Computer Institute</div>
-        <div>Official Academic Curriculum Document • Reg. & ISO Certified</div>
-        <div>Helpline: +91 81031 70595 • Email: support@visionitinstitute.com</div>
-        <div class="footer-notice">
-          This syllabus is approved by the Academic Directorate for student training and certification.
-        </div>
+        <div>Official Academic Curriculum Document</div>
+        <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">Vision IT & Computer Institute</div>
       </div>
 
-      <div class="authority-box">
-        <!-- Verification Seal Stamp -->
-        <div class="official-seal">
-          <div class="seal-text-top">VISION IT</div>
-          <div class="seal-star">★</div>
-          <div class="seal-text-bot">VERIFIED</div>
-        </div>
-
-        <!-- Academic Director Signature -->
-        <div class="signatory">
-          <div class="sign-line"></div>
-          <div class="sign-name">Ishwar Singh</div>
-          <div class="sign-designation">Academic Director</div>
-          <div class="sign-authority">Authorized Signatory</div>
-          <div class="sign-dept">Vision Academic Directorate</div>
-        </div>
+      <div class="signatory">
+        <div class="sign-line"></div>
+        <div class="sign-name">Ishwar Singh</div>
+        <div class="sign-designation">Academic Director</div>
       </div>
     </div>
 
