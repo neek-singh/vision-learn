@@ -352,14 +352,7 @@ export async function GET(request: Request) {
       font-weight: 900;
       color: var(--slate-900);
       line-height: 1.25;
-      margin-bottom: 8px;
-    }
-
-    .course-desc {
-      font-size: 12.5px;
-      color: var(--slate-700);
-      line-height: 1.6;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
     }
 
     .course-meta-grid {
@@ -811,7 +804,6 @@ export async function GET(request: Request) {
     <div class="course-banner">
       <div class="course-label">Official Curriculum Specification</div>
       <h2 class="course-name">${course.title}</h2>
-      <p class="course-desc">${course.description || "Comprehensive practical training curriculum designed for industry proficiency, software mastery, and certified computer applications."}</p>
       
       <div class="course-meta-grid">
         <div class="meta-box">
