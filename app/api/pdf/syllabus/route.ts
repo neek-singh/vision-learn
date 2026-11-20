@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminSupabaseClient } from "@/lib/supabase-server";
+import fs from "fs";
+import path from "path";
 
 export const dynamic = "force-dynamic";
 
@@ -97,6 +99,27 @@ export async function GET(request: Request) {
       year: "numeric"
     });
 
+    // Load Logo for print/PDF
+    let logoBase64 = "";
+    try {
+      const possiblePaths = [
+        path.join(process.cwd(), "public", "logo.png"),
+        path.join(process.cwd(), "vision-learn", "public", "logo.png")
+      ];
+      for (const p of possiblePaths) {
+        if (fs.existsSync(p)) {
+          logoBase64 = fs.readFileSync(p).toString("base64");
+          break;
+        }
+      }
+    } catch (e) {
+      console.warn("Could not load logo file from disk:", e);
+    }
+
+    const logoSrc = logoBase64
+      ? `data:image/png;base64,${logoBase64}`
+      : "https://res.cloudinary.com/ddiooxxks/image/upload/f_auto,q_auto/logo_unnut8.png";
+
     // 3. Render HTML Printable Page
     const html = `<!DOCTYPE html>
 <html lang="en">
@@ -134,6 +157,37 @@ export async function GET(request: Request) {
       line-height: 1.5;
       padding-bottom: 60px;
       -webkit-font-smoothing: antialiased;
+    }
+
+    /* Institute Name Watermark */
+    .watermark-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      z-index: 50;
+      overflow: hidden;
+    }
+
+    .watermark-text {
+      font-size: clamp(22px, 4.5vw, 44px);
+      font-weight: 900;
+      color: rgba(30, 64, 175, 0.04);
+      text-transform: uppercase;
+      letter-spacing: 5px;
+      transform: rotate(-32deg);
+      white-space: nowrap;
+      user-select: none;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      text-align: center;
+      line-height: 1;
     }
 
     /* Top Action Bar (Screen Only) */
@@ -219,35 +273,42 @@ export async function GET(request: Request) {
     /* Institute Letterhead */
     .header {
       border-bottom: 2px solid var(--primary);
-      padding-bottom: 18px;
-      margin-bottom: 24px;
+      padding-bottom: 16px;
+      margin-bottom: 22px;
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
-      gap: 20px;
+      align-items: center;
+      gap: 18px;
     }
 
     .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 14px;
       flex: 1;
       min-width: 0;
     }
 
+    .brand-logo {
+      width: 56px;
+      height: 56px;
+      object-fit: contain;
+      flex-shrink: 0;
+      border-radius: 6px;
+    }
+
+    .brand-text {
+      min-width: 0;
+    }
+
     .brand-title {
-      font-size: 22px;
+      font-size: 21px;
       font-weight: 900;
       color: var(--primary);
       text-transform: uppercase;
       letter-spacing: 0.3px;
-      line-height: 1.2;
-    }
-
-    .brand-subtitle {
-      font-size: 13px;
-      color: #2563eb;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      margin-top: 4px;
-      line-height: 1.3;
+      line-height: 1.25;
+      margin: 0;
     }
 
     .header-contact {
@@ -361,10 +422,10 @@ export async function GET(request: Request) {
       border: 1px solid var(--slate-200);
       border-radius: 10px;
       margin-bottom: 18px;
-      overflow: hidden;
-      page-break-inside: avoid;
       background: white;
       box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+      break-inside: auto;
+      page-break-inside: auto;
     }
 
     .module-header {
@@ -375,6 +436,8 @@ export async function GET(request: Request) {
       justify-content: space-between;
       align-items: center;
       gap: 10px;
+      break-after: avoid;
+      page-break-after: avoid;
     }
 
     .module-idx {
@@ -406,6 +469,8 @@ export async function GET(request: Request) {
     .chapter-block {
       padding: 12px 16px;
       border-bottom: 1px dashed var(--slate-200);
+      break-inside: avoid;
+      page-break-inside: avoid;
     }
     .chapter-block:last-child {
       border-bottom: none;
@@ -524,17 +589,27 @@ export async function GET(request: Request) {
       /* Stack letterhead on mobile so text never squishes */
       .header {
         flex-direction: column;
+        align-items: flex-start;
         gap: 12px;
         padding-bottom: 14px;
         margin-bottom: 18px;
       }
 
-      .brand-title {
-        font-size: 18px;
-        line-height: 1.25;
+      .brand-section {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
       }
-      .brand-subtitle {
-        font-size: 10px;
+
+      .brand-logo {
+        width: 48px;
+        height: 48px;
+      }
+
+      .brand-title {
+        font-size: 17px;
+        line-height: 1.25;
       }
 
       .header-contact {
@@ -590,9 +665,36 @@ export async function GET(request: Request) {
       body {
         background: white !important;
         padding: 0 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
       }
       .action-bar {
         display: none !important;
+      }
+      .watermark-container {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        pointer-events: none !important;
+        z-index: 9999 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      .watermark-text {
+        font-size: 46px !important;
+        color: rgba(0, 0, 0, 0.045) !important;
+        transform: rotate(-32deg) !important;
+        letter-spacing: 5px !important;
+        display: block !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
       }
       .document {
         border: none !important;
@@ -605,6 +707,22 @@ export async function GET(request: Request) {
         display: flex !important;
         flex-direction: row !important;
         justify-content: space-between !important;
+        align-items: center !important;
+      }
+      .brand-section {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 14px !important;
+      }
+      .brand-logo {
+        width: 54px !important;
+        height: 54px !important;
+        display: block !important;
+      }
+      .brand-title {
+        font-size: 20px !important;
+        color: #1e40af !important;
       }
       .header-contact {
         text-align: right !important;
@@ -613,18 +731,47 @@ export async function GET(request: Request) {
         padding: 0 !important;
         display: block !important;
       }
+      .course-banner {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+      }
       .module-card {
+        border: 1px solid #cbd5e1 !important;
+        margin-bottom: 14px !important;
+        box-shadow: none !important;
+        overflow: visible !important;
+        break-inside: auto !important;
+        page-break-inside: auto !important;
+      }
+      .module-header {
+        background: #f8fafc !important;
+        border-bottom: 1px solid #e2e8f0 !important;
+        break-after: avoid !important;
+        page-break-after: avoid !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      .chapter-block {
+        border-bottom: 1px dashed #e2e8f0 !important;
+        break-inside: avoid !important;
         page-break-inside: avoid !important;
       }
       .footer {
         display: flex !important;
         flex-direction: row !important;
         justify-content: space-between !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
       }
     }
   </style>
 </head>
 <body>
+
+  <!-- Institute Name Background Watermark -->
+  <div class="watermark-container" aria-hidden="true">
+    <div class="watermark-text">VISION IT &amp; COMPUTER INSTITUTE</div>
+  </div>
 
   <!-- Screen Action Bar -->
   <div class="action-bar">
@@ -646,11 +793,13 @@ export async function GET(request: Request) {
     <!-- Header Letterhead -->
     <div class="header">
       <div class="brand-section">
-        <h1 class="brand-title">Vision IT & Computer Institute</h1>
-        <div class="brand-subtitle">Learn. Practice. Succeed.</div>
+        <img src="${logoSrc}" alt="Vision IT Logo" class="brand-logo" />
+        <div class="brand-text">
+          <h1 class="brand-title">Vision IT &amp; Computer Institute</h1>
+        </div>
       </div>
       <div class="header-contact">
-        <strong>Head Campus & Academic Office</strong><br>
+        <strong>Head Campus &amp; Academic Office</strong><br>
         Helpline: +91 81031 70595<br>
         Email: <a href="mailto:support@visionitinstitute.com">support@visionitinstitute.com</a><br>
         Web: www.visionitinstitute.com<br>
