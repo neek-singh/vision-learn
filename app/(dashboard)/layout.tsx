@@ -242,32 +242,56 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     };
   }, [router]);
 
-  // Pre-warm offline cache with authenticated student pages so cold offline launch is instant
-  // Strictly verifies !response.redirected so /login is never cached under /dashboard
+  // Pre-warm offline cache with authenticated student pages (both HTML documents & RSC streams)
+  // so client-side navigation AND cold offline app launches work seamlessly offline
   useEffect(() => {
-    if (typeof window !== "undefined" && "caches" in window && navigator.onLine) {
-      caches.open("app-pages").then((cache) => {
-        const pagesToWarm = [
-          "/dashboard",
-          "/courses",
-          "/settings",
-          "/attendance",
-          "/fees",
-          "/tests",
-          "/curriculum",
-          "/offline"
-        ];
+    if (typeof window === "undefined" || !("caches" in window) || !navigator.onLine) return;
+
+    const pagesToWarm = [
+      "/dashboard",
+      "/courses",
+      "/settings",
+      "/attendance",
+      "/fees",
+      "/tests",
+      "/curriculum",
+      "/offline"
+    ];
+
+    const warmCaches = async () => {
+      try {
+        const [appCache, rscCache] = await Promise.all([
+          caches.open("app-pages"),
+          caches.open("next-rsc-payloads")
+        ]);
+
         pagesToWarm.forEach((url) => {
+          // 1. Warm full HTML document
           fetch(url, { credentials: "same-origin" })
             .then((response) => {
               if (response.ok && !response.redirected && response.status === 200) {
-                cache.put(url, response);
+                appCache.put(url, response.clone());
+              }
+            })
+            .catch(() => {});
+
+          // 2. Warm Next.js RSC stream for client-side Link navigations
+          fetch(url, { credentials: "same-origin", headers: { RSC: "1" } })
+            .then((response) => {
+              if (response.ok && !response.redirected && response.status === 200) {
+                rscCache.put(url, response.clone());
               }
             })
             .catch(() => {});
         });
-      });
-    }
+      } catch (err) {
+        console.warn("[PWA] Error pre-warming caches:", err);
+      }
+    };
+
+    // Run slightly deferred to avoid competing with initial page load
+    const timeout = setTimeout(warmCaches, 1200);
+    return () => clearTimeout(timeout);
   }, []);
 
   // Safe client-side offline hydration (prevents React 19 hydration mismatch)

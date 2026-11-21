@@ -92,14 +92,15 @@ const withPWA = require('next-pwa')({
       }
     },
     {
-      // App Pages Caching: NetworkFirst for reliable navigation and redirects (e.g. /dashboard -> /login)
-      urlPattern: /^https?:\/\/[^/]+(?:\/(?:[?#].*)?$|\/?$|\/(?:dashboard|courses|lessons|curriculum|materials|tests|attendance|fees|calendar|certificates|settings|notifications|profile|offline|login)(?:$|[/?]))/i,
-      handler: 'NetworkFirst',
+      // RSC Payload Caching: Must come BEFORE app-pages to intercept App Router RSC streams
+      urlPattern: ({ request, url }: any) => {
+        return request?.headers?.get?.('RSC') === '1' || url?.searchParams?.has('_rsc');
+      },
+      handler: 'StaleWhileRevalidate',
       options: {
-        cacheName: 'app-pages',
-        networkTimeoutSeconds: 5,
+        cacheName: 'next-rsc-payloads',
         expiration: {
-          maxEntries: 100,
+          maxEntries: 200,
           maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
         },
         cacheableResponse: {
@@ -108,13 +109,22 @@ const withPWA = require('next-pwa')({
       }
     },
     {
-      // RSC Payload Caching for seamless client-side navigation in Next.js App Router
-      urlPattern: /\/_next\/data\/.+\.json$|.*_rsc=.*/i,
-      handler: 'StaleWhileRevalidate',
+      // App Pages Caching: Full HTML document navigations
+      urlPattern: ({ request, url }: any) => {
+        if (url?.pathname?.startsWith('/api/')) return false;
+        if (request?.headers?.get?.('RSC') === '1' || url?.searchParams?.has('_rsc')) return false;
+        return (
+          request?.mode === 'navigate' ||
+          request?.destination === 'document' ||
+          /^\/(?:dashboard|courses|lessons|curriculum|materials|tests|attendance|fees|calendar|certificates|settings|notifications|profile|offline|login)?$/i.test(url?.pathname || '')
+        );
+      },
+      handler: 'NetworkFirst',
       options: {
-        cacheName: 'next-rsc-payloads',
+        cacheName: 'app-pages',
+        networkTimeoutSeconds: 3,
         expiration: {
-          maxEntries: 150,
+          maxEntries: 100,
           maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
         },
         cacheableResponse: {

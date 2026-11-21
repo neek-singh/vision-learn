@@ -82,10 +82,10 @@ export function PWARegistration() {
                 fetch(url, { credentials: "same-origin" })
                   .then((response) => {
                     if (response.ok && !response.redirected && response.status === 200) {
-                      cache.put(url, response);
+                      cache.put(url, response.clone());
                     }
                   })
-                  .catch(() => {});
+                  .catch(() => { });
               });
             });
           }
@@ -99,7 +99,7 @@ export function PWARegistration() {
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible" && "serviceWorker" in navigator) {
         navigator.serviceWorker.getRegistration().then((reg) => {
-          reg?.update().catch(() => {});
+          reg?.update().catch(() => { });
         });
       }
     };
